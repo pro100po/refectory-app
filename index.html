@@ -74,6 +74,8 @@ main{padding-block:18px 48px}
 h2{font:700 26px/1.15 var(--f-disp);margin:0 0 4px;text-wrap:balance}
 h2::first-letter{color:var(--accent)}
 .lead{color:var(--ink-2);max-width:68ch;margin:0 0 16px}
+.step-head{margin:0 0 16px}.step-head .lead{margin:0}
+@media (min-width:900px){ .step-head{display:flex;align-items:center}.step-head h2{white-space:nowrap;margin:0}.step-head .lead{min-width:0;border-left:1px solid var(--rule);padding-left:16px;margin-left:16px;font-size:14px} }
 h3{font:600 13px/1.3 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:0 0 10px}
 .stack{display:flex;flex-direction:column;gap:18px}
 .panel{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:16px;min-width:0}
@@ -364,10 +366,9 @@ html.set-lock,html.set-lock body{overflow:hidden}
 @media (pointer:coarse){ .linkish{padding:10px 0;margin:-10px 0} }
 /* одно помещение: строка вместо общего плана */
 /* шаг «Помещения»: панель инструментов над планом */
-.rooms-tools{justify-content:space-between}
-.rooms-tools .rt-g{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.rooms-tools .rt-r{margin-left:auto}
-.rooms-tools .btn{min-height:44px}
+.plan-bar-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;min-width:0}
+.plan-bar-actions .rt-g{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.plan-bar-actions .btn{min-height:44px}
 .rooms-field .notes{margin-top:12px}
 .rooms-hint{margin-top:8px}
 .rm-cfg{cursor:pointer}
@@ -435,6 +436,8 @@ html.set-lock,html.set-lock body{overflow:hidden}
 .plan-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:10px}
 .plan-bar>.plan-layers{margin:0;flex:0 1 auto;min-width:0}
 .plan-bar>.zbar{margin-left:auto}
+@media (max-width:899px){ .plan-bar-actions{order:-1;flex:0 0 100%} }
+@media (min-width:900px){ .plan-bar .plan-layers .btn,.plan-bar-actions>.btn,.plan-bar-actions .rt-g>.btn,.plan-bar>.zbar>.btn{padding-inline:5px;font-size:13px} }
 /* переключатель «Сети есть / проектируем»: на телефоне — в две строки */
 .nets-panel .seg button{min-height:44px;white-space:normal;line-height:1.25}
 @media (max-width:640px){ .nets-panel .seg{flex-direction:column} }
@@ -2214,9 +2217,10 @@ function stepIssLine(){ if(![0,2,5].includes(step)) return; const r=stepIss()[st
   const list=step===5 ? (planUnified()?[]:r.list.filter(x=>x.room&&x.room!==S.cur)) : r.list; if(!list.length) return;
   const c={bad:list.filter(x=>x.t==='bad').length, warn:list.filter(x=>x.t==='warn').length};
   const lead=main.querySelector('.lead'); if(!lead) return;
-  lead.insertAdjacentHTML('afterend', `<details class="step-iss ${c.bad?'bad':'warn'}"><summary>${step===5?'В других помещениях':'На этом шаге'}: ${issWords(c)}</summary>${notesHtml(list)}</details>`); }
+  lead.closest('.step-head').insertAdjacentHTML('afterend', `<details class="step-iss ${c.bad?'bad':'warn'}"><summary>${step===5?'В других помещениях':'На этом шаге'}: ${issWords(c)}</summary>${notesHtml(list)}</details>`); }
 // ошибка поля поставлена или снята — обновить ленту
 function navIssRefresh(){ if(P) renderNav(); if(typeof updSetUi==='function') updSetUi(); }
+function stepHead(title,leadHtml){ return `<div class="step-head"><h2>${title}</h2><p class="lead">${leadHtml}</p></div>`; }
 function pager(){ return `<div class="pager">${step>0?`<button class="btn" type="button" data-go="${step-1}">← ${STEP_NAMES[step-1]}</button>`:'<span></span>'}${step<8?`<button class="btn primary" type="button" data-go="${step+1}">${STEP_NAMES[step+1]} →</button>`:''}</div>`; }
 main.addEventListener('click',e=>{ const g=e.target.closest('[data-go]'); if(g) go(+g.dataset.go); });
 function exampleBar(){ return S.example?`<div class="example">Заполнено примером. Замените данные своими — всё пересчитается сразу.</div>`:''; }
@@ -2401,7 +2405,7 @@ function heatRecPanel(){ const N=S.people, who=`${N} ${plural(N,'человек�
     ${heatRecErr?'<p class="hrec-err" role="alert">Нужен пароконвектомат или плита — оставьте отмеченным хотя бы один.</p>':''}
     <div class="btns"><button class="btn primary tap" type="button" id="hrec-ok">Применить</button><button class="btn tap" type="button" id="hrec-no">Отмена</button></div></div>`; }
 function stepInput(){
-  return `<h2>Исходные данные</h2><p class="lead">Сколько людей кормить и каким тепловым оборудованием готовить. Под это приложение посчитает, сколько мощности нужно кухне, и сравнит с тем, что есть сейчас и до чего можно увеличить. Приготовление пищи первично: пароконвектомат и/или плита — индукционная или газовая — обязательны, от них строится вся кухня.</p>${exampleBar()}
+  return `${stepHead('Исходные данные', `Сколько людей кормить и каким тепловым оборудованием готовить. Под это приложение посчитает, сколько мощности нужно кухне, и сравнит с тем, что есть сейчас и до чего можно увеличить. Приготовление пищи первично: пароконвектомат и/или плита — индукционная или газовая — обязательны, от них строится вся кухня.`)}${exampleBar()}
   <div class="stack">
   <section class="panel"><h3>Трапеза</h3><div class="fields">
     ${num('people','Человек за одной трапезой',S.people,1,1,600)}
@@ -2529,12 +2533,9 @@ function stepRoom(){
   const arrUi = confirmArrange ? `<div class="confirm-box" role="alert"><p>Помещения будут переставлены вокруг «${esc((S.rooms.find(q=>q.roles.includes('hot'))||S.rooms[0]).name)}» по связям, а двери между помещениями — поставлены заново. Ручные правки этих дверей пропадут; окна, наружные двери и точки подключения останутся.</p>
       <div class="btns"><button class="btn primary tap" type="button" id="arrange-ok">Расставить</button><button class="btn tap" type="button" id="arrange-no">Отмена</button></div></div>` : '';
   const hint = !addMode ? '' : `<div class="example" data-fs="plan" style="margin-bottom:10px">Коснитесь стены${many?' любого помещения':''}, на которой нужно ${OPA[addMode]}.${addMode==='door'&&many?' На общей стене двух помещений дверь сразу поведёт в соседнее.':''} <button class="btn small" type="button" id="add-cancel">Отмена</button></div>`;
-  return `<h2>Помещения</h2><p class="lead">Нарисуйте помещения трапезной: стены, двери, окна и выступы. Нажмите на помещение — откроются его размеры, назначение и связи.</p>${exampleBar()}
+  return `${stepHead('Помещения', `Нарисуйте помещения трапезной: стены, двери, окна и выступы. Нажмите на помещение — откроются его размеры, назначение и связи.`)}${exampleBar()}
   <section class="rooms-field" aria-label="План помещений">
-    <div class="plan-tools rooms-tools"><span class="rt-g" role="group" aria-label="Добавить на стену">${['door','window','prot'].map(k=>`<button class="btn" type="button" data-add="${k}" aria-pressed="${addMode===k}">+ ${OPN[k]}</button>`).join('')}</span>
-      <span class="rt-g rt-r">${many?`<button class="btn" type="button" id="room-arrange" aria-expanded="${confirmArrange}">Расставить по связям</button>`:''}<button class="btn primary" type="button" id="room-add" aria-haspopup="dialog">+ Помещение</button></span></div>
-    ${arrUi}
-    <div class="plan-bar">${layersBarHtml('room')}${zoomCtl()}</div>${hint}
+    <div class="plan-bar">${layersBarHtml('room')}<div class="plan-bar-actions"><span class="rt-g" role="group" aria-label="Добавить на стену">${['door','window','prot'].map(k=>`<button class="btn" type="button" data-add="${k}" aria-pressed="${addMode===k}">+ ${OPN[k]}</button>`).join('')}</span><span class="rt-g rt-r">${many?`<button class="btn" type="button" id="room-arrange" aria-expanded="${confirmArrange}">Расставить по связям</button>`:''}<button class="btn primary" type="button" id="room-add" aria-haspopup="dialog">+ Помещение</button></span></div>${zoomCtl()}</div>${arrUi}${hint}
     <div class="plan-box ${addMode?'adding':''} ${VZ('plan')>1.001?'zbig':''}" id="pbox" data-fs="plan" style="--pz:${VZ('plan')}">${roomsPlanSvg()}</div>
     ${touchHintHtml('room')}
     <p class="hint rooms-hint">Нажмите на помещение или на ⚙ у названия — откроются его настройки.${many?` Помещения перетаскивайте: стены прилипают друг к другу с зазором ${fmt0(WALL_GAP*1000)} мм под перегородку.`:''} Двери, окна и выступы двигайте вдоль стен.</p>
@@ -2835,7 +2836,7 @@ function resChips(){
   return `<div class="res">${['cw','hw','sewer','vent','gas','el','sock'].map(t=>{ const on=hasPt(S,t)||(t==='vent'&&hasPt(S,'hood')); return `<span class="${on?'on':''}"><i class="pt-dot" style="background:var(${PT[t].col})">${PT[t].l}</i>${PT[t].n}: ${on?'отмечено':'нет'}</span>`; }).join('')}</div>`;
 }
 function stepPoints(){
-  return `<h2>Точки подключения</h2><p class="lead">Отметьте то, что уже есть в помещении: воду, канализацию, газ, вентиляцию, электрощит и электроподключения. Точки на стенах привязываются расстояниями от углов и друг от друга — эти размеры показаны на оранжевой размерной линии. В характеристиках записывается, что это за точка.</p>${exampleBar()}
+  return `${stepHead('Точки подключения', `Отметьте то, что уже есть в помещении: воду, канализацию, газ, вентиляцию, электрощит и электроподключения. Точки на стенах привязываются расстояниями от углов и друг от друга — эти размеры показаны на оранжевой размерной линии. В характеристиках записывается, что это за точка.`)}${exampleBar()}
   <section class="panel nets-panel" aria-label="Инженерные сети">${seg('utilities',S.utilities==='design'?'design':'existing',[['existing','Сети уже есть — отмечу их на плане'],['design','Сетей пока нет — проектируем']])}
     <p class="hint" style="margin-top:8px">${netsDesign(S)?'Приложение расставит оборудование по технологии и покажет, куда вывести воду, канализацию, электрику и вентиляцию. Уже известные точки (например, стояк канализации) можно отметить — они будут учтены.':'Отметьте вводы воды, канализацию, вентиляцию и электрощит — расстановка подстроится под них.'}</p>
     ${netsDesign(S)?notesHtml([{t:'info', m:NETS_INFO}]):''}</section>
@@ -2848,7 +2849,7 @@ function isBare(){ return step===1||step===2; }
 function roomEditor(){
   const tools=`<div class="pt-pal" role="group" aria-label="Добавить точку подключения">${PT_PAL.map(([k,nm,sh])=>`<button class="btn pt-pb" type="button" data-add="pt:${k}" aria-pressed="${addMode==='pt:'+k}" title="${nm}" aria-label="Добавить точку: ${nm}"><i class="pt-dot" style="background:var(${PT[k].col})" aria-hidden="true">${PT[k].l}</i><span class="pt-pn" aria-hidden="true">${sh}</span></button>`).join('')}<button class="btn pt-hood" type="button" data-add="pt:hood" aria-pressed="${addMode==='pt:hood'}" title="Существующий вытяжной зонт" aria-label="Добавить существующий вытяжной зонт">+ Зонт</button></div>`;
   const hint = !addMode ? '' : `<div class="example" data-fs="plan" style="margin-bottom:10px">Коснитесь плана у стены, где находится «${PT[addMode.slice(3)].n.toLowerCase()}». Если точка в полу или на потолке — коснитесь внутри помещения. <button class="btn small" type="button" id="add-cancel">Отмена</button></div>`;
-  return `<div class="plan-tools">${tools}</div><div class="plan-bar">${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div>${hint}
+  return `<div class="plan-bar"><div class="plan-bar-actions">${tools}</div>${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div>${hint}
     <div class="plan-box ${addMode?'adding':''} ${VZ('plan')>1.001?'zbig':''}" id="pbox" data-fs="plan" style="--pz:${VZ('plan')}">${planSvg('points',[],{bare:isBare()})}</div>
     ${typeof touchHintHtml==='function'?touchHintHtml('points'):''}${roomPanel()}
     <div class="panel" style="margin-top:12px"><h3>Точки и привязки</h3>${S.points.length?pointRows():'<p class="hint">Точек пока нет. Выберите тип в списке, нажмите «+ Точка» и коснитесь плана у нужной стены.</p>'}</div>`;
@@ -3489,7 +3490,7 @@ function stepExisting(){
     if(editUid===e.uid) return `<div style="padding:4px 0">${itemForm()}</div>`;
     return exRow(e, withBuy?haveEffect(e,withBuy,have):{t:'none', m:''}); }).join('');
   const nNull=S.existing.filter(e=>e.role==null).length;
-  return `<h2>Имеющееся оборудование</h2><p class="lead">То, что уже есть и пойдёт в проект. Оно учитывается в мощности и на плане, а подбор докупает только недостающее. Для каждой записи укажите, что это за аппарат: от этого зависит, что подбор не станет докупать. Под записью видно, как она повлияла на закупку.</p>${exampleBar()}
+  return `${stepHead('Имеющееся оборудование', `То, что уже есть и пойдёт в проект. Оно учитывается в мощности и на плане, а подбор докупает только недостающее. Для каждой записи укажите, что это за аппарат: от этого зависит, что подбор не станет докупать. Под записью видно, как она повлияла на закупку.`)}${exampleBar()}
   ${nNull&&!editUid?`<ul class="notes"><li class="warn">${nNull} ${plural(nNull,'запись','записи','записей')} без «Что это» — ${plural(nNull,'не учтена','не учтены','не учтены')} в подборе. Нажмите «Указать» у ${nNull===1?'неё':'каждой'}.</li></ul>`:''}
   <section class="panel">
     ${rows?`<div class="rows">${rows}</div>`:'<p class="hint">Пока ничего не добавлено. Если кухня с нуля — переходите к подбору.</p>'}
@@ -3593,7 +3594,7 @@ function stepSelect(){
   const staleHtml=stale.length?`<ul class="notes" style="margin:0 0 12px">${stale.map(x=>`<li class="warn">${esc(shortName(x.c))}: правка «${x.d>0?'+':''}${x.d}» сделана, когда приложение ставило ${x.baseAt}; сейчас ставит ${x.now} — итог ${Math.max(0,x.now+x.d)}.
       <div class="btns" style="margin-top:6px"><button class="btn small tap" type="button" data-stale-keep="${x.id}">Оставить</button><button class="btn small tap" type="button" data-stale-drop="${x.id}">Убрать правку</button></div></li>`).join('')}</ul>`:'';
   const editsBar=n?`<div class="edits-bar"><span>Ваших правок: <b>${n}</b></span>${confirmEditsReset?`<span class="muted">Все правки будут сняты, подбор вернётся к расчёту.</span><button class="btn small danger tap" type="button" id="edits-reset-yes">Сбросить</button><button class="btn small tap" type="button" id="edits-reset-no">Отмена</button>`:`<button class="btn small tap" type="button" id="edits-reset">Сбросить все правки</button>`}</div>`:'';
-  return `<h2>Подбор оборудования</h2><p class="lead">Набор на ${S.people} ${plural(S.people,'человека','человек','человек')} за трапезой под выбранное тепловое оборудование, с учётом того, что уже есть. Под каждой позицией — почему она в наборе. Количество и исполнение можно править: правки хранятся отдельно и накладываются на свежий расчёт, если поменяется число людей или помещения.</p>
+  return `${stepHead('Подбор оборудования', `Набор на ${S.people} ${plural(S.people,'человека','человек','человек')} за трапезой под выбранное тепловое оборудование, с учётом того, что уже есть. Под каждой позицией — почему она в наборе. Количество и исполнение можно править: правки хранятся отдельно и накладываются на свежий расчёт, если поменяется число людей или помещения.`)}
   ${meters()}${notesHtml(P.notes.map(n=>n.step!=null&&n.step!==4&&n.go==null?{...n, go:n.step}:n))}
   <section class="panel">${editsBar}${staleHtml}${list}${insHtml}
     <div class="add-row"><input type="search" id="add-q" placeholder="Найти позицию по названию" aria-label="Поиск позиции для добавления" value="${esc(addQuery)}">
@@ -3702,17 +3703,16 @@ function finePointer(){ try{ return matchMedia('(pointer: fine)').matches && !is
 function planCheckList(iss){ return iss.filter(i=>i.t!=='info').length?notesHtml(iss):`<ul class="notes"><li class="ok">Наложений, перекрытых рабочих зон, дверей и узких проходов не найдено.</li>${iss.map(i=>`<li class="info">${esc(i.m)}</li>`).join('')}</ul>`; }
 function stepPlan(){
   planMode='equip';   // режимы «Стены» и «Подключения» на этом шаге заменены ссылками на шаги 2 и 3
-  const head=`<h2>План расстановки</h2><p class="lead">${planMode==='equip'?'Перетаскивайте оборудование пальцем или мышью. Толстая линия — фронт обслуживания, крупный пунктир вокруг теплового — вытяжной зонт, мелкий пунктир — настенное. Размеры — в миллиметрах.':planMode==='room'?'Стены: двери, окна, выступы. Оборудование показано бледно.':'Точки подключения. Оборудование показано бледно.'}</p>
+  const head=`${stepHead('План расстановки', `${planMode==='equip'?'Перетаскивайте оборудование пальцем или мышью. Толстая линия — фронт обслуживания, крупный пунктир вокруг теплового — вытяжной зонт, мелкий пунктир — настенное. Размеры — в миллиметрах.':planMode==='room'?'Стены: двери, окна, выступы. Оборудование показано бледно.':'Точки подключения. Оборудование показано бледно.'}`)}
   <div class="plan-tools plan-links" id="pmode-bar"><button type="button" class="btn" data-goto="1">Изменить стены →</button><button type="button" class="btn" data-goto="2">Изменить подключения →</button></div>`;
   const CU=curUnits(), iss=(P.iss&&P.iss.lay&&P.iss.lay[S.cur])||checkLayout(curGeom(),CU);
   const UNI=planUnified(), ALL=UNI?P.units:CU, un=ALL.filter(u=>!S.layout[u.key]);
   const many=selKeys().length>1, su=!many&&sel&&CU.find(u=>u.key===sel&&S.layout[u.key]);
   const zs=[...new Set(ALL.map(u=>u.c.z))];
-  return head+`<div class="plan-tools">
+  return head+`<div class="plan-bar">${typeof layersBarHtml==='function'?layersBarHtml('equip'):''}<div class="plan-bar-actions">
     <button class="btn primary" type="button" id="auto-lay">Расставить автоматически</button>
     ${hotGroups(S,CU,S.layout)>1||CU.some(u=>u.c.hot&&!S.layout[u.key])?'<button class="btn" type="button" id="gather">Собрать тепловое под один зонт</button>':''}
-  </div>
-  <div class="plan-bar">${typeof layersBarHtml==='function'?layersBarHtml('equip'):''}${zoomCtl()}</div>
+  </div>${zoomCtl()}</div>
   <div class="plan-box ${VZ('plan')>1.001?'zbig':''}" id="pbox" data-fs="plan" style="--pz:${VZ('plan')}">${UNI?unifiedPlanSvg():planSvg('equip',iss)}</div>
   ${typeof touchHintHtml==='function'?touchHintHtml('equip'):''}
   ${UNI?`<p class="hint uni-hint">${isTouch()?(planEdit?'Ведите аппарат в другое помещение — он перейдёт туда.':'В режиме «✎ Править» аппарат можно перевести в другое помещение — ведите его туда.'):'Перетащите аппарат в другое помещение — он перейдёт туда. Нажмите на название помещения или дважды по пустому месту в нём — помещение крупно; «Вписать» — весь план.'}</p>`:''}
@@ -3910,7 +3910,7 @@ function stepEng(){
   const maxPh=Math.max(...p.ph,0.001);
   const drCell=i=>{ if(!hasDrain(i.c)) return ''; const pre=(i.src==='have'?'h:':'b:')+i.c.id+':'; return drainVals(P.units.filter(u=>u.key.startsWith(pre))).map(x=>x.w?`<span class="state ${x.w===2?'bad':'warn'}">${x.t}</span>`:x.t).join('; '); };
   const wRows=Wt.pts.map(i=>{ const dc=drCell(i); return `<tr><td>${esc(i.c.n)}${dc?`<span class="drm">слив до выпуска, м: <span class="num">${dc}</span></span>`:''}</td><td class="r num">${i.qty}</td><td class="r">${i.c.cw?'●':''}</td><td class="r">${i.c.hw?'●':''}</td><td class="r">${i.c.dr?'●':''}</td><td class="r num drc">${dc}</td></tr>`; }).join('');
-  return `<h2>Инженерия</h2><p class="lead">Сводка для электрика, сантехника и вентиляционщиков. Это исходные данные для задания, итоговые значения определяет проектировщик.</p>
+  return `${stepHead('Инженерия', `Сводка для электрика, сантехника и вентиляционщиков. Это исходные данные для задания, итоговые значения определяет проектировщик.`)}
   ${meters()}
   <div class="stack">
   <section class="panel"><h3>Электроснабжение</h3>
@@ -3960,7 +3960,7 @@ function stepCost(){
   const C=costCalc();
   const hasGas=C.rows.some(r=>r.c.gas);
   const rows=C.rows.map(r=>`<tr><td>${esc(r.c.n)}</td><td class="r num">${r.qty}</td>${hasGas?`<td class="r num">${r.c.gas?(r.c.gkw>0?fmt1(r.c.gkw*r.qty):'—'):''}</td>`:''}<td class="r">${r.src==='have'?'<span class="tag have">имеется</span>':`<input type="text" inputmode="decimal" data-num autocomplete="off" class="num" data-price="${r.c.id}" value="${priceOf(r.c)}" step="1000" min="0" aria-label="Цена за единицу">`}</td><td class="r num">${r.src==='have'?'—':rub(priceOf(r.c)*r.qty)}</td></tr>`).join('');
-  return `<h2>Спецификация и смета</h2><p class="lead">Цены — условные ориентиры, чтобы прикинуть бюджет. Впишите цены поставщика, итог пересчитается.</p>
+  return `${stepHead('Спецификация и смета', `Цены — условные ориентиры, чтобы прикинуть бюджет. Впишите цены поставщика, итог пересчитается.`)}
   <div class="stack">
   <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Наименование</th><th class="r">Кол-во</th>${hasGas?'<th class="r">Газ, кВт тепл.</th>':''}<th class="r">Цена, ₽</th><th class="r">Сумма</th></tr></thead><tbody>${rows}
     <tr><td>Зонт вытяжной пристенный, погонный метр</td><td class="r num">${fmt1(C.hoodLen)} м</td>${hasGas?'<td></td>':''}<td class="r"><input type="text" inputmode="decimal" data-num autocomplete="off" class="num" id="hood-price" value="${S.hoodPrice}" step="1000" min="0" aria-label="Цена погонного метра зонта"></td><td class="r num">${rub(C.hoodSum)}</td></tr>
@@ -4108,7 +4108,7 @@ function stepNorms(){
     ['СП 256.1325800.2016 «Электроустановки жилых и общественных зданий. Правила проектирования и монтажа»','проверьте редакцию','Расчётная нагрузка и коэффициенты спроса технологического оборудования.'],
     ['СП 1.13130.2020 «Системы противопожарной защиты. Эвакуационные пути и выходы»','проверьте редакцию','Ширина проходов и путей эвакуации.']
   ];
-  return `<h2>Справка</h2><p class="lead">Как приложение подбирает и расставляет оборудование, и нормативные документы для справки. Числа, по которым идёт расчёт, — в <button type="button" class="linkish" data-set="">«⚙ Настройки расчёта»</button>.</p>
+  return `${stepHead('Справка', `Как приложение подбирает и расставляет оборудование, и нормативные документы для справки. Числа, по которым идёт расчёт, — в <button type="button" class="linkish" data-set="">«⚙ Настройки расчёта»</button>.`)}
   <div class="stack">
   <section class="panel"><h3>Как устроен подбор и расстановка</h3>
     <p style="margin:0 0 10px;max-width:72ch;font-size:14.5px">Тепловое оборудование выбирается вручную на шаге «Исходные»: пароконвектомат и/или плита — индукционная или газовая — обязательны, остальное — по необходимости. Если отмечено «Есть газ», пароконвектомат, плиту, котёл и сковороду можно выбрать газовыми: в электрическую нагрузку они входят только своей электрической частью (вентилятор, управление, розжиг), а тепловая мощность по газу и расход газа показываются на шаге «Инженерия». Кнопка «Подобрать по числу человек» предлагает типовые исполнения. Остальной набор считается по числу человек: столы, ванны, стеллажи, холодильники (если включены) и мойка посуды по числу тарелок и чашек. Имеющееся оборудование засчитывается первым. Мощность — результат проекта, а не ограничение: набор считается под технологию, а приложение показывает, сколько киловатт нужно кухне, и сравнивает это с тем, что выделено сейчас и до чего можно увеличить. Количество и исполнение на шаге «Подбор» можно править: правки хранятся отдельно и накладываются на каждый свежий расчёт, поэтому при смене числа людей набор пересчитывается, а ваши «+1», «убрано» и выбранные исполнения сохраняются; если расчёт с тех пор изменился, приложение предупредит. Если не хватает даже после увеличения, можно нажать «Уложиться в … кВт» — тогда упрощается только вспомогательное оборудование (посудомоечная машина, водонагреватель, холодильный стол), тепловое приложение не трогает. Трёхфазный ввод считается нужным, если есть оборудование на 380 В или нагрузка больше 15 кВт.</p>

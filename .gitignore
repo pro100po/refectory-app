@@ -1,1 +1,7 @@
 test.txt
+TASK.md
+codex-log.txt
+review.diff
+commit-msg.txt
+git-log.txt
+*.flag

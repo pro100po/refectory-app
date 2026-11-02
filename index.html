@@ -1173,6 +1173,103 @@ function roomArea(room){ if(!hasPoly(room)) return room.w*room.d; const P=room.p
 function contourPts(room,off){ const P=roomPoly(room), ws=roomWalls(room), n=P.length; return P.map((p,i)=>{ const prev=ws[(i+n-1)%n], cur=ws[i]; return {x:p.x*100-(prev.nx+cur.nx)*off,y:p.y*100-(prev.ny+cur.ny)*off}; }); }
 // стены по контуру
 function wallsPathSvg(room,T,stroke){ const P=contourPts(room,T/2), d=P.map((p,i)=>`${i?'L':'M'}${p.x},${p.y}`).join(' ')+' Z'; return `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${T}" stroke-linejoin="miter"/>`; }
+/* ---------- форма помещения (30.2): шаблоны, проверка контура, смена формы ---------- */
+function shapeDefaults(tpl,W,D){ const r=v=>Math.round(v*10)/10, cw=r(W/3), cd=r(D/3);
+  if(tpl==='rect') return {W,D};
+  if(tpl==='L') return {W,D,cw,cd};
+  if(tpl==='U') return {W,D,cw,cd,co:(W-cw)/2};
+  if(tpl==='T'){ const lw=cw, ll=cd; return {W,D,lw,lo:(W-lw)/2,ll}; }
+  return null; }
+function shapeTemplate(tpl,rot,p){
+  if(!p||!Number.isFinite(Number(p.W))||!Number.isFinite(Number(p.D))) return {pts:[],roles:[]};
+  const W=Number(p.W), D=Number(p.D); let pts=[], roles=[];
+  if(tpl==='rect'){ pts=[{x:0,y:0},{x:W,y:0},{x:W,y:D},{x:0,y:D}]; roles=['top','right','bottom','left']; }
+  else if(tpl==='L'){
+    const cw=Number(p.cw), cd=Number(p.cd); if(!Number.isFinite(cw)||!Number.isFinite(cd)) return {pts:[],roles:[]};
+    pts=[{x:0,y:0},{x:W,y:0},{x:W,y:D-cd},{x:W-cw,y:D-cd},{x:W-cw,y:D},{x:0,y:D}]; roles=['top','right','cutTop','cutSide','bottom','left'];
+  } else if(tpl==='U'){
+    const cw=Number(p.cw), cd=Number(p.cd), co=Number(p.co); if(!Number.isFinite(cw)||!Number.isFinite(cd)||!Number.isFinite(co)) return {pts:[],roles:[]};
+    pts=[{x:0,y:0},{x:W,y:0},{x:W,y:D},{x:co+cw,y:D},{x:co+cw,y:D-cd},{x:co,y:D-cd},{x:co,y:D},{x:0,y:D}]; roles=['top','right','bottomR','cutR','cutTop','cutL','bottomL','left'];
+  } else if(tpl==='T'){
+    const lw=Number(p.lw), lo=Number(p.lo), ll=Number(p.ll); if(!Number.isFinite(lw)||!Number.isFinite(lo)||!Number.isFinite(ll)) return {pts:[],roles:[]};
+    pts=[{x:0,y:0},{x:W,y:0},{x:W,y:D-ll},{x:lo+lw,y:D-ll},{x:lo+lw,y:D},{x:lo,y:D},{x:lo,y:D-ll},{x:0,y:D-ll}]; roles=['top','right','barR','legR','legBottom','legL','barL','left'];
+  } else return {pts:[],roles:[]};
+  let turn=((Math.trunc(Number(rot)||0)%4)+4)%4;
+  while(turn--) pts=pts.map(q=>({x:-q.y,y:q.x}));
+  const minX=Math.min(...pts.map(q=>q.x)), minY=Math.min(...pts.map(q=>q.y));
+  pts=pts.map(q=>({x:Math.round((q.x-minX)*1000)/1000,y:Math.round((q.y-minY)*1000)/1000}));
+  return normPoly(pts,roles); }
+function normPoly(pts,roles){
+  let nodes=(Array.isArray(pts)?pts:[]).map((p,i)=>({p:{...p},role:Array.isArray(roles)?roles[i]:undefined}));
+  const area2=xs=>xs.reduce((a,n,i)=>{ const q=xs[(i+1)%xs.length].p; return a+n.p.x*q.y-q.x*n.p.y; },0);
+  if(nodes.length>2&&area2(nodes)<0){ const old=nodes, n=old.length; nodes=[]; for(let k=0;k<n;k++){ const i=n-1-k; nodes.push({p:old[i].p,role:old[(i-1+n)%n].role}); } }
+  let changed=true;
+  while(changed&&nodes.length>1){ changed=false; for(let i=0;i<nodes.length;i++){ const a=nodes[i].p, b=nodes[(i+1)%nodes.length].p;
+      if(Math.hypot(b.x-a.x,b.y-a.y)<=1e-9){ nodes.splice((i+1)%nodes.length,1); changed=true; break; } } }
+  changed=true;
+  while(changed&&nodes.length>2){ changed=false; for(let i=0;i<nodes.length;i++){ const a=nodes[(i+nodes.length-1)%nodes.length].p, b=nodes[i].p, c=nodes[(i+1)%nodes.length].p;
+      const ux=b.x-a.x, uy=b.y-a.y, vx=c.x-b.x, vy=c.y-b.y;
+      if(Math.abs(ux*vy-uy*vx)<=1e-9){ nodes.splice(i,1); changed=true; break; } } }
+  if(nodes.length){ let first=0; for(let i=1;i<nodes.length;i++) if(nodes[i].p.y<nodes[first].p.y||(nodes[i].p.y===nodes[first].p.y&&nodes[i].p.x<nodes[first].p.x)) first=i;
+    nodes=nodes.slice(first).concat(nodes.slice(0,first)); }
+  return {pts:nodes.map(n=>n.p),roles:nodes.map(n=>n.role)}; }
+function shapeError(pts){
+  const P=Array.isArray(pts)?pts:[], n=P.length;
+  if(n<4||P.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y))) return 'Контур не замкнут';
+  let area2=0; for(let i=0;i<n;i++){ const a=P[i], b=P[(i+1)%n]; area2+=a.x*b.y-b.x*a.y; }
+  if(Math.abs(area2)<=1e-12) return 'Контур не замкнут';
+  const walls=[];
+  for(let i=0;i<n;i++){ const a=P[i], b=P[(i+1)%n], dx=b.x-a.x, dy=b.y-a.y;
+    if(Math.abs(dx)>1e-9&&Math.abs(dy)>1e-9) return `Стена ${i+1} — не под прямым углом`;
+    walls.push({a,b,dx,dy,len:Math.hypot(dx,dy)}); }
+  for(let i=0;i<n;i++) if(walls[i].len<0.3) return `Стена ${i+1} короче 300 мм`;
+  const cross=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x), on=(a,b,p)=>p.x>=Math.min(a.x,b.x)-1e-9&&p.x<=Math.max(a.x,b.x)+1e-9&&p.y>=Math.min(a.y,b.y)-1e-9&&p.y<=Math.max(a.y,b.y)+1e-9;
+  const intersects=(a,b,c,d)=>{ const ab1=cross(a,b,c), ab2=cross(a,b,d), cd1=cross(c,d,a), cd2=cross(c,d,b);
+    if(((ab1>1e-9&&ab2< -1e-9)||(ab1< -1e-9&&ab2>1e-9))&&((cd1>1e-9&&cd2< -1e-9)||(cd1< -1e-9&&cd2>1e-9))) return true;
+    return (Math.abs(ab1)<=1e-9&&on(a,b,c))||(Math.abs(ab2)<=1e-9&&on(a,b,d))||(Math.abs(cd1)<=1e-9&&on(c,d,a))||(Math.abs(cd2)<=1e-9&&on(c,d,b)); };
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){ if(j===i+1||(i===0&&j===n-1)) continue;
+    if(intersects(walls[i].a,walls[i].b,walls[j].a,walls[j].b)) return `Стены ${i+1} и ${j+1} пересекаются`; }
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){ const a=walls[i], b=walls[j], ux=a.dx/a.len, uy=a.dy/a.len, nx=-uy, ny=ux;
+    const vx=b.dx/b.len, vy=b.dy/b.len; if(nx*(-vy)+ny*vx>-1+1e-9) continue;
+    const dist=(b.a.x-a.a.x)*nx+(b.a.y-a.a.y)*ny; if(dist<=1e-9||dist>=0.6) continue;
+    const q1=(b.a.x-a.a.x)*ux+(b.a.y-a.a.y)*uy, q2=(b.b.x-a.a.x)*ux+(b.b.y-a.a.y)*uy;
+    if(Math.min(a.len,Math.max(q1,q2))-Math.max(0,Math.min(q1,q2))>1e-9) return `Между стенами ${i+1} и ${j+1} меньше 600 мм`; }
+  return null; }
+function assignWids(room,pts,roles,tpl){
+  const oldWalls=roomWalls(room), oldById=Object.fromEntries(oldWalls.map(w=>[w.id,w])), out=Array(pts.length).fill(null), used=new Set();
+  if(room.shape&&room.shape.tpl===tpl&&room.shape.roles){
+    for(let i=0;i<pts.length;i++){ const role=roles&&roles[i], id=role&&room.shape.roles[role]; if(id&&oldById[id]&&!used.has(id)){ out[i]=id; used.add(id); } }
+  }
+  for(let i=0;i<pts.length;i++) if(!out[i]){ const a=pts[i], b=pts[(i+1)%pts.length], dx=b.x-a.x, dy=b.y-a.y, axis=Math.abs(dy)<1e-9?'h':Math.abs(dx)<1e-9?'v':null, len=Math.hypot(dx,dy);
+    if(!axis||!len) continue; const nx=-dy/len, ny=dx/len, loNew=axis==='h'?Math.min(a.x,b.x):Math.min(a.y,b.y), hiNew=axis==='h'?Math.max(a.x,b.x):Math.max(a.y,b.y), line=axis==='h'?a.y:a.x;
+    let best=null, bestOverlap=0;
+    for(const w of oldWalls){ if(used.has(w.id)||w.axis!==axis||Math.abs(w.nx-nx)>1e-9||Math.abs(w.ny-ny)>1e-9) continue;
+      if(Math.abs((axis==='h'?w.y1:w.x1)-line)>=0.001) continue;
+      const loOld=axis==='h'?Math.min(w.x1,w.x2):Math.min(w.y1,w.y2), hiOld=axis==='h'?Math.max(w.x1,w.x2):Math.max(w.y1,w.y2), overlap=Math.min(hiNew,hiOld)-Math.max(loNew,loOld);
+      if(overlap>bestOverlap){ best=w; bestOverlap=overlap; } }
+    if(best){ out[i]=best.id; used.add(best.id); }
+  }
+  for(let i=0;i<out.length;i++) if(!out[i]) out[i]=uid('w');
+  return out; }
+function wallName(room,id){
+  if(!hasPoly(room)) return `${SIDE_RU[id]||'правая'} стена`;
+  const i=roomWalls(room).findIndex(w=>w.id===id); return `стена ${i<0?'?':i+1}`; }
+function setRoomShape(room,shape){
+  const tpl=shape&&shape.tpl, built=tpl==='custom'?normPoly(shape.pts):shapeTemplate(tpl,shape&&shape.rot,shape&&shape.p), pts=built.pts, roles=built.roles, error=shapeError(pts);
+  if(error) return {error};
+  const old={w:room.w,d:room.d,poly:room.poly}, wids=assignWids(room,pts,roles,tpl);
+  if(tpl==='rect'){ delete room.poly; delete room.shape; room.w=Number(shape.p.W); room.d=Number(shape.p.D); }
+  else { room.poly=pts.map((p,i)=>({...p,wid:wids[i]})); room.shape=tpl==='custom'?{tpl:'custom'}:{tpl,rot:shape.rot,p:shape.p,roles:Object.fromEntries(roles.map((r,i)=>[r,wids[i]]))};
+    room.w=Math.max(...pts.map(p=>p.x)); room.d=Math.max(...pts.map(p=>p.y)); }
+  const newIds=new Set(roomWalls(room).map(w=>w.id)), moved=[];
+  const dest=id=>{ if(hasPoly(room)) return `на ${wallName(room,id).replace(/^стена /,'стену ')}`;
+    const adj=(SIDE_RU[id]||SIDE_RU.r).replace(/яя$/,'юю').replace(/ая$/,'ую'); return `на ${adj} стену`; };
+  for(const o of room.openings) if(!newIds.has(o.side)){ const width=Number(o.w)||0, q=wallPoint(old,o.side,(Number(o.off)||0)+width/2), hit=nearestWall(room,q.x,q.y), proj=projectToWall(room,hit.id,q.x,q.y);
+    o.side=hit.id; o.off=proj.off-width/2; moved.push(`${OP_NAME[o.type]||'Проём'} ${o.type==='prot'?'перенесён':'перенесена'} ${dest(hit.id)}`); }
+  for(const p of room.points) if(p.side!=='floor'&&!newIds.has(p.side)){ const width=p.type==='hood'?(Number(p.w)||0):0, q=wallPoint(old,p.side,(Number(p.off)||0)+width/2), hit=nearestWall(room,q.x,q.y), proj=projectToWall(room,hit.id,q.x,q.y);
+    p.side=hit.id; p.off=proj.off-width/2; const label=p.name||(PT[p.type]&&PT[p.type].n)||p.spec||p.type||'точка'; moved.push(`Точка «${label}» перенесена ${dest(hit.id)}`); }
+  clampRoom({room,openings:room.openings,points:room.points});
+  return {ok:true,moved}; }
 // отражение по горизонтали: контур, стены, проёмы, точки (вместо mirrorGeom)
 function mirrorWallId(room,id){ if(hasPoly(room)) return id; return id==='l'?'r':id==='r'?'l':id; }
 function mirrorRoom(s){ const W=s.room.w, R=s.room;

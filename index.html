@@ -385,6 +385,24 @@ html.set-lock,html.set-lock body{overflow:hidden}
 .rmp-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
 .rmp-wide{grid-column:1/-1}
 .rmp-warn{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:var(--r);font-size:13.5px}
+.shp-controls{display:flex;flex-direction:column;gap:12px}
+.shp-template-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:6px;align-items:stretch}
+.shp-template{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-width:0;min-height:64px;padding:5px 3px;font-size:12.5px;line-height:1.15;white-space:normal}
+.shp-template[aria-pressed="true"],.shp-rot[aria-pressed="true"]{background:var(--steel-soft);border-color:var(--steel);color:var(--ink)}
+.shp-svg{width:40px;height:28px;flex:0 0 auto}
+.shp-custom-label{align-self:center;color:var(--ink-2);font-size:13px}
+.shp-rotation{display:flex;flex-direction:column;gap:6px}
+.shp-rot-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.shp-rot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;min-height:58px;padding:3px;font-size:12px}
+.shp-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.shp-wall-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.shp-wall-actions .hint{margin-right:2px}
+.shp-wall-list{display:flex;flex-direction:column}
+.shp-wall-row{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:8px;align-items:end;padding:8px 0;border-top:1px solid var(--grid)}
+.shp-wall-row>b{align-self:center;font-size:13px;font-weight:500}
+.shp-wall-row .field{min-width:0}
+.shp-action{min-height:44px;white-space:normal;line-height:1.15}
+.shp-error-slot:empty{display:none}
 .rmp-note{display:block;margin-top:8px;font-size:12.5px;color:var(--ink-2)}
 .rmp-side .chain-row .ttl{min-height:44px;padding-bottom:4px}
 .rmp-side .chain-in.four{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -399,6 +417,7 @@ html.set-lock,html.set-lock body{overflow:hidden}
   .rmp-foot{display:flex;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule)}
   .rmp-foot .btn{flex:1 1 auto}
   html:has(#rmp-side) main{padding-bottom:62vh} }
+@media (max-width:390px){ .shp-fields{grid-template-columns:minmax(0,1fr)} .shp-template-row{grid-template-columns:repeat(4,minmax(0,1fr))} .shp-custom-label{grid-column:1/-1;justify-self:end} }
 /* окно «Новое помещение» */
 .nr-dlg{width:min(600px,100%)}
 .nr-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1235,9 +1254,17 @@ function shapeError(pts){
     const q1=(b.a.x-a.a.x)*ux+(b.a.y-a.a.y)*uy, q2=(b.b.x-a.a.x)*ux+(b.b.y-a.a.y)*uy;
     if(Math.min(a.len,Math.max(q1,q2))-Math.max(0,Math.min(q1,q2))>1e-9) return `Между стенами ${i+1} и ${j+1} меньше 600 мм`; }
   return null; }
+function shapeParamsError(tpl,p){
+  if(!p) return 'Не заданы размеры формы'; const W=Number(p.W), D=Number(p.D);
+  if(!Number.isFinite(W)||!Number.isFinite(D)||W<0.3||D<0.3||W>30||D>30) return 'Размеры должны быть от 300 до 30 000 мм';
+  if(tpl==='L'&&(Number(p.cw)>=W||Number(p.cd)>=D)) return 'Вырез должен быть меньше габарита помещения';
+  if(tpl==='U'&&(Number(p.cw)>=W||Number(p.cd)>=D||Number(p.co)<0||Number(p.co)+Number(p.cw)>W)) return 'Вырез должен помещаться внутри габарита помещения';
+  if(tpl==='T'&&(Number(p.lw)>=W||Number(p.ll)>=D||Number(p.lo)<0||Number(p.lo)+Number(p.lw)>W)) return 'Ножка должна помещаться внутри габарита помещения';
+  return null; }
 function assignWids(room,pts,roles,tpl){
   const oldWalls=roomWalls(room), oldById=Object.fromEntries(oldWalls.map(w=>[w.id,w])), out=Array(pts.length).fill(null), used=new Set();
-  if(room.shape&&room.shape.tpl===tpl&&room.shape.roles){
+  if(tpl==='custom'&&Array.isArray(roles)) for(let i=0;i<pts.length;i++){ const id=roles[i]; if(typeof id==='string'&&oldById[id]&&!used.has(id)){ out[i]=id; used.add(id); } }
+  if(tpl!=='custom'&&room.shape&&room.shape.tpl===tpl&&room.shape.roles){
     for(let i=0;i<pts.length;i++){ const role=roles&&roles[i], id=role&&room.shape.roles[role]; if(id&&oldById[id]&&!used.has(id)){ out[i]=id; used.add(id); } }
   }
   for(let i=0;i<pts.length;i++) if(!out[i]){ const a=pts[i], b=pts[(i+1)%pts.length], dx=b.x-a.x, dy=b.y-a.y, axis=Math.abs(dy)<1e-9?'h':Math.abs(dx)<1e-9?'v':null, len=Math.hypot(dx,dy);
@@ -1255,7 +1282,8 @@ function wallName(room,id){
   if(!hasPoly(room)) return `${SIDE_RU[id]||'правая'} стена`;
   const i=roomWalls(room).findIndex(w=>w.id===id); return `стена ${i<0?'?':i+1}`; }
 function setRoomShape(room,shape){
-  const tpl=shape&&shape.tpl, built=tpl==='custom'?normPoly(shape.pts):shapeTemplate(tpl,shape&&shape.rot,shape&&shape.p), pts=built.pts, roles=built.roles, error=shapeError(pts);
+  const tpl=shape&&shape.tpl, paramsError=tpl==='custom'?null:shapeParamsError(tpl,shape&&shape.p); if(paramsError) return {error:paramsError};
+  const built=tpl==='custom'?normPoly(shape.pts,shape.pts.map(p=>p.wid||null)):shapeTemplate(tpl,shape&&shape.rot,shape&&shape.p), pts=built.pts, roles=built.roles, error=shapeError(pts);
   if(error) return {error};
   const old={w:room.w,d:room.d,poly:room.poly}, wids=assignWids(room,pts,roles,tpl);
   if(tpl==='rect'){ delete room.poly; delete room.shape; room.w=Number(shape.p.W); room.d=Number(shape.p.D); }
@@ -1270,6 +1298,25 @@ function setRoomShape(room,shape){
     p.side=hit.id; p.off=proj.off-width/2; const label=p.name||(PT[p.type]&&PT[p.type].n)||p.spec||p.type||'точка'; moved.push(`Точка «${label}» перенесена ${dest(hit.id)}`); }
   clampRoom({room,openings:room.openings,points:room.points});
   return {ok:true,moved}; }
+function wallIsNotchBase(room,index){
+  const ws=roomWalls(room), n=ws.length; if(!hasPoly(room)||shapeCurrentTpl(room)!=='custom'||n<8) return false;
+  const prev=ws[(index+n-1)%n], cur=ws[index], next=ws[(index+1)%n], before=ws[(index+n-2)%n], after=ws[(index+2)%n], eps=1e-6;
+  if(Math.hypot(prev.dir.x+next.dir.x,prev.dir.y+next.dir.y)>eps) return false;
+  if(Math.abs(before.dir.x*cur.dir.y-before.dir.y*cur.dir.x)>eps||Math.abs(after.dir.x*cur.dir.y-after.dir.y*cur.dir.x)>eps) return false;
+  const lineDist=w=>Math.abs((w.x1-before.x1)*before.dir.y-(w.y1-before.y1)*before.dir.x);
+  return lineDist(after)<=eps;
+}
+function wallNotchPoints(room,id){
+  let pts=room.poly?room.poly.map(p=>({...p})):null;
+  if(!pts){ const tpl=room.shape?room.shape.tpl:'rect', rot=room.shape?room.shape.rot:0, p=room.shape&&room.shape.p?room.shape.p:shapeDefaults(tpl,room.w,room.d), built=shapeTemplate(tpl,rot,p), ws=roomWalls(room);
+    pts=built.pts.map((q,i)=>({...q,wid:(room.shape&&room.shape.roles&&room.shape.roles[built.roles[i]])||ws[i]?.id})); }
+  const wall=roomWalls(room).find(w=>w.id===id), i=wall?wall.i:-1, n=pts.length; if(i<0||n<4) return {error:'Стена не найдена'};
+  if(wallIsNotchBase(room,i)){
+    const gone=new Set(); for(let j=-1;j<=2;j++) gone.add((i+j+n)%n);
+    return {tpl:'custom',pts:pts.filter((_,j)=>!gone.has(j))}; }
+  const a=pts[i], b=pts[(i+1)%n], w=roomWalls(room)[i], one={x:a.x+(b.x-a.x)/3,y:a.y+(b.y-a.y)/3}, two={x:a.x+2*(b.x-a.x)/3,y:a.y+2*(b.y-a.y)/3}, off={x:w.nx*0.6,y:w.ny*0.6};
+  const out=[]; for(let j=0;j<n;j++){ out.push({...pts[j]}); if(j===i) out.push(one,{x:one.x+off.x,y:one.y+off.y},{x:two.x+off.x,y:two.y+off.y},two); }
+  return {tpl:'custom',pts:out}; }
 // отражение по горизонтали: контур, стены, проёмы, точки (вместо mirrorGeom)
 function mirrorWallId(room,id){ if(hasPoly(room)) return id; return id==='l'?'r':id==='r'?'l':id; }
 function mirrorRoom(s){ const W=s.room.w, R=s.room;
@@ -2493,7 +2540,8 @@ function roomsPlanSvg(){
   try{ for(const r of rs){ S.cur=r.id; const on=rpOpen&&r.id===keep;
       const points=hasPoly(r)?contourPts(r,0).map(p=>`${q(p.x)},${q(p.y)}`).join(' '):'';
       const bg=hasPoly(r)?`<polygon class="rm-bg" data-rbg="${r.id}" points="${points}" fill="var(--steel-soft)" fill-opacity="${on?0.75:0}" style="cursor:${many?'grab':'pointer'}"><title>${esc(r.name)} — настройки помещения</title></polygon>`:`<rect class="rm-bg" data-rbg="${r.id}" x="0" y="0" width="${q(r.w*100)}" height="${q(r.d*100)}" fill="var(--steel-soft)" fill-opacity="${on?0.75:0}" style="cursor:${many?'grab':'pointer'}"><title>${esc(r.name)} — настройки помещения</title></rect>`;
-      body+=`<g data-rg="${r.id}" class="${on?'rm-on':''}" transform="translate(${q(r.x*100)},${q(r.y*100)})">${bg}${planSvg('room',[],{inner:true, k, bare:true, blocked:many?blockedSides(r):new Set()})}${roomLabelSvg(r,k)}</g>`; } }
+      const wallNums=on&&hasPoly(r)?roomWalls(r).map(w=>{ const x=(w.x1+w.x2)*50+w.nx*22/k, y=(w.y1+w.y2)*50+w.ny*22/k; return `<g style="pointer-events:none"><circle cx="${q(x)}" cy="${q(y)}" r="${q(11/k)}" fill="var(--paper)" stroke="var(--rule)" stroke-width="${q(1.2/k)}"/><text x="${q(x)}" y="${q(y)}" font-size="${q(12/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--ink-2)">${w.i+1}</text></g>`; }).join(''):'';
+      body+=`<g data-rg="${r.id}" class="${on?'rm-on':''}" transform="translate(${q(r.x*100)},${q(r.y*100)})">${bg}${planSvg('room',[],{inner:true, k, bare:true, blocked:many?blockedSides(r):new Set()})}${wallNums}${roomLabelSvg(r,k)}</g>`; } }
   finally{ S.cur=keep; scrK=null; PT_SH={t:0,r:0,b:0,l:0}; }
   return `<svg id="plan" data-unified="1" data-rooms="1" viewBox="${q(vx)} ${q(vy)} ${q(vw)} ${q(vh)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${many?'План помещений: '+esc(rs.map(r=>r.name).join(', ')):`План помещения: длина ${fmt0(rs[0].d*1000)} мм по вертикали, ширина ${fmt0(rs[0].w*1000)} мм по горизонтали`}">
     <defs><pattern id="hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="10" stroke="var(--ink-2)" stroke-width="1.2" opacity=".35"/></pattern></defs>
@@ -2523,11 +2571,45 @@ function roomLabelSvg(r,k){
 // раздел: {id, title, html(r) → разметка, show(r) → показывать ли}. Для пункта 30.2: addRoomSection({id:'shape', title:'Форма', html:…}, 'room') — встанет между «Помещение» и «Связи»
 const RP_SECTIONS=[];
 function addRoomSection(sec, after){ const i=after?RP_SECTIONS.findIndex(s=>s.id===after):-1; if(i>=0) RP_SECTIONS.splice(i+1,0,sec); else RP_SECTIONS.push(sec); }
+function shapeSvg(tpl,rot,p){
+  const pts=shapeTemplate(tpl,rot,p).pts, xs=pts.map(q=>q.x), ys=pts.map(q=>q.y), minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys), scale=Math.min(36/Math.max(0.001,maxX-minX),24/Math.max(0.001,maxY-minY));
+  const dx=(40-(maxX-minX)*scale)/2, dy=(28-(maxY-minY)*scale)/2, points=pts.map(q=>`${(dx+(q.x-minX)*scale).toFixed(2)},${(dy+(q.y-minY)*scale).toFixed(2)}`).join(' ');
+  return `<svg class="shp-svg" viewBox="0 0 40 28" aria-hidden="true"><polygon points="${points}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>`; }
+function shapeCurrentTpl(r){ return r.shape?r.shape.tpl:(hasPoly(r)?'custom':'rect'); }
+function shapeCurrentParams(r,tpl){ return r.shape&&r.shape.tpl===tpl&&r.shape.p?{...r.shape.p}:shapeDefaults(tpl,r.w,r.d); }
+function shapeFieldHtml(tpl,p){
+  const specs=tpl==='L'?[['D','Общая длина ↕'],['W','Общая ширина ↔'],['cd','Вырез ↕'],['cw','Вырез ↔']]
+    :tpl==='U'?[['D','Общая длина ↕'],['W','Общая ширина ↔'],['cd','Глубина выреза ↕'],['cw','Ширина выреза ↔'],['co','Отступ выреза ↔']]
+    :tpl==='T'?[['D','Общая длина ↕'],['W','Общая ширина ↔'],['lw','Ширина ножки ↔'],['lo','Отступ ножки ↔'],['ll','Длина ножки ↕']]:[];
+  return specs.length?`<div class="fields shp-fields">${specs.map(([key,label])=>num(`shp-${key}`,label,Math.round(p[key]*1000),10,300,30000,'',`data-shp-param="${key}"`)).join('')}</div>`:''; }
+function shapeNotchButtons(r){ return `<div class="shp-wall-actions"><span class="hint">Добавить уступ на стену:</span>${roomWalls(r).map(w=>`<button type="button" class="btn small tap shp-action" data-wall-notch="${esc(w.id)}" aria-label="Уступ на стене ${w.i+1}">Уступ</button>`).join('')}</div>`; }
+function shapeSecHtml(r){
+  const tpl=shapeCurrentTpl(r), curRot=r.shape&&r.shape.rot||0, p=shapeCurrentParams(r,tpl), templates=[['rect','Прямоугольник'],['L','Г'],['U','П'],['T','Т']];
+  const choices=`<div class="shp-template-row">${templates.map(([key,label])=>`<button type="button" class="btn tap shp-template" data-shape-tpl="${key}" aria-pressed="${tpl===key}">${shapeSvg(key,0,shapeDefaults(key,3,2))}<span>${label}</span></button>`).join('')}${tpl==='custom'?'<span class="shp-custom-label">Своя форма</span>':''}</div>`;
+  const rotation=tpl!=='custom'&&tpl!=='rect'?`<div class="shp-rotation"><span class="lbl">Поворот</span><div class="shp-rot-row">${[0,1,2,3].map(rot=>`<button type="button" class="btn tap shp-rot" data-shape-rot="${rot}" aria-pressed="${Number(curRot)===rot}" aria-label="Поворот ${rot*90} градусов">${shapeSvg(tpl,rot,p)}<span>${rot*90}°</span></button>`).join('')}</div></div>`:'';
+  const walls=tpl==='custom'?`<div class="shp-wall-list">${roomWalls(r).map(w=>{ const un=wallIsNotchBase(r,w.i); return `<div class="shp-wall-row"><b>Стена ${w.i+1}</b>${num(`shp-wall-${esc(w.id)}`,'Длина, мм',Math.round(w.len*1000),10,300,30000,'',`data-wall-len="${esc(w.id)}"`)}<button type="button" class="btn small tap shp-action" ${un?`data-wall-unnotch="${esc(w.id)}"`:`data-wall-notch="${esc(w.id)}"`} aria-label="${un?'Убрать уступ':'Уступ'} на стене ${w.i+1}">${un?'Убрать уступ':'Уступ'}</button></div>`; }).join('')}</div>`:shapeNotchButtons(r);
+  return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p)}${walls}<div class="shp-error-slot"></div></div>`; }
+function shapeShowError(sec,el,msg){ if(el) el.setAttribute('aria-invalid','true'); const slot=sec.querySelector('.shp-error-slot'); if(slot) slot.innerHTML=`<p class="rmp-warn shp-warn" role="alert">${esc(msg)}</p>`; }
+function applyRoomShape(r,shape,sec,el){
+  const result=setRoomShape(r,shape); if(result.error){ shapeShowError(sec,el,result.error); return false; }
+  lastPush=0; touch(); recompute(); render(); if(result.moved.length) toast(result.moved.join('. ')); return true; }
+function bindShapeEditor(){
+  const sec=document.querySelector('[data-rpsec="shape"]'); if(!sec) return;
+  sec.querySelectorAll('[data-shape-tpl]').forEach(b=>b.addEventListener('click',()=>{ const r=S.room, tpl=b.dataset.shapeTpl; applyRoomShape(r,{tpl,rot:0,p:shapeDefaults(tpl,r.w,r.d)},sec,b); }));
+  sec.querySelectorAll('[data-shape-rot]').forEach(b=>b.addEventListener('click',()=>{ const r=S.room, tpl=shapeCurrentTpl(r); applyRoomShape(r,{tpl,rot:Number(b.dataset.shapeRot),p:shapeCurrentParams(r,tpl)},sec,b); }));
+  sec.querySelectorAll('[data-shp-param]').forEach(el=>el.addEventListener('change',()=>{ const r=S.room, tpl=shapeCurrentTpl(r), value=Number(String(el.value).replace(/\s+/g,'').replace(',','.')); if(!Number.isFinite(value)||value<300||value>30000){ shapeShowError(sec,el,'Введите размер от 300 до 30 000 мм.'); return; }
+    const p=shapeCurrentParams(r,tpl); p[el.dataset.shpParam]=value/1000; applyRoomShape(r,{tpl,rot:r.shape&&r.shape.rot||0,p},sec,el); }));
+  sec.querySelectorAll('[data-wall-len]').forEach(el=>el.addEventListener('change',()=>{ const r=S.room, value=Number(String(el.value).replace(/\s+/g,'').replace(',','.')); if(!Number.isFinite(value)||value<300||value>30000){ shapeShowError(sec,el,'Введите длину от 300 до 30 000 мм.'); return; }
+    const w=roomWalls(r).find(q=>q.id===el.dataset.wallLen); if(!w) return; const pts=r.poly.map(p=>({...p})), n=pts.length, delta=value/1000-w.len, dx=w.dir.x*delta, dy=w.dir.y*delta;
+    for(const i of [(w.i+1)%n,(w.i+2)%n]){ pts[i].x+=dx; pts[i].y+=dy; } applyRoomShape(r,{tpl:'custom',pts},sec,el); }));
+  sec.addEventListener('click',e=>{ const b=e.target.closest('[data-wall-notch],[data-wall-unnotch]'); if(!b) return; const r=S.room, id=b.dataset.wallNotch||b.dataset.wallUnnotch, shape=wallNotchPoints(r,id); if(shape.error){ shapeShowError(sec,b,shape.error); return; } applyRoomShape(r,shape,sec,b); });
+}
 addRoomSection({id:'room', title:'Помещение', html:r=>`<div class="fields rmp-fields">
     <label class="field rmp-wide"><span>Название</span><input id="rname" type="text" value="${esc(r.name)}" autocomplete="off"></label>
-    ${num('rd','Длина <span role="img" aria-label="по вертикали плана">↕</span>, мм',Math.round(r.d*1000),10,1000,30000,'','data-m2mm')}
-    ${num('rw','Ширина <span role="img" aria-label="по горизонтали плана">↔</span>, мм',Math.round(r.w*1000),10,1000,30000,'','data-m2mm')}</div>
+    ${hasPoly(r)?`<p class="hint rmp-wide">Габарит ${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм · ${fmt1(roomArea(r))} м². Форма и размеры — в разделе «Форма».</p>`:`${num('rd','Длина <span role="img" aria-label="по вертикали плана">↕</span>, мм',Math.round(r.d*1000),10,1000,30000,'','data-m2mm')}
+    ${num('rw','Ширина <span role="img" aria-label="по горизонтали плана">↔</span>, мм',Math.round(r.w*1000),10,1000,30000,'','data-m2mm')}`}</div>
   <div class="field" style="margin-top:14px"><span class="lbl">Назначение — что здесь будет</span><div class="chips" style="margin-top:6px">${ROLES.map(([k,l])=>`<button type="button" class="dish tap" data-role="${k}" aria-pressed="${r.roles.includes(k)}"><span class="bx">✓</span>${l}</button>`).join('')}</div></div>`});
+addRoomSection({id:'shape', title:'Форма', html:r=>shapeSecHtml(r)}, 'room');
 addRoomSection({id:'links', title:'Связи', html:r=>{
   const miss=linkTargets(r).filter(([t])=>hasLink(r.id,t)&&!doorFor(r.id,t));
   return `<div class="field"><span class="lbl">Отсюда можно попасть</span>${linkChips(linkTargets(r).map(([id,n])=>[r.id,id,n]))}</div>
@@ -2682,7 +2764,7 @@ bind[1]=()=>{
   if(rb){ rb.scrollTop=rpScroll;
     if(rpFocus){ const row=rb.querySelector(`[data-pick="op:${CSS.escape(rpFocus)}"]`); rpFocus=null; if(row){ const c=row.closest('.chain-row'), bt=rb.getBoundingClientRect(), ct=c.getBoundingClientRect(); rb.scrollTop+=ct.top-bt.top-8; } }
     rpScroll=rb.scrollTop; rb.addEventListener('scroll',()=>{ rpScroll=rb.scrollTop; },{passive:true}); rpPos(); }
-  bindRoomEditor();
+  bindShapeEditor(); bindRoomEditor();
 };
 
 function resChips(){

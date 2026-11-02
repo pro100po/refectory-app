@@ -662,7 +662,7 @@ function doorLabel(o){ if(o.to&&o.to.startsWith('room:')) return 'в «'+roomNam
 // дверь на стене помещения A → то же место на стене соседнего помещения B
 function mapDoor(A,d,B){
   const tol=0.4, wa=wallById(A,d.side), pa=wallPoint(A,d.side,d.off);
-  for(const wb of roomWalls(B)){ if(wb.nx!==-wa.nx || wb.ny!==-wa.ny || wb.axis!==wa.axis || !wa.axis) continue;
+  for(const wb of roomWalls(B)){ if(Math.abs(wb.nx+wa.nx)>1e-9 || Math.abs(wb.ny+wa.ny)>1e-9 || wb.axis!==wa.axis || !wa.axis) continue;
     const h=wa.axis==='h', la=(h?A.y:A.x)+(h?wa.y1:wa.x1), lb=(h?B.y:B.x)+(h?wb.y1:wb.x1);
     if(Math.abs(la-lb)>tol) continue;
     const off=(h?A.x+pa.x:A.y+pa.y)-(h?B.x+wb.offOrigin.x:B.y+wb.offOrigin.y), L=wb.len;
@@ -2282,11 +2282,23 @@ function doorFor(a,b){ const A=rById(a); if(!A) return null; const tgt=LINK_EXT[
   let d=A.openings.find(o=>o.type==='door'&&o.to===tgt); if(d) return d;
   const B=!LINK_EXT[b]&&rById(b); return B ? B.openings.find(o=>o.type==='door'&&o.to==='room:'+a)||null : null; }
 function sharedSpans(A,B){ const tol=0.4, out=[];
-  const hx=[Math.max(A.x,B.x)-A.x, Math.min(A.x+A.w,B.x+B.w)-A.x], vy=[Math.max(A.y,B.y)-A.y, Math.min(A.y+A.d,B.y+B.d)-A.y];
   const ws=hasPoly(A)?roomWalls(A):['t','b','l','r'].map(id=>wallById(A,id));   // порядок прежний: верх, низ, лево, право
-  for(const wa of ws){ if(!wa.axis) continue; const h=wa.axis==='h', la=(h?A.y:A.x)+(h?wa.y1:wa.x1);
-    if(roomWalls(B).some(wb=>wb.nx===-wa.nx && wb.ny===-wa.ny && wb.axis===wa.axis && Math.abs(la-((h?B.y:B.x)+(h?wb.y1:wb.x1)))<=tol)) out.push({side:wa.id, lo:h?hx[0]:vy[0], hi:h?hx[1]:vy[1]}); }
+  for(const wa of ws){ if(!wa.axis) continue; const h=wa.axis==='h', la=(h?A.y:A.x)+(h?wa.y1:wa.x1), a0=(h?A.x:A.y)+Math.min(h?wa.x1:wa.y1,h?wa.x2:wa.y2), a1=(h?A.x:A.y)+Math.max(h?wa.x1:wa.y1,h?wa.x2:wa.y2), origin=(h?A.x+wa.offOrigin.x:A.y+wa.offOrigin.y);
+    for(const wb of roomWalls(B)){ if(Math.abs(wb.nx+wa.nx)>1e-9 || Math.abs(wb.ny+wa.ny)>1e-9 || wb.axis!==wa.axis || Math.abs(la-((h?B.y:B.x)+(h?wb.y1:wb.x1)))>tol) continue;
+      const b0=(h?B.x:B.y)+Math.min(h?wb.x1:wb.y1,h?wb.x2:wb.y2), b1=(h?B.x:B.y)+Math.max(h?wb.x1:wb.y1,h?wb.x2:wb.y2), lo=Math.max(a0,b0)-origin, hi=Math.min(a1,b1)-origin;
+      out.push({side:wa.id,lo,hi}); } }
   return out.filter(s=>s.hi-s.lo>=1.0); }
+function roomsOverlap(A,B){
+  if(!hasPoly(A)&&!hasPoly(B)) return ov({x:A.x,y:A.y,w:A.w,h:A.d},{x:B.x-0.05,y:B.y-0.05,w:B.w+0.1,h:B.d+0.1},0.01);
+  const WA=roomWalls(A), WB=roomWalls(B), cross=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
+  for(const wa of WA) for(const wb of WB){ const a={x:A.x+wa.x1,y:A.y+wa.y1}, b={x:A.x+wa.x2,y:A.y+wa.y2}, c={x:B.x+wb.x1,y:B.y+wb.y1}, d={x:B.x+wb.x2,y:B.y+wb.y2}, ab1=cross(a,b,c), ab2=cross(a,b,d), cd1=cross(c,d,a), cd2=cross(c,d,b);
+    if(ab1*ab2 < 0 && cd1*cd2 < 0) return true; }
+  const inside=(room,x,y)=>{ const lx=x-room.x, ly=y-room.y; return pointInRoom(room,lx,ly,0) && roomWalls(room).every(w=>segDist(lx,ly,w.x1,w.y1,w.x2,w.y2)>0.05); };
+  const points=room=>{ const P=roomPoly(room), out=P.map(p=>({x:room.x+p.x,y:room.y+p.y})); let a2=0,cx=0,cy=0;
+    for(let i=0;i<P.length;i++){ const p=P[i], q=P[(i+1)%P.length], c=p.x*q.y-q.x*p.y; a2+=c; cx+=(p.x+q.x)*c; cy+=(p.y+q.y)*c; }
+    if(Math.abs(a2)>1e-12){ cx/=3*a2; cy/=3*a2; if(pointInRoom(room,cx,cy,0)) out.push({x:room.x+cx,y:room.y+cy}); }
+    return out; };
+  return points(A).some(p=>inside(B,p.x,p.y)) || points(B).some(p=>inside(A,p.x,p.y)); }
 function spotIn(A, side, lo, hi, w){
   const els=A.openings.filter(o=>o.side===side).sort((x,y)=>x.off-y.off), gaps=[]; let cur=lo;
   for(const x of els){ if(x.off+x.w<=lo||x.off>=hi) continue; if(x.off>cur) gaps.push([cur,Math.min(x.off,hi)]); cur=Math.max(cur,x.off+x.w); }
@@ -2320,7 +2332,7 @@ function placeNear(r, p){
       cands.push(c); } }
   cands.sort((a,b)=>a.sc-b.sc);
   for(const c of cands){ const rect={x:c.x,y:c.y,w:r.w,h:r.d};
-    if(S.rooms.some(o=>o!==r && o.placed && ov(rect,{x:o.x-0.05,y:o.y-0.05,w:o.w+0.1,h:o.d+0.1},0.01))) continue;
+    if(S.rooms.some(o=>o!==r && o.placed && ((hasPoly(r)||hasPoly(o))?roomsOverlap({...r,x:c.x,y:c.y},o):ov(rect,{x:o.x-0.05,y:o.y-0.05,w:o.w+0.1,h:o.d+0.1},0.01)))) continue;
     r.x=+c.x.toFixed(3); r.y=+c.y.toFixed(3); return true; }
   return false; }
 function arrangeRooms(){
@@ -2804,7 +2816,9 @@ function snapRoom(r){
   let bx=null, by=null, dx=0.3, dy=0.3;
   for(const o of S.rooms){ if(o===r) continue;
     for(const t of [o.x+o.w+WALL_GAP, o.x-r.w-WALL_GAP, o.x, o.x+o.w-r.w]){ const d=Math.abs(r.x-t); if(d<dx){ dx=d; bx=t; } }
-    for(const t of [o.y+o.d+WALL_GAP, o.y-r.d-WALL_GAP, o.y, o.y+o.d-r.d]){ const d=Math.abs(r.y-t); if(d<dy){ dy=d; by=t; } } }
+    for(const t of [o.y+o.d+WALL_GAP, o.y-r.d-WALL_GAP, o.y, o.y+o.d-r.d]){ const d=Math.abs(r.y-t); if(d<dy){ dy=d; by=t; } }
+    if(hasPoly(o)) for(const w of roomWalls(o)){ if(w.axis==='v'){ const X=o.x+w.x1; for(const t of [X+WALL_GAP,X-r.w-WALL_GAP,X,X-r.w]){ const d=Math.abs(r.x-t); if(d<dx){ dx=d; bx=t; } } }
+      else if(w.axis==='h'){ const Y=o.y+w.y1; for(const t of [Y+WALL_GAP,Y-r.d-WALL_GAP,Y,Y-r.d]){ const d=Math.abs(r.y-t); if(d<dy){ dy=d; by=t; } } } } }
   if(bx!=null) r.x=+bx.toFixed(3); if(by!=null) r.y=+by.toFixed(3);
 }
 bind[1]=()=>{
@@ -3087,10 +3101,13 @@ function planSvg(mode, iss, opts){
 function planUnified(){ return step===5 && planMode==='equip' && S.rooms.length>1; }
 function roomAt(x,y){ return S.rooms.find(r=>hasPoly(r)?pointInRoom(r,x-r.x,y-r.y,1e-6):(x>=r.x-1e-6 && x<=r.x+r.w+1e-6 && y>=r.y-1e-6 && y<=r.y+r.d+1e-6))||null; }
 // стороны помещения, к которым ближе 1 м стоит другое помещение: там размерные цепочки снаружи не рисуются
-function blockedSides(r){ const B=new Set(), ov=(a0,a1,b0,b1)=>Math.min(a1,b1)-Math.max(a0,b0)>0.05;
-  for(const q of S.rooms){ if(q===r) continue;
-    if(ov(r.x,r.x+r.w,q.x,q.x+q.w)){ if(q.y+q.d<=r.y+0.02 && r.y-(q.y+q.d)<1) B.add('t'); if(q.y>=r.y+r.d-0.02 && q.y-(r.y+r.d)<1) B.add('b'); }
-    if(ov(r.y,r.y+r.d,q.y,q.y+q.d)){ if(q.x+q.w<=r.x+0.02 && r.x-(q.x+q.w)<1) B.add('l'); if(q.x>=r.x+r.w-0.02 && q.x-(r.x+r.w)<1) B.add('r'); } }
+function blockedSides(r){ const B=new Set();
+  for(const q of S.rooms){ if(q===r) continue; const closed=new Set();
+    for(const wa of roomWalls(r)){ if(!wa.axis) continue; const h=wa.axis==='h', nx=wa.nx, ny=wa.ny, ax=r.x+wa.x1, ay=r.y+wa.y1, a0=(h?r.x:r.y)+Math.min(h?wa.x1:wa.y1,h?wa.x2:wa.y2), a1=(h?r.x:r.y)+Math.max(h?wa.x1:wa.y1,h?wa.x2:wa.y2);
+      for(const wb of roomWalls(q)){ if(wb.axis!==wa.axis || wb.nx!==-nx || wb.ny!==-ny) continue; const bx=q.x+wb.x1, by=q.y+wb.y1, outside=-((bx-ax)*nx+(by-ay)*ny), b0=(h?q.x:q.y)+Math.min(h?wb.x1:wb.y1,h?wb.x2:wb.y2), b1=(h?q.x:q.y)+Math.max(h?wb.x1:wb.y1,h?wb.x2:wb.y2);
+        if(outside>=-0.02 && outside<1 && Math.min(a1,b1)-Math.max(a0,b0)>0.05){ closed.add(wa.id); break; } } }
+    const order=hasPoly(r)?roomWalls(r).map(w=>w.id):['t','b','l','r'];
+    for(const id of order){ if(!closed.has(id)) continue; B.add(id); const wa=wallById(r,id); if(wa.axis==='h' && Math.abs(wa.y1)<1e-9 && Math.abs(wa.y2)<1e-9) B.add('t'); if(wa.axis==='v' && Math.abs(wa.x1-r.w)<1e-9 && Math.abs(wa.x2-r.w)<1e-9) B.add('r'); if(wa.axis==='h' && Math.abs(wa.y1-r.d)<1e-9 && Math.abs(wa.y2-r.d)<1e-9) B.add('b'); if(wa.axis==='v' && Math.abs(wa.x1)<1e-9 && Math.abs(wa.x2)<1e-9) B.add('l'); } }
   return B; }
 function unifiedPlanSvg(){
   const rs=S.rooms, minX=Math.min(...rs.map(r=>r.x)), minY=Math.min(...rs.map(r=>r.y)), maxX=Math.max(...rs.map(r=>r.x+r.w)), maxY=Math.max(...rs.map(r=>r.y+r.d));

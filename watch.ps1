@@ -52,8 +52,8 @@ function Archive-Version($subject) {
 
 function Push-Site {
   cmd /c 'git push origin main >> git-log.txt 2>&1'
-  if ($LASTEXITCODE -eq 0) { Write-Host "$(Get-Date -Format HH:mm:ss)  Published to GitHub." }
-  else { Write-Host "$(Get-Date -Format HH:mm:ss)  PUSH FAILED - see git-log.txt" -ForegroundColor Red }
+  if ($LASTEXITCODE -eq 0) { Write-Host "$(Get-Date -Format HH:mm:ss)  Опубликовано на GitHub." -ForegroundColor Green }
+  else { Write-Host "$(Get-Date -Format HH:mm:ss)  ОШИБКА публикации на GitHub — см. git-log.txt" -ForegroundColor Red }
 }
 
 function Show-Note($text) {
@@ -67,10 +67,10 @@ function Show-Note($text) {
     $script:note.Visible = $true
     $script:note.ShowBalloonTip(15000, "Claude + GPT", $text, [System.Windows.Forms.ToolTipIcon]::Info)
   } catch { Write-Host "Notification failed: $_" -ForegroundColor Yellow }
-  Write-Host "$(Get-Date -Format HH:mm:ss)  NOTE: $text" -ForegroundColor Cyan
+  Write-Host "$(Get-Date -Format HH:mm:ss)  Уведомление: $text" -ForegroundColor Cyan
 }
 
-Write-Host "Watcher started. Keep this window open while working with Claude."
+Write-Host "Наблюдатель запущен. Не закрывайте это окно и не щёлкайте внутри него (иначе оно встанет на паузу)."
 
 # Первый запуск: заводим историю версий с текущей версии приложения.
 if (-not (Test-Path "versions\list.txt")) {
@@ -80,7 +80,7 @@ if (-not (Test-Path "versions\list.txt")) {
   [System.IO.File]::WriteAllText((Join-Path $PSScriptRoot "commit-msg.txt"), $msg, $utf8)
   cmd /c 'git add -A >> git-log.txt 2>&1 && git commit -F commit-msg.txt >> git-log.txt 2>&1'
   Push-Site
-  Write-Host "$(Get-Date -Format HH:mm:ss)  Version history initialised."
+  Write-Host "$(Get-Date -Format HH:mm:ss)  История версий заведена."
 }
 
 while ($true) {
@@ -91,14 +91,19 @@ while ($true) {
   }
   if (Test-Path "go.flag") {
     Remove-Item "go.flag", "done.flag" -ErrorAction SilentlyContinue
-    Write-Host "$(Get-Date -Format HH:mm:ss)  GPT is working on TASK.md ..."
+    $task = ([System.IO.File]::ReadAllLines((Join-Path $PSScriptRoot "TASK.md"), $utf8) | Where-Object { $_.Trim() } | Select-Object -First 1) -replace "^#+\s*",""
+    Write-Host ""
+    Write-Host "$(Get-Date -Format HH:mm:ss)  Claude дал задание GPT: $task" -ForegroundColor Yellow
+    Write-Host "$(Get-Date -Format HH:mm:ss)  GPT работает..."
     cmd /c 'codex exec -s workspace-write "Execute the task described in TASK.md. Follow the rules in AGENTS.md strictly." > codex-log.txt 2>&1'
     cmd /c 'git diff > review.diff'
     Set-Content "done.flag" "run"
-    Write-Host "$(Get-Date -Format HH:mm:ss)  GPT finished."
+    Write-Host "$(Get-Date -Format HH:mm:ss)  GPT закончил. Claude проверяет правку..."
   }
   if (Test-Path "accept.flag") {
     Remove-Item "accept.flag", "done.flag" -ErrorAction SilentlyContinue
+    $msg1 = ([System.IO.File]::ReadAllLines((Join-Path $PSScriptRoot "commit-msg.txt"), $utf8))[0]
+    Write-Host "$(Get-Date -Format HH:mm:ss)  Claude принял правку: $msg1" -ForegroundColor Green
     Set-Content "git-log.txt" "" -Encoding UTF8
     cmd /c 'git add -A >> git-log.txt 2>&1'
     $changed = cmd /c "git diff --cached --name-only"
@@ -106,18 +111,18 @@ while ($true) {
       $subject = ([System.IO.File]::ReadAllLines((Join-Path $PSScriptRoot "commit-msg.txt"), $utf8))[0]
       Archive-Version $subject
       cmd /c 'git add versions versions.html >> git-log.txt 2>&1'
-      Write-Host "$(Get-Date -Format HH:mm:ss)  Version saved to history."
+      Write-Host "$(Get-Date -Format HH:mm:ss)  Версия сохранена в историю."
     }
     cmd /c 'git commit -F commit-msg.txt >> git-log.txt 2>&1'
     if ($LASTEXITCODE -eq 0) { Push-Site }
     Set-Content "done.flag" "accept"
-    Write-Host "$(Get-Date -Format HH:mm:ss)  Changes accepted (commit)."
+    Write-Host "$(Get-Date -Format HH:mm:ss)  Готово."
   }
   if (Test-Path "reject.flag") {
     Remove-Item "reject.flag", "done.flag" -ErrorAction SilentlyContinue
     cmd /c 'git checkout -- . > git-log.txt 2>&1'
     Set-Content "done.flag" "reject"
-    Write-Host "$(Get-Date -Format HH:mm:ss)  Changes rejected (restored)."
+    Write-Host "$(Get-Date -Format HH:mm:ss)  Claude отклонил правку — файл возвращён к прежней версии." -ForegroundColor Magenta
   }
   Start-Sleep -Seconds 3
 }

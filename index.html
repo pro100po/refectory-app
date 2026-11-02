@@ -2544,9 +2544,9 @@ function stepRoom(){
 
 /* поле плана шага «Помещения»: все помещения в своих положениях (одно — просто его план) */
 function roomsPlanSvg(){
-  const rs=S.rooms, minX=Math.min(...rs.map(r=>r.x)), minY=Math.min(...rs.map(r=>r.y)), maxX=Math.max(...rs.map(r=>r.x+r.w)), maxY=Math.max(...rs.map(r=>r.y+r.d));
+  const rs=S.rooms, minX=Math.min(...rs.map(r=>r.x)), minY=Math.min(...rs.map(r=>r.y)), maxX=Math.max(...rs.map(r=>r.x+r.w)), maxY=Math.max(...rs.map(r=>r.y+r.d)), nichePad=Math.max(0,...rs.flatMap(r=>roomWalls(r).map(w=>nicheOut(r,w.id,r.openings))));
   const keep=S.cur, many=rs.length>1, q=v=>+v.toFixed(2);
-  let pad=125, k=kFor('plan',(maxX-minX)*100+2*pad); pad=125+Math.max(0,11/k-19); k=kFor('plan',(maxX-minX)*100+2*pad);
+  let pad=125+nichePad, k=kFor('plan',(maxX-minX)*100+2*pad); pad=125+nichePad+Math.max(0,11/k-19); k=kFor('plan',(maxX-minX)*100+2*pad);
   let vx=minX*100-pad, vy=minY*100-pad, vw=(maxX-minX)*100+2*pad, vh=(maxY-minY)*100+2*pad;
   if(roomFreeze){ vx=roomFreeze.x; vy=roomFreeze.y; vw=roomFreeze.w; vh=roomFreeze.h; k=kFor('plan',vw); }   // пока помещение тащат — поле не меняет масштаб
   let body='';
@@ -2975,6 +2975,11 @@ function freeSpot(s, side, along, w, exceptId){
   for(const [a,b] of fit){ const off=Math.min(Math.max(along-w/2,a),b-w); const d=Math.abs(off+w/2-along); if(d<bd){ bd=d; best=off; } }
   return Math.round(best*100)/100;
 }
+function nicheOut(room, side, openings){ return Math.max(0,...(openings||[]).filter(o=>o.type==='prot'&&o.niche&&o.side===side).map(o=>(o.depth||0.3)*100)); }
+function nicheOutEdge(room, edge, openings){
+  const walls=hasPoly(room)?roomWalls(room).filter(w=>edge==='t'?w.axis==='h'&&Math.abs(w.y1)<1e-9&&Math.abs(w.y2)<1e-9:edge==='r'?w.axis==='v'&&Math.abs(w.x1-room.w)<1e-9&&Math.abs(w.x2-room.w)<1e-9:edge==='b'?w.axis==='h'&&Math.abs(w.y1-room.d)<1e-9&&Math.abs(w.y2-room.d)<1e-9:w.axis==='v'&&Math.abs(w.x1)<1e-9&&Math.abs(w.x2)<1e-9):[wallById(room,edge)];
+  return Math.max(0,...walls.map(w=>nicheOut(room,w.id,openings)));
+}
 function bindZoom(){}   // кнопки масштаба обрабатывает модуль «Масштаб и план»
 bind[2]=()=>{ bindRoomTabs(); bindRoomEditor();
   segBind(main,(k,v)=>{ if(k!=='utilities') return; S.utilities=v==='design'?'design':'existing'; touch(); render(); toast(v==='design'?'Сети проектируются — точки не обязательны':'Сети уже есть — отметьте их на плане'); }); };
@@ -3037,12 +3042,12 @@ function planSvg(mode, iss, opts){
   // печатный режим (выгрузка задания): конкретные цвета, слои, номера позиций — см. модуль «Задание»
   if(opts.print) return printPlanSvg(opts);
   iss=iss||[]; const bare=!!opts.bare;
-  const W=S.room.w*100, D=S.room.d*100, T=10, nichePad=Math.max(0,...S.openings.filter(o=>o.type==='prot'&&o.niche).map(o=>(o.depth||0.3)*100+15)); let pad=Math.max(125,nichePad);
+  const W=S.room.w*100, D=S.room.d*100, T=10, nichePad=Math.max(0,...S.openings.filter(o=>o.type==='prot'&&o.niche).map(o=>(o.depth||0.3)*100+120)), nicheEdge={t:nicheOutEdge(S.room,'t',S.openings),r:nicheOutEdge(S.room,'r',S.openings),b:nicheOutEdge(S.room,'b',S.openings),l:nicheOutEdge(S.room,'l',S.openings)}; let pad=Math.max(125,nichePad);
   const mkSides=(!(mode==='room'&&bare) && (mode==='points' || layerOn('pts'))) ? ptMarkSides(S.points) : new Set();
   if(opts.inner){ scrK=opts.k; PT_SH=ptShift(mkSides, scrK); }   // часть общего плана: масштаб подписей — общий для всех помещений
-  else for(let it=0;it<3;it++){ scrK=kFor('plan', W+2*pad); PT_SH=ptShift(mkSides, scrK); pad=Math.max(125,nichePad)+Math.max(0,...Object.values(PT_SH))+Math.max(0,11/scrK-19); }   // + запас под крупный шрифт общего размера на телефоне
+  else for(let it=0;it<3;it++){ scrK=kFor('plan', W+2*pad); PT_SH=ptShift(mkSides, scrK); pad=Math.max(125,nichePad,88+Math.max(...Object.values(nicheEdge))+20)+Math.max(0,...Object.values(PT_SH))+Math.max(0,11/scrK-19); }   // + запас под крупный шрифт общего размера на телефоне
   if(!opts.inner) scrK=kFor('plan', W+2*pad); posCache=null;
-  const oT=88+PT_SH.t, oL=88+PT_SH.l, oB=88+PT_SH.b, oR=88+PT_SH.r, BL=opts.blocked||new Set();
+  const oT=88+PT_SH.t+nicheEdge.t, oL=88+PT_SH.l+nicheEdge.l, oB=88+PT_SH.b+nicheEdge.b, oR=88+PT_SH.r+nicheEdge.r, BL=opts.blocked||new Set();
   const dimFs=Math.max(19, 11/scrK), showDim=dimFs*0.6*6<=Math.min(W,D) && (mode==='equip' || layerOn('dims'));
   const bad=new Set(iss.filter(i=>i.t==='bad').map(i=>i.key)), warn=new Set(iss.filter(i=>i.t==='warn').map(i=>i.key));
   let g='';
@@ -3101,7 +3106,7 @@ function unifiedPlanSvg(){
   const rs=S.rooms, minX=Math.min(...rs.map(r=>r.x)), minY=Math.min(...rs.map(r=>r.y)), maxX=Math.max(...rs.map(r=>r.x+r.w)), maxY=Math.max(...rs.map(r=>r.y+r.d));
   const lay=(P.iss&&P.iss.lay)||{}, keep=S.cur, pts=layerOn('pts');
   let pad=125, k=1;
-  for(let it=0;it<3;it++){ k=kFor('plan',(maxX-minX)*100+2*pad); let sh=0; for(const r of rs){ const o=ptShift(pts?ptMarkSides(r.points):new Set(),k); sh=Math.max(sh,...Object.values(o)); } pad=125+sh+Math.max(0,11/k-19); }
+  for(let it=0;it<3;it++){ k=kFor('plan',(maxX-minX)*100+2*pad); let sh=0; for(const r of rs){ const o=ptShift(pts?ptMarkSides(r.points):new Set(),k); sh=Math.max(sh,...Object.values(o)); } pad=Math.max(125,...rs.flatMap(r=>r.openings.filter(o=>o.type==='prot'&&o.niche).map(o=>(o.depth||0.3)*100+120)))+sh+Math.max(0,11/k-19); }
   k=kFor('plan',(maxX-minX)*100+2*pad);
   const vx=minX*100-pad, vy=minY*100-pad, vw=(maxX-minX)*100+2*pad, vh=(maxY-minY)*100+2*pad;
   let body='';
@@ -3180,7 +3185,7 @@ function chainsSvg(withPts, BL){
     els.forEach(o=>{ raw.push(o.off*100,(o.off+o.w)*100); spans.add(Math.round(o.off*100)+':'+Math.round((o.off+o.w)*100)); });
     ps.forEach(p=>{ raw.push(p.off*100); if(p.type==='hood') raw.push((p.off+p.w)*100); });
     raw.sort((a,b)=>a-b); const pts=raw.filter((v,i)=>i===0||v-raw[i-1]>0.4);
-    const sh=PT_SH[side]||0, inw=!!(BL&&BL.has(side)), sg=inw?-1:1, o1=sg*(38+sh), e0=sg*(12+sh), e1=sg*(46+sh);
+    const sh=(PT_SH[side]||0)+nicheOut(S.room,side,S.openings), inw=!!(BL&&BL.has(side)), sg=inw?-1:1, o1=sg*(38+sh), e0=sg*(12+sh), e1=sg*(46+sh);
     const P2=t=>wallOutU(S.room,side,t,o1);
     const ext=t=>[...wallOutU(S.room,side,t,e0), ...wallOutU(S.room,side,t,e1)];
     const a=P2(0), b=P2(L), col=withPts?'var(--z-hot)':'var(--steel)';
@@ -3254,10 +3259,19 @@ function addAt(p){
 function startRoomDrag(e,k,id){
   selRoom={k,id}; const s0=svgPt(e), tgt=e.target; let moved=false;
   const o=k==='op'?S.openings.find(x=>x.id===id):null, p=k==='pt'?S.points.find(x=>x.id===id):null;
-  const st=o?{off:o.off}:p.side==='floor'?{x:p.x,y:p.y}:{off:p.off}, nb=o?neighbors(S,o):null;
+  const st=o?{off:o.off}:p.side==='floor'?{x:p.x,y:p.y}:{off:p.off}; let nb=o?neighbors(S,o):null;
   const horiz=s=>wallById(S.room,s).axis!=='v';
   const mv=ev=>{ const q=svgPt(ev), dx=q.x-s0.x, dy=q.y-s0.y; if(!moved && Math.hypot(dx,dy)<0.03) return; moved=true;
-    if(o){ o.off=Math.round((st.off+(horiz(o.side)?dx:dy))*100)/100; o.off=Math.min(Math.max(o.off,nb.lo),nb.hi-o.w); }
+    if(o){
+      if(o.type==='prot'){
+        const ids=hasPoly(S.room)?roomWalls(S.room).map(w=>w.id):['t','b','l','r'], dist={}; for(const wall of ids) dist[wall]=wallDist(S.room,wall,q.x,q.y,'seg');
+        const ns=nearestWall(S.room,q.x,q.y,ids,'seg').id;
+        if(ns!==o.side && dist[o.side]-dist[ns]>=0.15-1e-9){ const along=projectToWall(S.room,ns,q.x,q.y).off-o.w/2, off=freeSpot(S,ns,along,o.w,o.id);
+          if(off!==null){ o.side=ns; o.off=off; st.jumped=true; nb=neighbors(S,o); } }
+        const along=projectToWall(S.room,o.side,q.x,q.y).off;
+        o.off=st.jumped?Math.round((along-o.w/2)*100)/100:Math.round((st.off+(horiz(o.side)?dx:dy))*100)/100; o.off=Math.min(Math.max(o.off,nb.lo),nb.hi-o.w);
+      } else { o.off=Math.round((st.off+(horiz(o.side)?dx:dy))*100)/100; o.off=Math.min(Math.max(o.off,nb.lo),nb.hi-o.w); }
+    }
     else if(p.side==='floor'){ p.x=Math.round((st.x+dx)*100)/100; p.y=Math.round((st.y+dy)*100)/100; }
     else { // точка на стене: ближайшая стена к указателю; сменить стену — только если к ней ближе на 0,15 м и больше (без дрожания в углу)
       const ids=hasPoly(S.room)?roomWalls(S.room).map(w=>w.id):['t','b','l','r'], dist={}; for(const id of ids) dist[id]=wallDist(S.room,id,q.x,q.y,'seg');
@@ -3268,8 +3282,9 @@ function startRoomDrag(e,k,id){
     clampRoom(S); refreshPlan();
     // палец: элемент, которого коснулись, должен оставаться в документе, иначе touchmove не доходит до документа и браузер забирает жест в прокрутку
     if(tgt && !tgt.isConnected){ const sv=document.getElementById('plan'); if(sv){ tgt.style.visibility='hidden'; tgt.style.pointerEvents='none'; sv.appendChild(tgt); } }
-    if(p && p.side!=='floor'){ const svg=document.getElementById('plan'), i=4, L=[...wallInU(S.room,p.side,0,i), ...wallInU(S.room,p.side,wallLen(S.room,p.side)*100,i)];
-      svg&&svg.insertAdjacentHTML('beforeend',`<line class="pt-wall-hl" x1="${L[0]}" y1="${L[1]}" x2="${L[2]}" y2="${L[3]}" stroke="var(${PT[p.type].col})" stroke-width="5" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity=".75" style="pointer-events:none"/>`); } };
+    const hlSide=o&&o.type==='prot'?o.side:p&&p.side!=='floor'?p.side:null;
+    if(hlSide){ const svg=document.getElementById('plan'), i=4, L=[...wallInU(S.room,hlSide,0,i), ...wallInU(S.room,hlSide,wallLen(S.room,hlSide)*100,i)], col=o?'var(--accent)':`var(${PT[p.type].col})`;
+      svg&&svg.insertAdjacentHTML('beforeend',`<line class="pt-wall-hl" x1="${L[0]}" y1="${L[1]}" x2="${L[2]}" y2="${L[3]}" stroke="${col}" stroke-width="5" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity=".75" style="pointer-events:none"/>`); } };
   const up=()=>{ window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); window.removeEventListener('pointercancel',up); if(!moved && o && step===1){ openRoomPanel(S.cur, id); return; } touch(); render(); };
   window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); window.addEventListener('pointercancel',up);
 }
@@ -4234,7 +4249,7 @@ finalizePrintSvg.n=0;
 /* ---- печатный план одного помещения: слои walls / points / equip / need ---- */
 const PRINT_SCALES=[25,50,75,100,150,200];
 const PLAN_BOX={w:265, h:150};   // поле под план на альбомном листе, мм
-function planExtents(room, layer){ const nichePad=Math.max(115,...roomGeom(S,room).openings.filter(o=>o.type==='prot'&&o.niche).map(o=>(o.depth||0.3)*100+15)); return {x:-nichePad, y:-nichePad, w:room.w*100+2*nichePad, h:room.d*100+nichePad+150}; }   // метки точек и отодвинутые цепочки помещаются в прежние поля — масштаб листа не меняется   // снизу — место под цепочку и масштабную линейку
+function planExtents(room, layer){ const nichePad=Math.max(115,...roomGeom(S,room).openings.filter(o=>o.type==='prot'&&o.niche).map(o=>(o.depth||0.3)*100+120)); return {x:-nichePad, y:-nichePad, w:room.w*100+2*nichePad, h:room.d*100+nichePad+150}; }   // метки точек и отодвинутые цепочки помещаются в прежние поля — масштаб листа не меняется   // снизу — место под цепочку и масштабную линейку
 function pickScale(wCm,hCm,box){ box=box||PLAN_BOX; for(const k of PRINT_SCALES){ if(wCm*10/k<=box.w && hCm*10/k<=box.h) return k; } return PRINT_SCALES[PRINT_SCALES.length-1]; }
 function scaleBarSvg(x,y,ink,k){ // 0–1–2 м
   let g=`<g font-family="IBMPlexMono" font-size="15" fill="${ink}">`;
@@ -4253,7 +4268,7 @@ function printPlanSvg(opts){
     const W=S.room.w*100, D=S.room.d*100, T=10, ex=planExtents(S.room, layer), k=opts.scale||50;
     PT_SH=(layer==='points'||layer==='need')?ptShift(ptMarkSides(S.points),null):{t:0,r:0,b:0,l:0};
     PRINT_EL=(layer==='points'||layer==='need');   // зона перед щитом и круг «вода не ближе» — на листах подключений
-    const oT=88, oL=88;   // на печати цепочка за метками всё ещё ближе общего размера
+    const oT=88+nicheOutEdge(S.room,'t',S.openings), oL=88+nicheOutEdge(S.room,'l',S.openings);   // на печати цепочка за метками всё ещё ближе общего размера
     const ink='var(--ink)', ink2='var(--ink-2)';
     let g='';
     for(let x=0;x<=W+0.1;x+=50) g+=`<line x1="${x}" y1="0" x2="${x}" y2="${D}" stroke="var(${Math.round(x)%100?'--grid':'--grid-2'})" stroke-width="1"/>`;
@@ -4503,7 +4518,7 @@ REPORT.register({ id:'room-walls', title:'Стены и проёмы', group:'П
   build(ctx){ const r=ctx.room;
     const wallOrder=Object.fromEntries(roomWalls(r).map((w,i)=>[w.id,i]));
     const rows=roomGeom(S,r).openings.slice().sort((a,b)=>wallOrder[a.side]-wallOrder[b.side]||a.off-b.off).map(o=>{
-      const note = o.type==='window' ? `подоконник ${fmt0((o.sill||0.9)*1000)} мм` : o.type==='prot' ? `глубина ${o.niche?'ниши':'выступа'} ${fmt0((o.depth||0.3)*1000)} мм`
+      const note = o.type==='window' ? `подоконник ${fmt0((o.sill||0.9)*1000)} мм` : o.type==='prot' ? o.niche ? `ниша, глубина ${fmt0((o.depth||0.3)*1000)} мм` : `глубина ${fmt0((o.depth||0.3)*1000)} мм`
         : `${doorLabelIn(r,o)}; открывается ${o.swing==='in'?'внутрь':'наружу'}, петли ${o.hinge==='l'?'слева':'справа'}${o.derived?' (дверь соседнего помещения)':''}`;
       return [opName(o), `${wallTitle(r,o.side).replace(/ стена$/,'')}, ${fmt0(wallLen(r,o.side)*1000)}`, `${fmt0(o.off*1000)} ${wallFrom(r,o.side)}`, fmt0(o.w*1000), note]; });
     return [{t:'h2', text:`«${r.name}»: стены и проёмы`},
@@ -5565,7 +5580,7 @@ function equipDimsSvg(room, units, opts){
   const ppu=print?1:planPxPerUnit(room), fs=print?13:11/ppu, cw=fs*0.6;   // на экране — 11 px при любом масштабе
   const col=print?'var(--ink-2)':'var(--ink-2)';
   let out='';
-  const SH=s=>(typeof PT_SH==='object'&&PT_SH[s])||0;   // цепочка дальше от стены, если на ней метки точек
+  const ops=roomGeom(S,room).openings, SH=s=>((typeof PT_SH==='object'&&PT_SH[s])||0)+nicheOut(room,s,ops);   // цепочка дальше от стены, если на ней метки точек или ниша
   const P2=(s,t,o)=>{ o=(o||38)+SH(s); return wallOutU(room,s,t,o); };
   const ext=(s,t)=>{ const a=28+SH(s), e=44+SH(s); return [...wallOutU(room,s,t,a), ...wallOutU(room,s,t,e)]; };   // короткие выносные — не задевают подписи дверей
   if(mode==='all'){
@@ -5594,7 +5609,7 @@ function equipDimsSvg(room, units, opts){
   return `<g class="eq-dims" pointer-events="${print?'none':'auto'}">${out}</g>`;
 }
 // метка «0» — угол начала отсчёта «от угла»: у горизонтальных стен левый, у вертикальных верхний
-function zeroMarkSvg(room,s){ const o=38+((typeof PT_SH==='object'&&PT_SH[s])||0), z=wallOutU(room,s,0,o);
+function zeroMarkSvg(room,s){ const o=38+((typeof PT_SH==='object'&&PT_SH[s])||0)+nicheOut(room,s,roomGeom(S,room).openings), z=wallOutU(room,s,0,o);
   return `<circle cx="${z[0]}" cy="${z[1]}" r="9" fill="#ffffff" stroke="var(--accent)" stroke-width="1.6"/><text x="${z[0]}" y="${z[1]}" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="var(--accent)">0</text>`; }
 // линия от стены до аппарата (в единицах k на метр): поперёк стены, по середине аппарата
 function wallToRect(room,s,b,k){ const w=wallById(room,s), vert=w.axis==='v', ln=(vert?w.x1:w.y1)*k, m=vert?(b.y+b.h/2)*k:(b.x+b.w/2)*k;

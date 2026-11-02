@@ -387,7 +387,8 @@ html.set-lock,html.set-lock body{overflow:hidden}
 .rmp-warn{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:var(--r);font-size:13.5px}
 .shp-controls{display:flex;flex-direction:column;gap:12px}
 .shp-template-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:6px;align-items:stretch}
-.shp-template{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-width:0;min-height:64px;padding:5px 3px;font-size:12.5px;line-height:1.15;white-space:normal}
+.shp-template{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-width:0;min-height:64px;padding:5px 3px;font-size:12.5px;line-height:1.15;white-space:normal;overflow-wrap:anywhere}
+.shp-handle{touch-action:none}
 .shp-template[aria-pressed="true"],.shp-rot[aria-pressed="true"]{background:var(--steel-soft);border-color:var(--steel);color:var(--ink)}
 .shp-svg{width:40px;height:28px;flex:0 0 auto}
 .shp-custom-label{align-self:center;color:var(--ink-2);font-size:13px}
@@ -1281,21 +1282,26 @@ function assignWids(room,pts,roles,tpl){
 function wallName(room,id){
   if(!hasPoly(room)) return `${SIDE_RU[id]||'правая'} стена`;
   const i=roomWalls(room).findIndex(w=>w.id===id); return `стена ${i<0?'?':i+1}`; }
-function setRoomShape(room,shape){
+function setRoomShape(room,shape,shift){
+  const shiftX=Number(shift&&shift.x)||0, shiftY=Number(shift&&shift.y)||0;
   const tpl=shape&&shape.tpl, paramsError=tpl==='custom'?null:shapeParamsError(tpl,shape&&shape.p); if(paramsError) return {error:paramsError};
   const built=tpl==='custom'?normPoly(shape.pts,shape.pts.map(p=>p.wid||null)):shapeTemplate(tpl,shape&&shape.rot,shape&&shape.p), pts=built.pts, roles=built.roles, error=shapeError(pts);
   if(error) return {error};
-  const old={w:room.w,d:room.d,poly:room.poly}, wids=assignWids(room,pts,roles,tpl);
+  const old={w:room.w,d:room.d,poly:room.poly}, oldWalls=roomWalls(old), wids=assignWids(room,pts,roles,tpl);
   if(tpl==='rect'){ delete room.poly; delete room.shape; room.w=Number(shape.p.W); room.d=Number(shape.p.D); }
   else { room.poly=pts.map((p,i)=>({...p,wid:wids[i]})); room.shape=tpl==='custom'?{tpl:'custom'}:{tpl,rot:shape.rot,p:shape.p,roles:Object.fromEntries(roles.map((r,i)=>[r,wids[i]]))};
     room.w=Math.max(...pts.map(p=>p.x)); room.d=Math.max(...pts.map(p=>p.y)); }
-  const newIds=new Set(roomWalls(room).map(w=>w.id)), moved=[];
+  const newWalls=roomWalls(room), newIds=new Set(newWalls.map(w=>w.id)), newById=Object.fromEntries(newWalls.map(w=>[w.id,w])), moved=[];
   const dest=id=>{ if(hasPoly(room)) return `на ${wallName(room,id).replace(/^стена /,'стену ')}`;
     const adj=(SIDE_RU[id]||SIDE_RU.r).replace(/яя$/,'юю').replace(/ая$/,'ую'); return `на ${adj} стену`; };
-  for(const o of room.openings) if(!newIds.has(o.side)){ const width=Number(o.w)||0, q=wallPoint(old,o.side,(Number(o.off)||0)+width/2), hit=nearestWall(room,q.x,q.y), proj=projectToWall(room,hit.id,q.x,q.y);
-    o.side=hit.id; o.off=proj.off-width/2; moved.push(`${OP_NAME[o.type]||'Проём'} ${o.type==='prot'?'перенесён':'перенесена'} ${dest(hit.id)}`); }
-  for(const p of room.points) if(p.side!=='floor'&&!newIds.has(p.side)){ const width=p.type==='hood'?(Number(p.w)||0):0, q=wallPoint(old,p.side,(Number(p.off)||0)+width/2), hit=nearestWall(room,q.x,q.y), proj=projectToWall(room,hit.id,q.x,q.y);
-    p.side=hit.id; p.off=proj.off-width/2; const label=p.name||(PT[p.type]&&PT[p.type].n)||p.spec||p.type||'точка'; moved.push(`Точка «${label}» перенесена ${dest(hit.id)}`); }
+  for(const o of room.openings){ if(newIds.has(o.side)){ const before=oldWalls.find(w=>w.id===o.side), after=newById[o.side];
+      if(before&&after&&before.axis===after.axis&&Math.abs(before.nx-after.nx)<1e-9&&Math.abs(before.ny-after.ny)<1e-9){ const q=wallPoint(old,o.side,Number(o.off)||0); o.off=projectToWall(room,o.side,q.x-shiftX,q.y-shiftY).off; }
+    } else { const width=Number(o.w)||0, q=wallPoint(old,o.side,(Number(o.off)||0)+width/2), hit=nearestWall(room,q.x,q.y), proj=projectToWall(room,hit.id,q.x,q.y);
+      o.side=hit.id; o.off=proj.off-width/2; moved.push(`${OP_NAME[o.type]||'Проём'} ${o.type==='prot'?'перенесён':'перенесена'} ${dest(hit.id)}`); } }
+  for(const p of room.points) if(p.side!=='floor'){ if(newIds.has(p.side)){ const before=oldWalls.find(w=>w.id===p.side), after=newById[p.side];
+      if(before&&after&&before.axis===after.axis&&Math.abs(before.nx-after.nx)<1e-9&&Math.abs(before.ny-after.ny)<1e-9){ const q=wallPoint(old,p.side,Number(p.off)||0); p.off=projectToWall(room,p.side,q.x-shiftX,q.y-shiftY).off; }
+    } else { const width=p.type==='hood'?(Number(p.w)||0):0, q=wallPoint(old,p.side,(Number(p.off)||0)+width/2), hit=nearestWall(room,q.x,q.y), proj=projectToWall(room,hit.id,q.x,q.y);
+      p.side=hit.id; p.off=proj.off-width/2; const label=p.name||(PT[p.type]&&PT[p.type].n)||p.spec||p.type||'точка'; moved.push(`Точка «${label}» перенесена ${dest(hit.id)}`); } }
   clampRoom({room,openings:room.openings,points:room.points});
   return {ok:true,moved}; }
 function wallIsNotchBase(room,index){
@@ -2454,7 +2460,7 @@ bind[0]=()=>{
 /* ---------- 2. Помещения ---------- */
 let confirmRoomDel=false, confirmArrange=false;
 // шаг «Помещения»: открыта ли боковая панель текущего помещения, к какому проёму её прокрутить, прокрутка панели, замороженный вид поля при перетаскивании помещения
-let rpOpen=false, rpFocus=null, rpScroll=0, roomFreeze=null;
+let rpOpen=false, rpFocus=null, rpScroll=0, roomFreeze=null, wallDrag=null;
 const ROOM_CHOICES=[['prep','Заготовочная'],['store','Склад'],['wash','Моечная'],['hot','Горячий цех'],['other','Другое']];
 function roomRoleName(k){ const r=ROLES.find(x=>x[0]===k); return r?(r[2]||r[1]):''; }
 function roleLabel(k){ const c=ROOM_CHOICES.find(x=>x[0]===k); return c?c[1]:roomRoleName(k); }
@@ -2541,7 +2547,9 @@ function roomsPlanSvg(){
       const points=hasPoly(r)?contourPts(r,0).map(p=>`${q(p.x)},${q(p.y)}`).join(' '):'';
       const bg=hasPoly(r)?`<polygon class="rm-bg" data-rbg="${r.id}" points="${points}" fill="var(--steel-soft)" fill-opacity="${on?0.75:0}" style="cursor:${many?'grab':'pointer'}"><title>${esc(r.name)} — настройки помещения</title></polygon>`:`<rect class="rm-bg" data-rbg="${r.id}" x="0" y="0" width="${q(r.w*100)}" height="${q(r.d*100)}" fill="var(--steel-soft)" fill-opacity="${on?0.75:0}" style="cursor:${many?'grab':'pointer'}"><title>${esc(r.name)} — настройки помещения</title></rect>`;
       const wallNums=on&&hasPoly(r)?roomWalls(r).map(w=>{ const x=(w.x1+w.x2)*50+w.nx*22/k, y=(w.y1+w.y2)*50+w.ny*22/k; return `<g style="pointer-events:none"><circle cx="${q(x)}" cy="${q(y)}" r="${q(11/k)}" fill="var(--paper)" stroke="var(--rule)" stroke-width="${q(1.2/k)}"/><text x="${q(x)}" y="${q(y)}" font-size="${q(12/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--ink-2)">${w.i+1}</text></g>`; }).join(''):'';
-      body+=`<g data-rg="${r.id}" class="${on?'rm-on':''}" transform="translate(${q(r.x*100)},${q(r.y*100)})">${bg}${planSvg('room',[],{inner:true, k, bare:true, blocked:many?blockedSides(r):new Set()})}${wallNums}${roomLabelSvg(r,k)}</g>`; } }
+      const wallHandles=on?roomWalls(r).map(w=>{ const x=(w.x1+w.x2)*50, y=(w.y1+w.y2)*50, cursor=w.axis==='h'?'ns-resize':'ew-resize'; return `<g class="shp-handle" data-wall-handle="${esc(w.id)}" data-room="${esc(r.id)}" style="cursor:${cursor}"><circle cx="${q(x)}" cy="${q(y)}" r="${q(22/k)}" fill="transparent" stroke="none"/><circle cx="${q(x)}" cy="${q(y)}" r="${q(7/k)}" fill="var(--paper)" stroke="var(--steel)" stroke-width="${q(2/k)}" style="pointer-events:none"/><title>Перетащите, чтобы сдвинуть стену</title></g>`; }).join(''):'';
+      const wallPreview=on?`<polygon id="shp-ghost" points="${points||roomPoly(r).map(p=>`${q(p.x*100)},${q(p.y*100)}`).join(' ')}" fill="none" stroke="var(--steel)" stroke-width="${q(2/k)}" stroke-dasharray="${q(6/k)} ${q(4/k)}" stroke-linejoin="round" display="none" style="pointer-events:none"/><text id="shp-drag-label" x="0" y="0" font-size="${q(13/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--steel)" display="none" style="pointer-events:none"></text>`:'';
+      body+=`<g data-rg="${r.id}" class="${on?'rm-on':''}" transform="translate(${q(r.x*100)},${q(r.y*100)})">${bg}${planSvg('room',[],{inner:true, k, bare:true, blocked:many?blockedSides(r):new Set()})}${wallNums}${wallPreview}${wallHandles}${roomLabelSvg(r,k)}</g>`; } }
   finally{ S.cur=keep; scrK=null; PT_SH={t:0,r:0,b:0,l:0}; }
   return `<svg id="plan" data-unified="1" data-rooms="1" viewBox="${q(vx)} ${q(vy)} ${q(vw)} ${q(vh)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${many?'План помещений: '+esc(rs.map(r=>r.name).join(', ')):`План помещения: длина ${fmt0(rs[0].d*1000)} мм по вертикали, ширина ${fmt0(rs[0].w*1000)} мм по горизонтали`}">
     <defs><pattern id="hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="10" stroke="var(--ink-2)" stroke-width="1.2" opacity=".35"/></pattern></defs>
@@ -2584,7 +2592,7 @@ function shapeFieldHtml(tpl,p){
   return specs.length?`<div class="fields shp-fields">${specs.map(([key,label])=>num(`shp-${key}`,label,Math.round(p[key]*1000),10,300,30000,'',`data-shp-param="${key}"`)).join('')}</div>`:''; }
 function shapeNotchButtons(r){ return `<div class="shp-wall-actions"><span class="hint">Добавить уступ на стену:</span>${roomWalls(r).map(w=>`<button type="button" class="btn small tap shp-action" data-wall-notch="${esc(w.id)}" aria-label="Уступ на стене ${w.i+1}">Уступ</button>`).join('')}</div>`; }
 function shapeSecHtml(r){
-  const tpl=shapeCurrentTpl(r), curRot=r.shape&&r.shape.rot||0, p=shapeCurrentParams(r,tpl), templates=[['rect','Прямоугольник'],['L','Г'],['U','П'],['T','Т']];
+  const tpl=shapeCurrentTpl(r), curRot=r.shape&&r.shape.rot||0, p=shapeCurrentParams(r,tpl), templates=[['rect','Прямо&shy;угольник'],['L','Г'],['U','П'],['T','Т']];
   const choices=`<div class="shp-template-row">${templates.map(([key,label])=>`<button type="button" class="btn tap shp-template" data-shape-tpl="${key}" aria-pressed="${tpl===key}">${shapeSvg(key,0,shapeDefaults(key,3,2))}<span>${label}</span></button>`).join('')}${tpl==='custom'?'<span class="shp-custom-label">Своя форма</span>':''}</div>`;
   const rotation=tpl!=='custom'&&tpl!=='rect'?`<div class="shp-rotation"><span class="lbl">Поворот</span><div class="shp-rot-row">${[0,1,2,3].map(rot=>`<button type="button" class="btn tap shp-rot" data-shape-rot="${rot}" aria-pressed="${Number(curRot)===rot}" aria-label="Поворот ${rot*90} градусов">${shapeSvg(tpl,rot,p)}<span>${rot*90}°</span></button>`).join('')}</div></div>`:'';
   const walls=tpl==='custom'?`<div class="shp-wall-list">${roomWalls(r).map(w=>{ const un=wallIsNotchBase(r,w.i); return `<div class="shp-wall-row"><b>Стена ${w.i+1}</b>${num(`shp-wall-${esc(w.id)}`,'Длина, мм',Math.round(w.len*1000),10,300,30000,'',`data-wall-len="${esc(w.id)}"`)}<button type="button" class="btn small tap shp-action" ${un?`data-wall-unnotch="${esc(w.id)}"`:`data-wall-notch="${esc(w.id)}"`} aria-label="${un?'Убрать уступ':'Уступ'} на стене ${w.i+1}">${un?'Убрать уступ':'Уступ'}</button></div>`; }).join('')}</div>`:shapeNotchButtons(r);
@@ -2660,6 +2668,55 @@ function roomMove(e,r,held){
     if(raf) cancelAnimationFrame(raf); roomFreeze=null;
     if(moved){ S.cur=r.id; touch(); render(); } else if(!held) openRoomPanel(r.id); else render(); };
   window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); window.addEventListener('pointercancel',up); }
+
+function wallDragReset(st){
+  st.circles.forEach(c=>{ c.setAttribute('cx',st.hx); c.setAttribute('cy',st.hy); });
+  st.ghost.setAttribute('display','none'); st.label.setAttribute('display','none'); }
+function wallDragPreview(st,e){
+  const p=svgPtG(e), d=Math.round(((p.x-st.p0.x)*st.wall.nx+(p.y-st.p0.y)*st.wall.ny)*100)/100, axis=st.wall.axis, n=axis==='h'?st.wall.ny:st.wall.nx;
+  let delta=d;
+  if(delta){ const line0=axis==='h'?st.room.y+st.wall.y1:st.room.x+st.wall.x1, next=line0+n*delta; let best=0.1, snap=null;
+    for(const other of S.rooms) for(const w of roomWalls(other)){ if(w.axis!==axis||(other===st.room&&w.id===st.wall.id)) continue;
+      const line=axis==='h'?other.y+w.y1:other.x+w.x1, dist=Math.abs(line-next); if(dist<best){ best=dist; snap=line; } }
+    if(snap!==null) delta=(snap-line0)/n;
+  }
+  const pts=st.base.map(q=>({...q})), a=pts[st.wall.i], b=pts[(st.wall.i+1)%pts.length];
+  a.x+=st.wall.nx*delta; a.y+=st.wall.ny*delta; b.x+=st.wall.nx*delta; b.y+=st.wall.ny*delta;
+  const error=shapeError(pts), q=v=>+v.toFixed(2), midX=(st.wall.x1+st.wall.x2)*50+st.wall.nx*delta*100, midY=(st.wall.y1+st.wall.y2)*50+st.wall.ny*delta*100;
+  st.delta=delta; st.moved=Math.abs(delta)>1e-9; st.pts=pts; st.error=error;
+  st.ghost.setAttribute('points',pts.map(v=>`${q(v.x*100)},${q(v.y*100)}`).join(' ')); st.ghost.setAttribute('stroke',error?'var(--bad)':'var(--steel)');
+  st.circles.forEach(c=>{ c.setAttribute('cx',q(midX)); c.setAttribute('cy',q(midY)); });
+  st.label.setAttribute('x',q(midX+st.wall.nx*24/st.k)); st.label.setAttribute('y',q(midY+st.wall.ny*24/st.k)); st.label.setAttribute('fill',error?'var(--bad)':'var(--steel)');
+  st.label.textContent=error||`${delta<0?'−':'+'}${Math.round(Math.abs(delta)*1000)} мм`;
+}
+function wallDragFinish(cancel){
+  const st=wallDrag; if(!st) return; wallDrag=null;
+  window.removeEventListener('pointermove',st.move); window.removeEventListener('pointerup',st.up); window.removeEventListener('pointercancel',st.cancel);
+  if(st.raf) cancelAnimationFrame(st.raf); roomFreeze=null;
+  if(cancel||!st.moved){ wallDragReset(st); return; }
+  if(st.error){ wallDragReset(st); toast(st.error); return; }
+  const xs=st.pts.map(p=>p.x), ys=st.pts.map(p=>p.y), dx=Math.min(...xs), dy=Math.min(...ys), pts=st.pts.map(p=>({...p,x:p.x-dx,y:p.y-dy}));
+  const shape=pts.length===4?{tpl:'rect',rot:0,p:{W:Math.max(...pts.map(p=>p.x)),D:Math.max(...pts.map(p=>p.y))}}:{tpl:'custom',pts};
+  const result=setRoomShape(st.room,shape,{x:dx,y:dy});
+  if(result.error){ wallDragReset(st); toast(result.error); return; }
+  st.room.x+=dx; st.room.y+=dy;
+  for(const key of Object.keys(S.layout||{})) if((P&&P.roomOf&&P.roomOf[key]===st.room.id)||(S.layoutRoom&&S.layoutRoom[key]===st.room.id)){
+    const pos=S.layout[key]; if(pos){ pos.x=(Number(pos.x)||0)-dx; pos.y=(Number(pos.y)||0)-dy; } }
+  lastPush=0; touch(); recompute(); render(); if(result.moved.length) toast(result.moved.join('. '));
+}
+function wallDragStart(e,r,id,handle){
+  if(!r||!rpOpen||r.id!==S.cur||wallDrag||!handle.isConnected) return;
+  const walls=roomWalls(r), wall=walls.find(w=>w.id===id), svg=document.getElementById('plan'); if(!wall||!svg||!['h','v'].includes(wall.axis)) return;
+  const ghost=svg.querySelector('#shp-ghost'), label=svg.querySelector('#shp-drag-label'), circles=[...handle.querySelectorAll('circle')]; if(!ghost||!label||!circles.length) return;
+  const vb=svg.viewBox.baseVal, p=svgPtG(e), hx=(wall.x1+wall.x2)*50, hy=(wall.y1+wall.y2)*50;
+  roomFreeze={x:vb.x,y:vb.y,w:vb.width,h:vb.height};
+  wallDrag={room:r,wall,handle,ghost,label,circles,hx,hy,p0:{x:p.x-r.x,y:p.y-r.y},base:roomPoly(r).map((q,i)=>({...q,wid:q.wid||walls[i].id})),k:kFor('plan',vb.width),pid:e.pointerId,delta:0,moved:false,pts:null,error:null,raf:0};
+  const st=wallDrag; st.ghost.setAttribute('display','inline'); st.label.setAttribute('display','inline');
+  st.move=ev=>{ if(ev.pointerId!==st.pid) return; ev.preventDefault(); st.lastEvent=ev; if(!st.raf) st.raf=requestAnimationFrame(()=>{ st.raf=0; if(wallDrag===st&&st.lastEvent) wallDragPreview(st,st.lastEvent); }); };
+  st.up=ev=>{ if(ev.pointerId!==st.pid) return; if(st.raf) cancelAnimationFrame(st.raf); st.raf=0; wallDragPreview(st,ev); wallDragFinish(false); };
+  st.cancel=ev=>{ if(ev.pointerId!==st.pid) return; wallDragFinish(true); };
+  window.addEventListener('pointermove',st.move); window.addEventListener('pointerup',st.up); window.addEventListener('pointercancel',st.cancel);
+}
 
 /* ---- окно «Новое помещение» ---- */
 let nrSt=null;
@@ -3134,6 +3191,9 @@ function bindPlanPointer(){
     if(!document.getElementById('plan')) return;
     const zr=e.target.closest('[data-zoomroom]'); if(zr && !e.target.closest('.it')){ e.preventDefault(); zoomToRoom(zr.dataset.zoomroom); return; }
     const G=typeof planGate==='function'?planGate:(ev,el,st)=>st&&st(), tch=e.pointerType!=='mouse'&&isTouch();
+    const wh=e.target.closest('.shp-handle[data-wall-handle]');
+    if(wh){ e.stopPropagation(); const start=()=>wallDragStart(e,rById(wh.dataset.room),wh.dataset.wallHandle,wh);
+      if(tch) G(e,wh,start,()=>{}); else if(e.button===0){ e.preventDefault(); start(); } return; }
     if(mode==='equip'){ const g=e.target.closest('.it');
       if(g){ const k=g.dataset.key;
         if(!tch && modKey(e) && e.button===0){ e.preventDefault(); selToggle(k); return; }           // Ctrl/Cmd+клик — добавить или убрать
@@ -5382,6 +5442,7 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if(e.key==='Escape'){
+    if(wallDrag){ e.preventDefault(); e.stopImmediatePropagation(); wallDragFinish(true); return; }
     if((tag==='INPUT'||tag==='TEXTAREA') && t.__focusVal!=null && t.value!==t.__focusVal){ e.preventDefault(); e.stopImmediatePropagation(); t.value=t.__focusVal; clearFieldError(t); try{ t.select(); }catch(_){} return; }
     if(overlay) return;                        // окна выгрузки и проектов закрываются своими обработчиками
     for(const s of CLOSE_ORDER){ const b=document.querySelector(s); if(b && !b.disabled && b.offsetParent!==null){ e.preventDefault(); b.click(); return; } }

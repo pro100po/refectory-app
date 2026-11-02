@@ -1032,8 +1032,9 @@ function normEdits(e){ e=e&&typeof e==='object'?e:{}; const o=x=>x&&typeof x==='
 /* ======================================================================
    ГЕОМЕТРИЯ ПОМЕЩЕНИЯ — контур из стен-отрезков (пункт 30.1)
    Помещение — контур room.poly: вершины по часовой стрелке (ось y вниз), от левого верхнего угла.
+   Вершина: {x, y, wid}.
    Нет poly (все проекты сейчас) — прямоугольник w × d: (0,0) (w,0) (w,d) (0,d), стены 't' 'r' 'b' 'l'.
-   room.w, room.d — габарит контура. Поле side у проёмов и точек — id стены; у будущих контуров id — 'w0', 'w1', …
+   room.w, room.d — габарит контура. Поле side у проёмов и точек — id стены; у контура id стены хранится в вершине, с которой стена начинается: room.poly[i].wid (если wid нет — 'w'+i).
    Отсчёт off вдоль стены (offOrigin, offDir): горизонтальные — слева направо, вертикальные — сверху вниз,
    косые — от начала стены. t — координата по периметру по часовой от начала первой стены.
    Для прямоугольника каждая величина считается теми же действиями, что и до перевода на контур, —
@@ -1051,11 +1052,11 @@ function rectWalls(W,D){ const P=2*(W+D);
           mk('r',1, W,0,W,D, D, 0,1, W,W+D, W,0, t=>t-W),
           mk('b',2, W,D,0,D, W, -1,0, W+D,2*W+D, 0,D, t=>t-W-D),
           mk('l',3, 0,D,0,0, D, 0,-1, 2*W+D,P, 0,0, t=>t-2*W-D)]; }
-// произвольный контур (30.2, 30.3): стены 'w0', 'w1', …; угол 'reflex' — внутренний
+// произвольный контур (30.2, 30.3): id стены — poly[i].wid, иначе 'w'+i; угол 'reflex' — внутренний
 function polyWalls(poly){ const n=poly.length, out=[]; let t=0;
   for(let i=0;i<n;i++){ const a=poly[i], b=poly[(i+1)%n], dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy), ux=dx/len, uy=dy/len;
     const axis=Math.abs(uy)<1e-9?'h':Math.abs(ux)<1e-9?'v':null, fwd=axis==='h'?ux>0:axis==='v'?uy>0:true, t0=t;
-    out.push({id:'w'+i, i, x1:a.x, y1:a.y, x2:b.x, y2:b.y, len, dir:{x:ux,y:uy}, nx:zf(-uy), ny:zf(ux), axis, t0, tEnd:t0+len,
+    out.push({id:a.wid||('w'+i), i, x1:a.x, y1:a.y, x2:b.x, y2:b.y, len, dir:{x:ux,y:uy}, nx:zf(-uy), ny:zf(ux), axis, t0, tEnd:t0+len,
       offOrigin:fwd?{x:a.x,y:a.y}:{x:b.x,y:b.y}, offDir:fwd?{x:ux,y:uy}:{x:zf(-ux),y:zf(-uy)}, offFrom:fwd?'start':'end', along:t=>t-t0});
     t+=len; }
   for(let i=0;i<n;i++){ const p=out[(i+n-1)%n], c=out[i], cr=p.dir.x*c.dir.y-p.dir.y*c.dir.x; c.cornerStart=cr>=0?'convex':'reflex'; p.cornerEnd=c.cornerStart; }
@@ -1169,10 +1170,9 @@ function wallLineU(room,id){ const w=W_OF(room,id); return w.axis==='h'?w.y1*100
 // площадь контура
 function roomArea(room){ if(!hasPoly(room)) return room.w*room.d; const P=room.poly; let a=0; for(let i=0,j=P.length-1;i<P.length;j=i++) a+=(P[j].x+P[i].x)*(P[j].y-P[i].y); return Math.abs(a)/2; }
 // отражение по горизонтали: контур, стены, проёмы, точки (вместо mirrorGeom)
-function mirrorWallId(room,id){ if(!hasPoly(room)) return id==='l'?'r':id==='r'?'l':id;
-  const w=wallById(room,id), W=room.w; for(const q of roomWalls(room)){ if(Math.abs(q.x1-(W-w.x2))<1e-9&&Math.abs(q.y1-w.y2)<1e-9&&Math.abs(q.x2-(W-w.x1))<1e-9&&Math.abs(q.y2-w.y1)<1e-9) return q.id; } return id; }
+function mirrorWallId(room,id){ if(hasPoly(room)) return id; return id==='l'?'r':id==='r'?'l':id; }
 function mirrorRoom(s){ const W=s.room.w, R=s.room;
-  const room=hasPoly(R)?{w:R.w, d:R.d, poly:(()=>{ const m=R.poly.map(p=>({x:W-p.x,y:p.y})).reverse(); return m; })()}:{w:R.w, d:R.d};
+  const room=hasPoly(R)?{w:R.w, d:R.d, poly:(()=>{ const n=R.poly.length; return R.poly.map((_,k)=>{ const p=R.poly[n-1-k], j=(n-2-k+n)%n; return {x:W-p.x,y:p.y,wid:R.poly[j].wid||('w'+j)}; }); })()}:{w:R.w, d:R.d};
   const mo=(side,off,len)=>{ const w=wallById(R,side); return w.axis==='v' ? {side:mirrorWallId(R,side), off} : {side:mirrorWallId(R,side), off:w.len-off-len}; };
   return {room, norms:s.norms, wg:s.wg, stage:s.stage, stages:s.stages,
     openings:s.openings.map(o=>{ const n={...o}; const m=mo(o.side,o.off,o.w); if(wallById(R,o.side).axis==='v') n.side=m.side; else n.off=m.off; return n; }),
@@ -4078,7 +4078,7 @@ function printOverviewSvg(opts){
     }
     const cx=X(r.x+r.w/2), cy=Y(r.y+r.d/2), fs=Math.max(14,Math.min(28,r.w*k/(r.name.length*0.62+1)));
     out+=`<text x="${cx}" y="${cy-fs*0.5}" font-size="${fs}" font-weight="700" text-anchor="middle" fill="${ink}">${esc(r.name)}</text>
-      <text x="${cx}" y="${cy+fs*0.6}" font-size="15" font-family="var(--f-mono)" text-anchor="middle" fill="${ink2}">${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм · ${fmt1(r.w*r.d)} м²</text>
+      <text x="${cx}" y="${cy+fs*0.6}" font-size="15" font-family="var(--f-mono)" text-anchor="middle" fill="${ink2}">${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм · ${fmt1(roomArea(r))} м²</text>
       <text x="${cx}" y="${cy+fs*0.6+20}" font-size="13" text-anchor="middle" fill="var(--steel)">${esc(r.roles.map(x=>(ROLES.find(q=>q[0]===x)||[])[1]).filter(Boolean).join(' · ')||'назначение не отмечено')}</text>`;
   }
   const w=(maxX-minX)*k+2*pad, h=(maxY-minY)*k+2*pad+40, kk=pickScale(w,h);
@@ -4182,7 +4182,7 @@ function volts(c){ return (c.kw||0)>0?(c.ph===3?'380':'220'):'—'; }
 const ALL=['full','electric','plumbing','vent','gas','cost'];
 REPORT.register({ id:'title', title:'Титульный лист', group:'Общее', order:100, audience:ALL, always:true,
   build(ctx){ const m=ctx.meta, p=P.power, R=resEff(S), cost=costCalc(), posL=ctx.pos.list;
-    const area=S.rooms.reduce((a,r)=>a+r.w*r.d,0), buyN=posL.filter(x=>x.src==='buy').length, haveN=posL.filter(x=>x.src==='have').length;
+    const area=S.rooms.reduce((a,r)=>a+roomArea(r),0), buyN=posL.filter(x=>x.src==='buy').length, haveN=posL.filter(x=>x.src==='have').length;
     const gasOn=S.gas&&S.gas.on, gasItems=P.items.some(i=>i.c.gas);
     const pw=`${fmt1(p.demand)} кВт, ${p.need3?'3 фазы, 380 В':'1 фаза, 220 В'}`+(R.A!=null?` · сейчас ${fmt1(R.A)} кВт`:'')+(R.B!=null?` · можно до ${fmt1(R.B)} кВт`:'');
     return [
@@ -4225,8 +4225,8 @@ REPORT.register({ id:'rooms', title:'Помещения', group:'Помещен�
   build(ctx){ const links=r=>{ const t=[]; for(const l of effLinks()){ const o=l[0]===r.id?l[1]:l[1]===r.id?l[0]:null; if(!o) continue; t.push(LINK_EXT[o]||('«'+roomName(S,o)+'»')); } return t.join(', ')||'—'; };
     return [{t:'h1', text:'Помещения'},
       {t:'table', cols:[{title:'Помещение',w:2},{title:'Длина × ширина, мм',w:1.5},{title:'Площадь, м²',w:1,align:'r'},{title:'Назначение',w:3},{title:'Откуда можно попасть',w:2.5}],
-        rows:S.rooms.map(r=>[r.name, `${fmt0(r.d*1000)} × ${fmt0(r.w*1000)}`, fmt1(r.w*r.d), r.roles.map(x=>(ROLES.find(q=>q[0]===x)||[])[1]).filter(Boolean).join(', ')||'не отмечено', links(r)]),
-        foot:[['Всего','',fmt1(S.rooms.reduce((a,r)=>a+r.w*r.d,0)),'','']]},
+        rows:S.rooms.map(r=>[r.name, `${fmt0(r.d*1000)} × ${fmt0(r.w*1000)}`, fmt1(roomArea(r)), r.roles.map(x=>(ROLES.find(q=>q[0]===x)||[])[1]).filter(Boolean).join(', ')||'не отмечено', links(r)]),
+        foot:[['Всего','',fmt1(S.rooms.reduce((a,r)=>a+roomArea(r),0)),'','']]},
       ctx.plan.overview()]; } });
 
 REPORT.register({ id:'room-walls', title:'Стены и проёмы', group:'Помещения', order:500, audience:['full'], perRoom:true,
@@ -4236,7 +4236,7 @@ REPORT.register({ id:'room-walls', title:'Стены и проёмы', group:'П
         : `${doorLabelIn(r,o)}; открывается ${o.swing==='in'?'внутрь':'наружу'}, петли ${o.hinge==='l'?'слева':'справа'}${o.derived?' (дверь соседнего помещения)':''}`;
       return [OP_NAME[o.type], `${SIDE_RU[o.side]}, ${fmt0(wallLen(r,o.side)*1000)}`, `${fmt0(o.off*1000)} ${SIDE_FROM[o.side]}`, fmt0(o.w*1000), note]; });
     return [{t:'h2', text:`«${r.name}»: стены и проёмы`},
-      {t:'kv', cols:2, rows:[['Длина × ширина', `${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм`],['Площадь', fmt1(r.w*r.d)+' м²']]},
+      {t:'kv', cols:2, rows:[['Длина × ширина', `${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм`],['Площадь', fmt1(roomArea(r))+' м²']]},
       rows.length?{t:'table', cols:[{title:'Проём',w:1},{title:'Стена, длина мм',w:1.6},{title:'Привязка, мм',w:1.8},{title:'Ширина, мм',w:1,align:'r'},{title:'Подоконник / куда ведёт / глубина',w:3.6}], rows,
         note:'Стены названы так, как они лежат на плане: верхняя, правая, нижняя, левая. Привязка — до ближнего края проёма.'}:{t:'p', text:'Проёмов не отмечено.', muted:true},
       ctx.plan.room(r,'walls')]; } });

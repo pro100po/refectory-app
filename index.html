@@ -1191,6 +1191,16 @@ function wallLineU(room,id){ const w=W_OF(room,id); return w.axis==='h'?w.y1*100
 function roomArea(room){ if(!hasPoly(room)) return room.w*room.d; const P=room.poly; let a=0; for(let i=0,j=P.length-1;i<P.length;j=i++) a+=(P[j].x+P[i].x)*(P[j].y-P[i].y); return Math.abs(a)/2; }
 // контур помещения в см плана, сдвинутый наружу на off см
 function contourPts(room,off){ const P=roomPoly(room), ws=roomWalls(room), n=P.length; return P.map((p,i)=>{ const prev=ws[(i+n-1)%n], cur=ws[i]; return {x:p.x*100-(prev.nx+cur.nx)*off,y:p.y*100-(prev.ny+cur.ny)*off}; }); }
+function innerRect(room){ if(!hasPoly(room)) return {x:0,y:0,w:room.w,h:room.d};
+  const P=roomPoly(room), xs=[...new Set(P.map(p=>p.x))].sort((a,b)=>a-b), ys=[...new Set(P.map(p=>p.y))].sort((a,b)=>a-b), nx=xs.length-1, ny=ys.length-1;
+  const inside=Array.from({length:ny},(_,j)=>Array.from({length:nx},(_,i)=>pointInRoom(room,(xs[i]+xs[i+1])/2,(ys[j]+ys[j+1])/2)));
+  const bad=Array.from({length:ny+1},()=>Array(nx+1).fill(0));
+  for(let j=1;j<=ny;j++) for(let i=1;i<=nx;i++) bad[j][i]=(inside[j-1][i-1]?0:1)+bad[j-1][i]+bad[j][i-1]-bad[j-1][i-1];
+  let best={x:xs[0],y:ys[0],w:0,h:0}, area=0;
+  for(let i0=0;i0<nx;i0++) for(let i1=i0+1;i1<=nx;i1++) for(let j0=0;j0<ny;j0++) for(let j1=j0+1;j1<=ny;j1++){
+    if(bad[j1][i1]-bad[j0][i1]-bad[j1][i0]+bad[j0][i0]) continue;
+    const w=xs[i1]-xs[i0], h=ys[j1]-ys[j0], a=w*h; if(a>area){ best={x:xs[i0],y:ys[j0],w,h}; area=a; } }
+  return best; }
 // стены по контуру
 function wallsPathSvg(room,T,stroke){ const P=contourPts(room,T/2), d=P.map((p,i)=>`${i?'L':'M'}${p.x},${p.y}`).join(' ')+' Z'; return `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${T}" stroke-linejoin="miter"/>`; }
 /* ---------- форма помещения (30.2): шаблоны, проверка контура, смена формы ---------- */
@@ -1282,6 +1292,8 @@ function assignWids(room,pts,roles,tpl){
 function wallName(room,id){
   if(!hasPoly(room)) return `${SIDE_RU[id]||'правая'} стена`;
   const i=roomWalls(room).findIndex(w=>w.id===id); return `стена ${i<0?'?':i+1}`; }
+function wallTitle(room,id){ if(id==='floor') return 'пол'; if(!hasPoly(room)) return SIDE_RU[id]+' стена'; return wallName(room,id); }
+function wallFrom(room,id){ if(!hasPoly(room)) return SIDE_FROM[id]; const w=wallById(room,id); return w&&w.axis==='v'?'от верхнего угла':'от левого угла'; }
 function setRoomShape(room,shape,shift){
   const shiftX=Number(shift&&shift.x)||0, shiftY=Number(shift&&shift.y)||0;
   const tpl=shape&&shape.tpl, paramsError=tpl==='custom'?null:shapeParamsError(tpl,shape&&shape.p); if(paramsError) return {error:paramsError};
@@ -2560,7 +2572,7 @@ function roomLabelSvg(r,k){
   // область подписи: без полосы внутренних цепочек размеров у стен, к которым вплотную соседнее помещение
   const ins={l:0,r:0,t:0,b:0}, cin=layerOn('dims')?Math.max(85,60+20/k):0;
   if(S.rooms.length>1) for(const sd of blockedSides(r)) if(r.openings.some(o=>o.side===sd)) ins[sd]=cin;
-  const X0=ins.l, Y0=ins.t, W=Math.max(0,r.w*100-ins.l-ins.r), D=Math.max(0,r.d*100-ins.t-ins.b), q=v=>+v.toFixed(2), name=r.name||'Помещение', G=44/k, m=10/k;
+  const ir=hasPoly(r)?innerRect(r):null, X0=ir?ir.x*100:ins.l, Y0=ir?ir.y*100:ins.t, W=Math.max(0,ir?ir.w*100:r.w*100-ins.l-ins.r), D=Math.max(0,ir?ir.h*100:r.d*100-ins.t-ins.b), q=v=>+v.toFixed(2), name=r.name||'Помещение', G=44/k, m=10/k;
   const rt=r.roles.map(x=>(ROLES.find(z=>z[0]===x)||[])[1]).filter(Boolean).join(' · ');
   const fs=Math.max(13/k, Math.min(26/k, (W-G-3*m)/(name.length*0.6+0.5))), nw=name.length*0.6*fs, fr=11.5/k;
   const rowW=nw+m+G, fit=rowW<=W-2*m && Math.max(fs*1.3,G)<=D-2*m, lab=layerOn('labels');
@@ -2569,7 +2581,7 @@ function roomLabelSvg(r,k){
   if(fit){ const x0=X0+W/2-(lab?rowW:G)/2; gx=lab?x0+nw+m+G/2:X0+W/2; gy=cy;
     if(lab) out+=`<text class="rm-name" x="${q(x0)}" y="${q(cy)}" font-size="${q(fs)}" font-weight="700" font-family="var(--f-disp)" fill="var(--ink)" dominant-baseline="central">${esc(name)}</text>`;
     if(showR) out+=`<text x="${q(X0+W/2)}" y="${q(cy+Math.max(fs*0.65,G/2)+fr*0.9)}" font-size="${q(fr)}" text-anchor="middle" fill="var(--steel)" style="pointer-events:none">${esc(rt)}</text>`; }
-  else { const RW=r.w*100, RD=r.d*100; gx=RW>=G+2*m?RW-ins.r-G/2-m/2:RW/2; gy=RD>=G+2*m?ins.t+G/2+m/2:RD/2; }
+  else { const RW=r.w*100, RD=r.d*100; if(ir){ gx=W>=G+2*m?X0+W-G/2-m/2:X0+W/2; gy=D>=G+2*m?Y0+G/2+m/2:Y0+D/2; } else { gx=RW>=G+2*m?RW-ins.r-G/2-m/2:RW/2; gy=RD>=G+2*m?ins.t+G/2+m/2:RD/2; } }
   out+=`<g class="rm-cfg" data-roomcfg="${r.id}" role="button" tabindex="0" aria-label="Настройки помещения «${esc(name)}»"><rect x="${q(gx-G/2)}" y="${q(gy-G/2)}" width="${q(G)}" height="${q(G)}" fill="var(--sheet)" fill-opacity="0"/>
     <circle cx="${q(gx)}" cy="${q(gy)}" r="${q(15/k)}" fill="var(--paper)" stroke="var(--rule)" stroke-width="${q(1.2/k)}"/><text x="${q(gx)}" y="${q(gy)}" font-size="${q(17/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--ink-2)" style="pointer-events:none">⚙\uFE0E</text></g>`;
   return out;
@@ -3088,11 +3100,12 @@ function unifiedPlanSvg(){
   k=kFor('plan',(maxX-minX)*100+2*pad);
   const vx=minX*100-pad, vy=minY*100-pad, vw=(maxX-minX)*100+2*pad, vh=(maxY-minY)*100+2*pad;
   let body='';
-  try{ for(const r of rs){ S.cur=r.id; const fs=Math.max(13/k, Math.min(26/k, r.w*100/(r.name.length*0.62+1))), q=v=>+v.toFixed(2);
+  try{ for(const r of rs){ S.cur=r.id; const ir=hasPoly(r)?innerRect(r):null, fs=Math.max(13/k, Math.min(26/k, r.w*100/(r.name.length*0.62+1))), q=v=>+v.toFixed(2);
       // название — в левом верхнем углу внутри; занят оборудованием — ближайшее свободное место, ближе к углу
       const lw=(r.name.length*0.6*fs+20/k)/100, lh=(fs*1.25+16/k)/100, boxes=roomUnits(r.id).filter(u=>S.layout[u.key]).map(u=>bbox(u.c,S.layout[u.key]));
-      let at=null; for(let yy=0; yy+lh<=r.d && !at; yy+=0.1) for(let xx=0; xx+lw<=r.w; xx+=0.1){ if(!boxes.some(b=>b.x<xx+lw&&xx<b.x+b.w&&b.y<yy+lh&&yy<b.y+b.h)){ at={x:xx,y:yy}; break; } }
-      at=at||{x:0,y:0};
+      const start=ir&&!pointInRoom(r,0,0)?{x:ir.x,y:ir.y}:{x:0,y:0};
+      let at=null; for(let yy=start.y; yy+lh<=r.d && !at; yy+=0.1) for(let xx=start.x; xx+lw<=r.w; xx+=0.1){ if((!ir||rectInRoom(r,{x:xx,y:yy,w:lw,h:lh}))&&!boxes.some(b=>b.x<xx+lw&&xx<b.x+b.w&&b.y<yy+lh&&yy<b.y+b.h)){ at={x:xx,y:yy}; break; } }
+      at=at||start;
       const label=`<text class="room-lbl" data-zoomroom="${r.id}" x="${q(at.x*100+10/k)}" y="${q(at.y*100+8/k+fs*0.9)}" font-size="${q(fs)}" font-weight="700" font-family="var(--f-disp)" fill="var(--ink)" fill-opacity=".22" style="cursor:zoom-in"><title>${esc(r.name)} — показать крупно</title>${esc(r.name)}</text>`;
       const iss=lay[r.id]||checkLayout(curGeom(),curUnits());
       body+=`<g data-rg="${r.id}" transform="translate(${q(r.x*100)},${q(r.y*100)})">${planSvg('equip',iss,{inner:true, k, blocked:blockedSides(r), label})}</g>`; } }
@@ -3156,7 +3169,7 @@ function eqLabel(c,w,h,u){
 }
 function chainsSvg(withPts, BL){
   const W=S.room.w*100, D=S.room.d*100; let out='';
-  for(const side of roomWalls(S.room).map(w=>w.id)){ const els=withPts?[]:wallEls(S,side), ps=withPts?S.points.filter(p=>p.side===side):[]; if(!els.length&&!ps.length) continue;
+  for(const side of roomWalls(S.room).map(w=>w.id)){ const els=withPts?[]:wallEls(S,side), ps=withPts?S.points.filter(p=>p.side===side):[]; if(!els.length&&!ps.length&&!(hasPoly(S.room)&&!withPts)) continue;
     const ww=wallById(S.room,side), nearW=ww.nx>0||ww.ny>0, vertW=ww.axis==='v';
     const L=sideLen(S,side)*100, raw=[0,L], spans=new Set();
     els.forEach(o=>{ raw.push(o.off*100,(o.off+o.w)*100); spans.add(Math.round(o.off*100)+':'+Math.round((o.off+o.w)*100)); });
@@ -4325,9 +4338,9 @@ function printOverviewSvg(opts){
         const tx=sx+nx*22, ty=sy+ny*22, vert=nx!==0;
         arrows+=`<text x="${tx}" y="${ty}" font-size="18" font-weight="700" fill="var(--accent)" text-anchor="${vert?(nx>0?'start':'end'):'middle'}" dominant-baseline="central">${lab}</text>`; }
     }
-    const cx=X(r.x+r.w/2), cy=Y(r.y+r.d/2), fs=Math.max(14,Math.min(28,r.w*k/(r.name.length*0.62+1)));
+    const ir=hasPoly(r)?innerRect(r):null, cx=X(r.x+(ir?ir.x+ir.w/2:r.w/2)), cy=Y(r.y+(ir?ir.y+ir.h/2:r.d/2)), fs=Math.max(14,Math.min(28,(ir?ir.w:r.w)*k/(r.name.length*0.62+1)));
     out+=`<text x="${cx}" y="${cy-fs*0.5}" font-size="${fs}" font-weight="700" text-anchor="middle" fill="${ink}">${esc(r.name)}</text>
-      <text x="${cx}" y="${cy+fs*0.6}" font-size="15" font-family="var(--f-mono)" text-anchor="middle" fill="${ink2}">${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм · ${fmt1(roomArea(r))} м²</text>
+      <text x="${cx}" y="${cy+fs*0.6}" font-size="15" font-family="var(--f-mono)" text-anchor="middle" fill="${ink2}">${ir?`габарит ${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм · ${fmt1(roomArea(r))} м²`:`${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм · ${fmt1(roomArea(r))} м²`}</text>
       <text x="${cx}" y="${cy+fs*0.6+20}" font-size="13" text-anchor="middle" fill="var(--steel)">${esc(r.roles.map(x=>(ROLES.find(q=>q[0]===x)||[])[1]).filter(Boolean).join(' · ')||'назначение не отмечено')}</text>`;
   }
   const w=(maxX-minX)*k+2*pad, h=(maxY-minY)*k+2*pad+40, kk=pickScale(w,h);
@@ -4411,16 +4424,16 @@ function bindingRows(room, pos){
   const c0=S.cur; S.cur=room.id;
   try{ const units=curUnits(), ch=equipChains(room, units, S.layout), rows=[], order={t:0,r:1,b:2,l:3};
     for(const [s,segs] of Object.entries(ch.sides)) segs.forEach((g,i)=>{ if(g.kind!=='unit'||!g.bold) return; const n=segs[i+1];
-      rows.push({k:[order[s], g.a], r:[String((pos.unit(g.x.u)||{}).no||''), g.x.u.c.n, SIDE_RU[s]+(s==='floor'?'':' стена'), fmt0(g.a*1000), fmt0((g.sz||(g.e-g.a))*1000), n?(n.kind==='gap'?fmt0((n.e-n.a)*1000):'0'):'0', fmt0(g.d*1000)]}); });
+      rows.push({k:[order[s], g.a], r:[String((pos.unit(g.x.u)||{}).no||''), g.x.u.c.n, wallTitle(room,s), fmt0(g.a*1000), fmt0((g.sz||(g.e-g.a))*1000), n?(n.kind==='gap'?fmt0((n.e-n.a)*1000):'0'):'0', fmt0(g.d*1000)]}); });
     for(const isl of ch.islands){ const b=isl.x.b; rows.push({k:[4,b.x], r:[String((pos.unit(isl.x.u)||{}).no||''), isl.x.u.c.n, 'отдельно стоящее', `${fmt0(b.x*1000)} от левой, ${fmt0(b.y*1000)} от верхней`, fmt0(b.w*1000), '—', '—']}); }
     for(const w of ch.wall){ const pl=unitPlace(w.u, room), rg=alongRange(w.u, room, S.layout, pl.s);
-      rows.push({k:[5+order[pl.s], rg.a], r:[String((pos.unit(w.u)||{}).no||''), w.u.c.n+' (настенное)', SIDE_RU[pl.s]+' стена', fmt0(rg.a*1000), fmt0(rg.size*1000), fmt0((rg.hi-rg.a-rg.size)*1000), fmt0(pl.d*1000)]}); }
+      rows.push({k:[5+order[pl.s], rg.a], r:[String((pos.unit(w.u)||{}).no||''), w.u.c.n+' (настенное)', wallTitle(room,pl.s), fmt0(rg.a*1000), fmt0(rg.size*1000), fmt0((rg.hi-rg.a-rg.size)*1000), fmt0(pl.d*1000)]}); }
     rows.sort((a,b)=>a.k[0]-b.k[0]||a.k[1]-b.k[1]); return rows.map(x=>x.r);
   } finally{ S.cur=c0; } }
 // где на плане метка требуемого подключения: середина задней кромки; отсчёт вдоль стены — от угла «0»
 function needAnchor(u, room){ const p=S.layout[u.key], b=bbox(u.c,p), W=room.w, D=room.d;
   const sw=wallForRot(room,p.rot,b), s=sw?sw.id:'l', along=wallById(room,s).axis!=='v'?b.x+b.w/2:b.y+b.h/2, d=sideDist(b,s,room);
-  return {wall:SIDE_RU[s]+' стена'+(d>DIM_OFF?` (в ${fmt0(d*1000)} мм от неё)`:''), along:fmt0(along*1000)}; }
+  return {wall:wallTitle(room,s)+(d>DIM_OFF?` (в ${fmt0(d*1000)} мм от неё)`:''), along:fmt0(along*1000)}; }
 function roomUnitsOf(id){ return P.units.filter(u=>P.roomOf[u.key]===id); }
 function posLabel(p){ return p.c.n+(p.c.model?` (${p.c.model})`:''); }
 function dimsOf(c){ return c.mount==='none'?'—':`${fmt0(c.w*1000)}×${fmt0(c.d*1000)}×${fmt0(c.h*1000)}`; }
@@ -4480,14 +4493,15 @@ REPORT.register({ id:'rooms', title:'Помещения', group:'Помещен�
 
 REPORT.register({ id:'room-walls', title:'Стены и проёмы', group:'Помещения', order:500, audience:['full'], perRoom:true,
   build(ctx){ const r=ctx.room;
-    const rows=roomGeom(S,r).openings.slice().sort((a,b)=>'trbl'.indexOf(a.side)-'trbl'.indexOf(b.side)||a.off-b.off).map(o=>{
+    const wallOrder=Object.fromEntries(roomWalls(r).map((w,i)=>[w.id,i]));
+    const rows=roomGeom(S,r).openings.slice().sort((a,b)=>wallOrder[a.side]-wallOrder[b.side]||a.off-b.off).map(o=>{
       const note = o.type==='window' ? `подоконник ${fmt0((o.sill||0.9)*1000)} мм` : o.type==='prot' ? `глубина ${fmt0((o.depth||0.3)*1000)} мм`
         : `${doorLabelIn(r,o)}; открывается ${o.swing==='in'?'внутрь':'наружу'}, петли ${o.hinge==='l'?'слева':'справа'}${o.derived?' (дверь соседнего помещения)':''}`;
-      return [OP_NAME[o.type], `${SIDE_RU[o.side]}, ${fmt0(wallLen(r,o.side)*1000)}`, `${fmt0(o.off*1000)} ${SIDE_FROM[o.side]}`, fmt0(o.w*1000), note]; });
+      return [OP_NAME[o.type], `${wallTitle(r,o.side).replace(/ стена$/,'')}, ${fmt0(wallLen(r,o.side)*1000)}`, `${fmt0(o.off*1000)} ${wallFrom(r,o.side)}`, fmt0(o.w*1000), note]; });
     return [{t:'h2', text:`«${r.name}»: стены и проёмы`},
       {t:'kv', cols:2, rows:[['Длина × ширина', `${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм`],['Площадь', fmt1(roomArea(r))+' м²']]},
       rows.length?{t:'table', cols:[{title:'Проём',w:1},{title:'Стена, длина мм',w:1.6},{title:'Привязка, мм',w:1.8},{title:'Ширина, мм',w:1,align:'r'},{title:'Подоконник / куда ведёт / глубина',w:3.6}], rows,
-        note:'Стены названы так, как они лежат на плане: верхняя, правая, нижняя, левая. Привязка — до ближнего края проёма.'}:{t:'p', text:'Проёмов не отмечено.', muted:true},
+        note:hasPoly(r)?'Стены пронумерованы по часовой стрелке от левого верхнего угла, номера — на плане. Привязка — до ближнего края проёма.':'Стены названы так, как они лежат на плане: верхняя, правая, нижняя, левая. Привязка — до ближнего края проёма.'}:{t:'p', text:'Проёмов не отмечено.', muted:true},
       ctx.plan.room(r,'walls')]; } });
 function doorLabelIn(r,o){ if(o.to&&o.to.startsWith('room:')) return 'ведёт в «'+roomName(S,o.to.slice(5))+'»'; return 'ведёт '+(DOOR_TO[o.to]||'—'); }
 
@@ -4495,8 +4509,8 @@ REPORT.register({ id:'room-points', title:'Существующие подклю
   available: ()=>!netsDesign(S),   // сети проектируются — раздела нет, в «Исходных данных» строка «Инженерные сети: проектируются»
   build(ctx){ const r=ctx.room;
     const rows=r.points.slice().sort((a,b)=>Object.keys(PT).indexOf(a.type)-Object.keys(PT).indexOf(b.type)).map(p=>{
-      const where = p.side==='floor'||!p.side ? 'пол' : SIDE_RU[p.side]+' стена';
-      const bind = p.side==='floor'||!p.side ? `${fmt0(p.x*1000)} от левой, ${fmt0(p.y*1000)} от верхней` : `${fmt0(p.off*1000)} ${SIDE_FROM[p.side]}`+(p.type==='hood'?`; ${fmt0(p.w*1000)}×${fmt0(p.d*1000)}`:'');
+      const where = p.side==='floor'||!p.side ? 'пол' : wallTitle(r,p.side);
+      const bind = p.side==='floor'||!p.side ? `${fmt0(p.x*1000)} от левой, ${fmt0(p.y*1000)} от верхней` : `${fmt0(p.off*1000)} ${wallFrom(r,p.side)}`+(p.type==='hood'?`; ${fmt0(p.w*1000)}×${fmt0(p.d*1000)}`:'');
       return [PT[p.type].n, where, bind, p.hgt!=null&&p.type!=='hood'?fmt0(p.hgt*1000):'—', p.spec||'—']; });
     return [{t:'h2', text:`«${r.name}»: существующие подключения`},
       rows.length?{t:'table', cols:[{title:'Что',w:2},{title:'Где',w:1.3},{title:'Привязка, мм',w:2.4},{title:'Высота, мм',w:1,align:'r'},{title:'Характеристики',w:3}], rows}:{t:'p', text:'В этом помещении подключения не отмечены — отдельного плана нет.', muted:true},
@@ -4621,7 +4635,7 @@ REPORT.register({ id:'eng-gas', title:'Газ', group:'Инженерия', orde
       for(const u of curUnits()){ if(!u.c.gas) continue; const pp=pos.unit(u), lay=S.layout[u.key];
         const d = gp.length&&lay ? Math.min(...gp.map(q=>ptDist(S,bbox(u.c,lay),q))) : null;
         dist.push([String(pp?pp.no:''), shortName(u.c), r.name, gp.length?(d!=null?fmtM(d):'в резерве'):'точки газа нет', d==null?'—':d>S.norms.gasHose+0.01?'продлить газопровод':'гибкая подводка']); } } finally{ S.cur=c; } }
-    const pts=[]; for(const r of S.rooms) r.points.filter(p=>p.type==='gas').forEach(p=>pts.push([r.name, p.side==='floor'?'пол':SIDE_RU[p.side]+' стена', p.side==='floor'?`${fmt0(p.x*1000)} от левой, ${fmt0(p.y*1000)} от верхней`:`${fmt0(p.off*1000)} ${SIDE_FROM[p.side]}`, p.spec||'—']));
+    const pts=[]; for(const r of S.rooms) r.points.filter(p=>p.type==='gas').forEach(p=>pts.push([r.name, p.side==='floor'?'пол':wallTitle(r,p.side), p.side==='floor'?`${fmt0(p.x*1000)} от левой, ${fmt0(p.y*1000)} от верхней`:`${fmt0(p.off*1000)} ${wallFrom(r,p.side)}`, p.spec||'—']));
     return [{t:'h1', text:'Газ'},
       {t:'kv', cols:2, rows:[['Газ', bottle?'сжиженный, баллоны':'природный, сеть'],['Суммарная тепловая мощность', fmt1(sum)+' кВт'],['Максимальный расход', bottle?fmt1(sum/12.8)+' кг/ч':fmt1(sum/9.3)+' м³/ч'],['Гибкая подводка, принято', fmtM(S.norms.gasHose)]]},
       {t:'p', text:'Расход — при одновременной работе всех газовых аппаратов; ориентировочно, для задания газовой службе.'+(unk?` Без учёта ${unk} ${plural(unk,'аппарата','аппаратов','аппаратов')}: у них не указана тепловая мощность.`:''), muted:true},

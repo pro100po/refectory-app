@@ -56,6 +56,20 @@ function Push-Site {
   else { Write-Host "$(Get-Date -Format HH:mm:ss)  PUSH FAILED - see git-log.txt" -ForegroundColor Red }
 }
 
+function Show-Note($text) {
+  # всплывающее уведомление Windows (значок в трее)
+  try {
+    Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+    if ($script:note) { $script:note.Dispose() }
+    $script:note = New-Object System.Windows.Forms.NotifyIcon
+    $script:note.Icon = [System.Drawing.SystemIcons]::Information
+    $script:note.Text = "Claude + GPT"
+    $script:note.Visible = $true
+    $script:note.ShowBalloonTip(15000, "Claude + GPT", $text, [System.Windows.Forms.ToolTipIcon]::Info)
+  } catch { Write-Host "Notification failed: $_" -ForegroundColor Yellow }
+  Write-Host "$(Get-Date -Format HH:mm:ss)  NOTE: $text" -ForegroundColor Cyan
+}
+
 Write-Host "Watcher started. Keep this window open while working with Claude."
 
 # Первый запуск: заводим историю версий с текущей версии приложения.
@@ -70,6 +84,11 @@ if (-not (Test-Path "versions\list.txt")) {
 }
 
 while ($true) {
+  if (Test-Path "notify.txt") {
+    $t = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot "notify.txt"), $utf8)
+    Remove-Item "notify.txt" -ErrorAction SilentlyContinue
+    Show-Note $t.Trim()
+  }
   if (Test-Path "go.flag") {
     Remove-Item "go.flag", "done.flag" -ErrorAction SilentlyContinue
     Write-Host "$(Get-Date -Format HH:mm:ss)  GPT is working on TASK.md ..."

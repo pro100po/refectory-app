@@ -1963,7 +1963,7 @@ function hoods(s, units){
   const hot=units.filter(u=>u.c.hot);
   const rects=hot.filter(u=>L[u.key]&&!covered(u)).map(u=>{ const b=bbox(u.c,L[u.key]);
     let x1=b.x-o, y1=b.y-o, x2=b.x+b.w+o, y2=b.y+b.h+o;
-    for(const w of roomWalls(s.room)) if(w.axis && backDist(s.room,w,b)<=0.4){ if(w.axis==='h'){ if(w.ny>0) y1=w.y1; else y2=w.y1; } else { if(w.nx>0) x1=w.x1; else x2=w.x1; } }   // зонт у стены — до стены
+    for(const w of roomWalls(s.room)){ const sp=spanOnWall(s.room,w,b); if(w.axis && backDist(s.room,w,b)<=0.4 && sp[1]>0 && sp[0]<w.len){ if(w.axis==='h'){ if(w.ny>0) y1=w.y1; else y2=w.y1; } else { if(w.nx>0) x1=w.x1; else x2=w.x1; } } }   // зонт у стены — до стены
     x1=Math.max(0,x1); y1=Math.max(0,y1); x2=Math.min(W,x2); y2=Math.min(D,y2); return {x:x1,y:y1,w:x2-x1,h:y2-y1}; });
   let m=[...rects], ch=true;
   while(ch){ ch=false;
@@ -2860,7 +2860,7 @@ function chainIn(attr,label,val,mid,neg){ return `<label class="${mid?'mid':''}"
 function wallRows(){
   return roomWalls(S.room).map(w=>w.id).map(side=>{ const els=wallEls(S,side); if(!els.length) return '';
     const L=sideLen(S,side), horiz=wallById(S.room,side).axis!=='v', A=horiz?'Слева':'Сверху', B=horiz?'Справа':'Снизу';
-    return `<div class="chain-wall"><h4>${SIDES[side]} стена <span class="num">${fmt0(L*1000)} мм</span></h4>${els.map((o,i)=>{ const pv=els[i-1], nx=els[i+1];
+    return `<div class="chain-wall"><h4>${wallTitle(S.room,side).replace(/^./,c=>c.toUpperCase())} <span class="num">${fmt0(L*1000)} мм</span></h4>${els.map((o,i)=>{ const pv=els[i-1], nx=els[i+1];
       const gb=o.off-(pv?pv.off+pv.w:0), ga=(nx?nx.off:L)-(o.off+o.w);
       const cells=[chainIn(`data-chain="${o.id}:b"`,`${A}, от ${pv?OP_GEN[pv.type]:'угла'}`,gb,0,gb<-0.001),
         chainIn(`data-chain="${o.id}:w"`,`Ширина ${o.type==='prot'&&o.niche?'ниши':OP_GEN[o.type]}`,o.w,1),
@@ -2871,7 +2871,7 @@ function wallRows(){
 }
 function pointRows(){
   const groups=[...roomWalls(S.room).map(w=>w.id).map(sd=>[sd, S.points.filter(p=>p.side===sd).sort((a,b)=>a.off-b.off)]), ['floor', S.points.filter(p=>p.side==='floor')]];
-  return groups.filter(g=>g[1].length).map(([sd,ps])=>`<div class="chain-wall"><h4>${sd==='floor'?'В полу или на потолке':`${SIDES[sd]} стена <span class="num">${fmt0(sideLen(S,sd)*1000)} мм</span>`}</h4>${ps.map(pointRow).join('')}</div>`).join('')
+  return groups.filter(g=>g[1].length).map(([sd,ps])=>`<div class="chain-wall"><h4>${sd==='floor'?'В полу или на потолке':`${wallTitle(S.room,sd).replace(/^./,c=>c.toUpperCase())} <span class="num">${fmt0(sideLen(S,sd)*1000)} мм</span>`}</h4>${ps.map(pointRow).join('')}</div>`).join('')
     + '<p class="hint" style="margin-top:6px">Все размеры в миллиметрах. Привязка считается от ближайшего угла или соседней точки на той же стене — так же, как на оранжевой размерной линии.</p>';
 }
 function pointRow(p){
@@ -2892,7 +2892,7 @@ let fitPalT=0; window.addEventListener('resize',()=>{ clearTimeout(fitPalT); fit
 function zoomCtl(f){ return typeof planBarHtml==='function'?planBarHtml(f||'plan'):''; }
 function roomPanel(){
   if(!selRoom) return `<p class="hint" style="margin-top:8px">Элементы на плане можно перетаскивать. Нажмите на элемент или на «настроить», чтобы открыть его настройки.</p>`;
-  const sideOpts=(cur,floor)=>Object.entries(SIDES).map(([k,v])=>`<option value="${k}" ${cur===k?'selected':''}>${v} стена</option>`).join('')+(floor?`<option value="floor" ${cur==='floor'?'selected':''}>В полу или на потолке</option>`:'');
+  const sideOpts=(cur,floor)=>roomWalls(S.room).map(w=>w.id).map(id=>`<option value="${id}" ${cur===id?'selected':''}>${wallTitle(S.room,id).replace(/^./,c=>c.toUpperCase())}</option>`).join('')+(floor?`<option value="floor" ${cur==='floor'?'selected':''}>В полу или на потолке</option>`:'');
   const btns=`<div class="btns" style="margin-top:12px"><button class="btn danger" type="button" id="del-room">Удалить</button><button class="btn" type="button" id="desel">Готово</button></div>`;
   if(selRoom.k==='op'){ const o=S.openings.find(x=>x.id===selRoom.id); if(!o) return '';
     return `<div class="panel" id="rpanel" data-fs="plan" style="margin-top:10px"><h3>${opName(o)}</h3><div class="fields">
@@ -5947,7 +5947,7 @@ function planSheetHtml(u){
   let bindTxt='';
   try{
     if(pl&&pl.kind==='wall'){ const rg=alongRange(u,S.room,S.layout,pl.s), horiz=wallById(S.room,pl.s).axis!=='v';
-      bindTxt=`${SIDES[pl.s]} стена: от ${horiz?'левого':'верхнего'} угла ${fmt0(rg.a*1000)} мм${pl.d>0.004?`, отступ от стены ${fmt0(pl.d*1000)} мм`:''}`; }
+      bindTxt=`${wallTitle(S.room,pl.s).replace(/^./,c=>c.toUpperCase())}: от ${horiz?'левого':'верхнего'} угла ${fmt0(rg.a*1000)} мм${pl.d>0.004?`, отступ от стены ${fmt0(pl.d*1000)} мм`:''}`; }
     else if(pl){ const isl=islandOf({b:pl.b,u},S.room);
       bindTxt=`отдельно стоящее: ${fmt0(isl.h.d*1000)} мм от ${wallById(S.room,isl.h.s).nx>0?'левой':'правой'} стены, ${fmt0(isl.v.d*1000)} мм от ${wallById(S.room,isl.v.s).ny>0?'верхней':'нижней'}`; }
   }catch(e){}

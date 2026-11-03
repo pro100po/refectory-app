@@ -1,0 +1,7 @@
+﻿
+warning: in the working copy of 'versions.html', LF will be replaced by CRLF the next time Git touches it
+[main c4538d0] Пункт аудита 30.2, исправление: глубина выступа, зонта и отступа аппарата — по реальному месту у стены сложной формы
+ 5 files changed, 6168 insertions(+), 6 deletions(-)
+ create mode 100644 versions/2026-11-03_1624.html
+To https://github.com/pro100po/refectory-app.git
+   00ce983..c4538d0  main -> main

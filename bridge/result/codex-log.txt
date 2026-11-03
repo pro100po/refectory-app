@@ -1,0 +1,367 @@
+OpenAI Codex v0.166.0
+--------
+workdir: C:\Users\pro10\refectory-app
+model: gpt-6-astra
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a1a189-a7aa-7690-aad5-3cc269b56ae2
+--------
+user
+Execute the task described in TASK.md. Follow the rules in AGENTS.md strictly.
+codex
+Прочитаю `TASK.md` и `AGENTS.md`, затем внесу только указанные изменения в `index.html`.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -Raw AGENTS.md; Get-Content -Raw TASK.md' in C:\Users\pro10\refectory-app
+ succeeded in 984ms:
+# ÐŸÑ€Ð°Ð²Ð¸Ð»Ð° Ð´Ð»Ñ Ð¸ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»Ñ (Codex / GPT)
+
+Ð¢Ñ‹ â€” Ð¸ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒ. Ð—Ð°Ð´Ð°Ñ‡Ð¸ ÑÑ‚Ð°Ð²Ð¸Ñ‚ Ð¸ Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÐµÑ‚ Ð´Ñ€ÑƒÐ³Ð¾Ð¹ Ð°Ð³ÐµÐ½Ñ‚; Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ Ð²ÑÐµÐ³Ð´Ð° Ð»ÐµÐ¶Ð¸Ñ‚ Ð² `TASK.md`.
+
+1. Ð”ÐµÐ»Ð°Ð¹ **Ñ‚Ð¾Ð»ÑŒÐºÐ¾** Ñ‚Ð¾, Ñ‡Ñ‚Ð¾ Ð½Ð°Ð¿Ð¸ÑÐ°Ð½Ð¾ Ð² `TASK.md`. ÐÐ¸ÐºÐ°ÐºÐ¸Ñ… Â«Ð·Ð°Ð¾Ð´Ð½Ð¾ ÑƒÐ»ÑƒÑ‡ÑˆÑƒÂ».
+2. ÐÐµ Ð¿ÐµÑ€ÐµÑ„Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐ¹ ÐºÐ¾Ð´, Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹ Ð¾Ñ‚ÑÑ‚ÑƒÐ¿Ñ‹, ÐºÐ°Ð²Ñ‹Ñ‡ÐºÐ¸, Ð¿Ð¾Ñ€ÑÐ´Ð¾Ðº ÑÑ‚Ñ€Ð¾Ðº Ð²Ð½Ðµ Ð·Ð¾Ð½Ñ‹ Ð·Ð°Ð´Ð°Ð½Ð¸Ñ.
+3. ÐÐµ Ñ‚Ñ€Ð¾Ð³Ð°Ð¹ ÑÐ¾ÑÐµÐ´Ð½Ð¸Ðµ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸, ÑÑ‚Ð¸Ð»Ð¸ Ð¸ Ñ‚ÐµÐºÑÑ‚Ñ‹, ÐµÑÐ»Ð¸ Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ ÑÑ‚Ð¾Ð³Ð¾ Ð½Ðµ Ñ‚Ñ€ÐµÐ±ÑƒÐµÑ‚.
+4. ÐÐµ ÑƒÐ´Ð°Ð»ÑÐ¹ ÐºÐ¾Ð´, ÐµÑÐ»Ð¸ ÑƒÐ´Ð°Ð»ÐµÐ½Ð¸Ðµ Ð¿Ñ€ÑÐ¼Ð¾ Ð½Ðµ ÑƒÐºÐ°Ð·Ð°Ð½Ð¾.
+5. ÐÐµ ÑÐ¾Ð·Ð´Ð°Ð²Ð°Ð¹ Ð½Ð¾Ð²Ñ‹Ðµ Ñ„Ð°Ð¹Ð»Ñ‹, ÐºÑ€Ð¾Ð¼Ðµ ÑƒÐ¿Ð¾Ð¼ÑÐ½ÑƒÑ‚Ñ‹Ñ… Ð² Ð·Ð°Ð´Ð°Ð½Ð¸Ð¸. ÐŸÑ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ðµ â€” Ð¾Ð´Ð¸Ð½ Ñ„Ð°Ð¹Ð» `index.html`, Ð²ÐµÑÑŒ ÐºÐ¾Ð´ Ð¾ÑÑ‚Ð°Ñ‘Ñ‚ÑÑ Ð² Ð½Ñ‘Ð¼.
+6. ÐÐµ Ð´ÐµÐ»Ð°Ð¹ `git commit`, `git reset`, `git checkout` â€” ÐºÐ¾Ð¼Ð¼Ð¸Ñ‚Ñ‹ Ð´ÐµÐ»Ð°ÐµÑ‚ Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÑŽÑ‰Ð¸Ð¹.
+7. Ð˜Ð½Ñ‚ÐµÑ€Ñ„ÐµÐ¹Ñ Ð¸ Ñ‚ÐµÐºÑÑ‚Ñ‹ â€” Ð½Ð° Ñ€ÑƒÑÑÐºÐ¾Ð¼, Ð² ÑÑ‚Ð¸Ð»Ðµ ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÑŽÑ‰Ð¸Ñ….
+8. Ð•ÑÐ»Ð¸ Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ Ð½ÐµÑÑÐ½Ð¾ Ð¸Ð»Ð¸ Ð¿Ñ€Ð¾Ñ‚Ð¸Ð²Ð¾Ñ€ÐµÑ‡Ð¸Ñ‚ ÐºÐ¾Ð´Ñƒ â€” Ð½Ðµ ÑƒÐ³Ð°Ð´Ñ‹Ð²Ð°Ð¹: Ð½Ð¸Ñ‡ÐµÐ³Ð¾ Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹ Ð¸ Ð¾Ð¿Ð¸ÑˆÐ¸ Ð¿Ñ€Ð¾Ð±Ð»ÐµÐ¼Ñƒ Ð² ÐºÐ¾Ð½Ñ†Ðµ Ð¾Ñ‚Ð²ÐµÑ‚Ð°.
+9. Ð’ ÐºÐ¾Ð½Ñ†Ðµ Ð¾Ñ‚Ð²ÐµÑ‚Ð° ÐºÐ¾Ñ€Ð¾Ñ‚ÐºÐ¾ Ð¿ÐµÑ€ÐµÑ‡Ð¸ÑÐ»Ð¸: ÐºÐ°ÐºÐ¸Ðµ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸/Ñ„Ñ€Ð°Ð³Ð¼ÐµÐ½Ñ‚Ñ‹ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ñ‹ Ð¸ Ð·Ð°Ñ‡ÐµÐ¼.
+10. ÐŸÐ°Ð¿ÐºÑƒ `versions/` Ð¸ Ñ„Ð°Ð¹Ð» `versions.html` Ð½Ðµ Ð¾Ñ‚ÐºÑ€Ñ‹Ð²Ð°Ð¹, Ð½Ðµ Ð¸Ñ‰Ð¸ Ð² Ð½Ð¸Ñ… Ð¸ Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹ â€” ÑÑ‚Ð¾ Ð°Ñ€Ñ…Ð¸Ð² Ð¿Ñ€Ð¾ÑˆÐ»Ñ‹Ñ… Ð²ÐµÑ€ÑÐ¸Ð¹. Ð Ð°Ð±Ð¾Ñ‚Ð°Ð¹ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ñ `index.html`.
+
+# ÐŸÑƒÐ½ÐºÑ‚ Ð°ÑƒÐ´Ð¸Ñ‚Ð° 30.2, Ð¸ÑÐ¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ: ÑÑ‚ÐµÐ½Ñ‹ ÑÐ»Ð¾Ð¶Ð½Ð¾Ð¹ Ñ„Ð¾Ñ€Ð¼Ñ‹ Ð² ÑÐ¿Ð¸ÑÐºÐ°Ñ… Ð¸ Ð·Ð¾Ð½Ñ‚ Ñƒ Ð²Ð½ÑƒÑ‚Ñ€ÐµÐ½Ð½ÐµÐ³Ð¾ ÑƒÐ³Ð»Ð°
+
+Ð¦ÐµÐ»ÑŒ: Ñƒ Ð¿Ð¾Ð¼ÐµÑ‰ÐµÐ½Ð¸Ð¹ Ð“-, ÐŸ-, Ð¢-Ð¾Ð±Ñ€Ð°Ð·Ð½Ð¾Ð¹ Ñ„Ð¾Ñ€Ð¼Ñ‹ ÑÑ‚ÐµÐ½Ñ‹ Ð² ÑÐ¿Ð¸ÑÐºÐ°Ñ… Ð¸ Ð¿Ð¾Ð»ÑÑ… Ð½Ð°Ð·Ñ‹Ð²Ð°ÑŽÑ‚ÑÑ Ð¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ð¾, Ð»ÑŽÐ±ÑƒÑŽ ÑÑ‚ÐµÐ½Ñƒ ÐºÐ¾Ð½Ñ‚ÑƒÑ€Ð° Ð¼Ð¾Ð¶Ð½Ð¾ Ð²Ñ‹Ð±Ñ€Ð°Ñ‚ÑŒ, Ð·Ð¾Ð½Ñ‚ Ð½Ðµ Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ Ð¾Ñ‚Ñ€Ð¸Ñ†Ð°Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ð¹ Ñ€Ð°Ð·Ð¼ÐµÑ€.
+
+ÐŸÑ€Ð°Ð²ÐºÐ¸ â€” Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð² `index.html`, Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð² Ð¿ÐµÑ€ÐµÑ‡Ð¸ÑÐ»ÐµÐ½Ð½Ñ‹Ñ… Ð¼ÐµÑÑ‚Ð°Ñ….
+
+## 1. ÐŸÐ¾Ð´Ð¿Ð¸ÑÐ¸ ÑÑ‚ÐµÐ½ Ð²Ð¼ÐµÑÑ‚Ð¾ Â«undefined ÑÑ‚ÐµÐ½Ð°Â»
+
+Ð¡ÐµÐ¹Ñ‡Ð°Ñ Ð¿Ð¾Ð´Ð¿Ð¸ÑÑŒ Ð³Ñ€ÑƒÐ¿Ð¿Ñ‹ Ð±ÐµÑ€Ñ‘Ñ‚ÑÑ Ð¸Ð· `SIDES[side]` (Ñ‚Ð°Ð¼ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ `t`, `r`, `b`, `l`), Ð´Ð»Ñ ÑÑ‚ÐµÐ½ ÐºÐ¾Ð½Ñ‚ÑƒÑ€Ð° Ñ Ð´Ñ€ÑƒÐ³Ð¸Ð¼Ð¸ id Ð²Ñ‹Ñ…Ð¾Ð´Ð¸Ñ‚ Â«undefined ÑÑ‚ÐµÐ½Ð°Â».
+
+Ð—Ð°Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ Ð¿Ð¾Ð´Ð¿Ð¸ÑÑŒ Ð½Ð° Ð½Ð°Ð·Ð²Ð°Ð½Ð¸Ðµ Ð¸Ð· ÑÐ»Ð¾Ñ ÑÑ‚ÐµÐ½: `wallTitle(S.room, id)` Ñ Ð·Ð°Ð³Ð»Ð°Ð²Ð½Ð¾Ð¹ Ð¿ÐµÑ€Ð²Ð¾Ð¹ Ð±ÑƒÐºÐ²Ð¾Ð¹ (Ð½Ð°Ð¿Ñ€Ð¸Ð¼ÐµÑ€ `const t=wallTitle(S.room,side); t[0].toUpperCase()+t.slice(1)`). Ð”Ð»Ñ Ð¿Ñ€ÑÐ¼Ð¾ÑƒÐ³Ð¾Ð»ÑŒÐ½Ð¸ÐºÐ° Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚ ÑÐ¾Ð²Ð¿Ð°Ð´Ñ‘Ñ‚ Ñ Ð¿Ñ€ÐµÐ¶Ð½Ð¸Ð¼ (Â«Ð’ÐµÑ€Ñ…Ð½ÑÑ ÑÑ‚ÐµÐ½Ð°Â» Ð¸ Ñ‚. Ð´.), Ð´Ð»Ñ ÐºÐ¾Ð½Ñ‚ÑƒÑ€Ð° Ð±ÑƒÐ´ÐµÑ‚ Â«Ð¡Ñ‚ÐµÐ½Ð° 3Â».
+
+ÐœÐµÑÑ‚Ð°:
+- `function wallRows()` â€” Ð·Ð°Ð³Ð¾Ð»Ð¾Ð²Ð¾Ðº `<h4>${SIDES[side]} ÑÑ‚ÐµÐ½Ð° ...`;
+- `function pointRows()` â€” Ð·Ð°Ð³Ð¾Ð»Ð¾Ð²Ð¾Ðº `<h4>... ${SIDES[sd]} ÑÑ‚ÐµÐ½Ð° ...` (Ð²ÐµÑ‚ÐºÐ° Ð½Ðµ Ð´Ð»Ñ `floor`);
+- `function planSheetHtml(u)` â€” ÑÑ‚Ñ€Ð¾ÐºÐ° `bindTxt=\`${SIDES[pl.s]} ÑÑ‚ÐµÐ½Ð°: Ð¾Ñ‚ ...` (Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð½Ð°Ð·Ð²Ð°Ð½Ð¸Ðµ ÑÑ‚ÐµÐ½Ñ‹; Ð¾ÑÑ‚Ð°Ð»ÑŒÐ½Ð¾Ð¹ Ñ‚ÐµÐºÑÑ‚ ÑÑ‚Ñ€Ð¾ÐºÐ¸ Ð½Ðµ Ð¼ÐµÐ½ÑÑ‚ÑŒ).
+
+## 2. Ð¡Ð¿Ð¸ÑÐ¾Ðº Â«Ð¡Ñ‚ÐµÐ½Ð°Â» / Â«Ð“Ð´ÐµÂ» Ð² Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ°Ñ… Ð¿Ñ€Ð¾Ñ‘Ð¼Ð° Ð¸ Ñ‚Ð¾Ñ‡ÐºÐ¸
+
+`function roomPanel()`: `const sideOpts=(cur,floor)=>Object.entries(SIDES).map(...)` ÑÑ‚Ñ€Ð¾Ð¸Ñ‚ Ð²Ð°Ñ€Ð¸Ð°Ð½Ñ‚Ñ‹ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¸Ð· Ñ‡ÐµÑ‚Ñ‹Ñ€Ñ‘Ñ… ÑÑ‚Ð¾Ñ€Ð¾Ð½.
+
+Ð¡Ð´ÐµÐ»Ð°Ñ‚ÑŒ Ð²Ð°Ñ€Ð¸Ð°Ð½Ñ‚Ñ‹ Ð¸Ð· ÑÑ‚ÐµÐ½ Ñ‚ÐµÐºÑƒÑ‰ÐµÐ³Ð¾ Ð¿Ð¾Ð¼ÐµÑ‰ÐµÐ½Ð¸Ñ: `roomWalls(S.room).map(w=>w.id)`, Ð¿Ð¾Ð´Ð¿Ð¸ÑÑŒ â€” Ñ‚Ð¾ Ð¶Ðµ Ð½Ð°Ð·Ð²Ð°Ð½Ð¸Ðµ, Ñ‡Ñ‚Ð¾ Ð² Ð¿. 1 (`wallTitle` Ñ Ð·Ð°Ð³Ð»Ð°Ð²Ð½Ð¾Ð¹ Ð±ÑƒÐºÐ²Ñ‹, Ð±ÐµÐ· Ð´Ð¾Ð±Ð°Ð²Ð»ÐµÐ½Ð¸Ñ ÑÐ»Ð¾Ð²Ð° Â«ÑÑ‚ÐµÐ½Ð°Â» â€” Ð¾Ð½Ð¾ ÑƒÐ¶Ðµ Ð² Ð½Ð°Ð·Ð²Ð°Ð½Ð¸Ð¸). Ð—Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ `value` â€” id ÑÑ‚ÐµÐ½Ñ‹. Ð’Ñ‹Ð±Ñ€Ð°Ð½Ð½Ð¾Ð¹ Ð¾ÑÑ‚Ð°Ñ‘Ñ‚ÑÑ Ñ‚ÐµÐºÑƒÑ‰Ð°Ñ ÑÑ‚ÐµÐ½Ð° (`cur===id`). Ð’Ð°Ñ€Ð¸Ð°Ð½Ñ‚ Â«Ð’ Ð¿Ð¾Ð»Ñƒ Ð¸Ð»Ð¸ Ð½Ð° Ð¿Ð¾Ñ‚Ð¾Ð»ÐºÐµÂ» Ð¿Ñ€Ð¸ `floor` â€” ÐºÐ°Ðº ÑÐµÐ¹Ñ‡Ð°Ñ.
+
+ÐžÐ±Ñ€Ð°Ð±Ð¾Ñ‚Ñ‡Ð¸ÐºÐ¸ `[data-of]` Ð¸ `[data-pf]` (`o.side=el.value`, `setPtSide(p, el.value)`) Ð½Ðµ Ð¼ÐµÐ½ÑÑ‚ÑŒ.
+
+## 3. Ð—Ð¾Ð½Ñ‚ Ñƒ Ð²Ð½ÑƒÑ‚Ñ€ÐµÐ½Ð½ÐµÐ³Ð¾ ÑƒÐ³Ð»Ð° (`function hoods(s, units)`)
+
+Ð¡Ñ‚Ñ€Ð¾ÐºÐ°:
+```
+for(const w of roomWalls(s.room)) if(w.axis && backDist(s.room,w,b)<=0.4){ ...
+```
+Ð¿Ñ€Ð¸Ð¶Ð¸Ð¼Ð°ÐµÑ‚ Ð·Ð¾Ð½Ñ‚ Ðº Ð»ÑŽÐ±Ð¾Ð¹ ÑÑ‚ÐµÐ½Ðµ Ð±Ð»Ð¸Ð¶Ðµ 0,4 Ð¼, Ð´Ð°Ð¶Ðµ ÐµÑÐ»Ð¸ Ð°Ð¿Ð¿Ð°Ñ€Ð°Ñ‚ ÑÑ‚Ð¾Ð¸Ñ‚ Ð½Ðµ Ð²Ð´Ð¾Ð»ÑŒ Ð½ÐµÑ‘ (Ñƒ Ð²Ð½ÑƒÑ‚Ñ€ÐµÐ½Ð½ÐµÐ³Ð¾ ÑƒÐ³Ð»Ð° Ð“-Ñ„Ð¾Ñ€Ð¼Ñ‹ Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ÑÑ ÑˆÐ¸Ñ€Ð¸Ð½Ð° âˆ’1,45 Ð¼).
+
+Ð”Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ ÑƒÑÐ»Ð¾Ð²Ð¸Ðµ: Ð°Ð¿Ð¿Ð°Ñ€Ð°Ñ‚ ÑÑ‚Ð¾Ð¸Ñ‚ Ð²Ð´Ð¾Ð»ÑŒ ÑÑ‚Ð¾Ð¹ ÑÑ‚ÐµÐ½Ñ‹ â€” Ð¿Ñ€Ð¾ÐµÐºÑ†Ð¸Ñ `spanOnWall(s.room,w,b)` Ð¿ÐµÑ€ÐµÐºÑ€Ñ‹Ð²Ð°ÐµÑ‚ ÑÑ‚ÐµÐ½Ñƒ: `sp[1]>0 && sp[0]<w.len`. ÐžÑÑ‚Ð°Ð»ÑŒÐ½ÑƒÑŽ Ð»Ð¾Ð³Ð¸ÐºÑƒ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸ Ð½Ðµ Ð¼ÐµÐ½ÑÑ‚ÑŒ.
+
+## Ð§Ñ‚Ð¾ ÐÐ• Ñ‚Ñ€Ð¾Ð³Ð°Ñ‚ÑŒ
+- Ð¡Ð»Ð¾Ð²Ð°Ñ€ÑŒ `SIDES` Ð¸ Ð²ÑÐµ Ð¾ÑÑ‚Ð°Ð»ÑŒÐ½Ñ‹Ðµ Ð¼ÐµÑÑ‚Ð°, Ð³Ð´Ðµ Ð¾Ð½ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÑ‚ÑÑ.
+- Ð¡Ð»Ð¾Ð¹ ÑÑ‚ÐµÐ½ (`roomWalls`, `wallById`, `wallTitle` Ð¸ Ñ‚. Ð´.), Ñ€Ð°ÑÑÑ‚Ð°Ð½Ð¾Ð²ÐºÑƒ, Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ¸ Ð¿Ð»Ð°Ð½Ð°, Ð¿ÐµÑ‡Ð°Ñ‚ÑŒ.
+- Ð’Ñ‘Ñ€ÑÑ‚ÐºÑƒ Ð¸ ÑÑ‚Ð¸Ð»Ð¸.
+
+## ÐšÑ€Ð¸Ñ‚ÐµÑ€Ð¸Ð¹ Ð³Ð¾Ñ‚Ð¾Ð²Ð½Ð¾ÑÑ‚Ð¸
+- ÐŸÑ€Ð¸Ð¼ÐµÑ€ â†’ Â«ÐŸÐ¾Ð¼ÐµÑ‰ÐµÐ½Ð¸ÑÂ» â†’ Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸ ÐºÑƒÑ…Ð½Ð¸ â†’ Â«Ð¤Ð¾Ñ€Ð¼Ð°Â» â†’ Â«Ð“Â». Ð”Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ Ð¾ÐºÐ½Ð¾ Ð½Ð° ÑÑ‚ÐµÐ½Ñƒ Ð²Ñ‹Ñ€ÐµÐ·Ð°. Ð’ Ñ€Ð°Ð·Ð´ÐµÐ»Ðµ Â«Ð¡Ñ‚ÐµÐ½Ñ‹Â» Ð·Ð°Ð³Ð¾Ð»Ð¾Ð²Ð¾Ðº Ð³Ñ€ÑƒÐ¿Ð¿Ñ‹ â€” Â«Ð¡Ñ‚ÐµÐ½Ð° N â€¦Â», Ð½Ðµ Â«undefined ÑÑ‚ÐµÐ½Ð°Â».
+- Ð’ Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ°Ñ… ÑÑ‚Ð¾Ð³Ð¾ Ð¾ÐºÐ½Ð° Ð¿Ð¾Ð»Ðµ Â«Ð¡Ñ‚ÐµÐ½Ð°Â» Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ Ð¸Ð¼ÐµÐ½Ð½Ð¾ ÑÑ‚Ñƒ ÑÑ‚ÐµÐ½Ñƒ Ð¸ ÑÐ¾Ð´ÐµÑ€Ð¶Ð¸Ñ‚ Ð²ÑÐµ 6 ÑÑ‚ÐµÐ½; Ð²Ñ‹Ð±Ð¾Ñ€ Ð´Ñ€ÑƒÐ³Ð¾Ð¹ ÑÑ‚ÐµÐ½Ñ‹ Ð¿ÐµÑ€ÐµÐ½Ð¾ÑÐ¸Ñ‚ Ð¾ÐºÐ½Ð¾.
+- Ð£ Ð¿Ñ€ÑÐ¼Ð¾ÑƒÐ³Ð¾Ð»ÑŒÐ½Ð¾Ð³Ð¾ Ð¿Ð¾Ð¼ÐµÑ‰ÐµÐ½Ð¸Ñ Ð¿Ð¾Ð´Ð¿Ð¸ÑÐ¸ Ð¸ ÑÐ¿Ð¸ÑÐºÐ¸ Ð¿Ñ€ÐµÐ¶Ð½Ð¸Ðµ: Â«Ð’ÐµÑ€Ñ…Ð½ÑÑ ÑÑ‚ÐµÐ½Ð°Â», Â«ÐŸÑ€Ð°Ð²Ð°Ñ ÑÑ‚ÐµÐ½Ð°Â» Ð¸ Ñ‚. Ð´.
+- Ð¨Ð°Ð³ Â«ÐŸÐ»Ð°Ð½Â» Ñ Ð“-Ð¾Ð±Ñ€Ð°Ð·Ð½Ð¾Ð¹ ÐºÑƒÑ…Ð½ÐµÐ¹: Ð² ÐºÐ¾Ð½ÑÐ¾Ð»Ð¸ Ð½ÐµÑ‚ Ð¾ÑˆÐ¸Ð±ÐºÐ¸ `<rect> attribute width: A negative value`.
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Encoding UTF8 -Raw TASK.md; rg -n 'function (wallRows|pointRows|planSheetHtml|roomPanel|hoods)|const sideOpts|bindTxt=|SIDES\\[side\\]|SIDES\\[sd\\]|backDist\\(s.room,w,b\\)' index.html" in C:\Users\pro10\refectory-app
+ succeeded in 1675ms:
+# Пункт аудита 30.2, исправление: стены сложной формы в списках и зонт у внутреннего угла
+
+Цель: у помещений Г-, П-, Т-образной формы стены в списках и полях называются правильно, любую стену контура можно выбрать, зонт не получает отрицательный размер.
+
+Правки — только в `index.html`, только в перечисленных местах.
+
+## 1. Подписи стен вместо «undefined стена»
+
+Сейчас подпись группы берётся из `SIDES[side]` (там только `t`, `r`, `b`, `l`), для стен контура с другими id выходит «undefined стена».
+
+Заменить подпись на название из слоя стен: `wallTitle(S.room, id)` с заглавной первой буквой (например `const t=wallTitle(S.room,side); t[0].toUpperCase()+t.slice(1)`). Для прямоугольника результат совпадёт с прежним («Верхняя стена» и т. д.), для контура будет «Стена 3».
+
+Места:
+- `function wallRows()` — заголовок `<h4>${SIDES[side]} стена ...`;
+- `function pointRows()` — заголовок `<h4>... ${SIDES[sd]} стена ...` (ветка не для `floor`);
+- `function planSheetHtml(u)` — строка `bindTxt=\`${SIDES[pl.s]} стена: от ...` (только название стены; остальной текст строки не менять).
+
+## 2. Список «Стена» / «Где» в настройках проёма и точки
+
+`function roomPanel()`: `const sideOpts=(cur,floor)=>Object.entries(SIDES).map(...)` строит варианты только из четырёх сторон.
+
+Сделать варианты из стен текущего помещения: `roomWalls(S.room).map(w=>w.id)`, подпись — то же название, что в п. 1 (`wallTitle` с заглавной буквы, без добавления слова «стена» — оно уже в названии). Значение `value` — id стены. Выбранной остаётся текущая стена (`cur===id`). Вариант «В полу или на потолке» при `floor` — как сейчас.
+
+Обработчики `[data-of]` и `[data-pf]` (`o.side=el.value`, `setPtSide(p, el.value)`) не менять.
+
+## 3. Зонт у внутреннего угла (`function hoods(s, units)`)
+
+Строка:
+```
+for(const w of roomWalls(s.room)) if(w.axis && backDist(s.room,w,b)<=0.4){ ...
+```
+прижимает зонт к любой стене ближе 0,4 м, даже если аппарат стоит не вдоль неё (у внутреннего угла Г-формы получается ширина −1,45 м).
+
+Добавить условие: аппарат стоит вдоль этой стены — проекция `spanOnWall(s.room,w,b)` перекрывает стену: `sp[1]>0 && sp[0]<w.len`. Остальную логику функции не менять.
+
+## Что НЕ трогать
+- Словарь `SIDES` и все остальные места, где он используется.
+- Слой стен (`roomWalls`, `wallById`, `wallTitle` и т. д.), расстановку, проверки плана, печать.
+- Вёрстку и стили.
+
+## Критерий готовности
+- Пример → «Помещения» → настройки кухни → «Форма» → «Г». Добавить окно на стену выреза. В разделе «Стены» заголовок группы — «Стена N …», не «undefined стена».
+- В настройках этого окна поле «Стена» показывает именно эту стену и содержит все 6 стен; выбор другой стены переносит окно.
+- У прямоугольного помещения подписи и списки прежние: «Верхняя стена», «Правая стена» и т. д.
+- Шаг «План» с Г-образной кухней: в консоли нет ошибки `<rect> attribute width: A negative value`.
+
+1959:function hoods(s, units){
+1966:    for(const w of roomWalls(s.room)) if(w.axis && backDist(s.room,w,b)<=0.4){ if(w.axis==='h'){ if(w.ny>0) y1=w.y1; else y2=w.y1; } else { if(w.nx>0) x1=w.x1; else x2=w.x1; } }   // зонт у стены — до стены
+2179:function hoodsAll(){ const hs=S.rooms.map(r=>hoods(roomGeom(S,r), roomUnits(r.id)));
+2860:function wallRows(){
+2863:    return `<div class="chain-wall"><h4>${SIDES[side]} стена <span class="num">${fmt0(L*1000)} мм</span></h4>${els.map((o,i)=>{ const pv=els[i-1], nx=els[i+1];
+2872:function pointRows(){
+2874:  return groups.filter(g=>g[1].length).map(([sd,ps])=>`<div class="chain-wall"><h4>${sd==='floor'?'В полу или на потолке':`${SIDES[sd]} стена <span class="num">${fmt0(sideLen(S,sd)*1000)} мм</span>`}</h4>${ps.map(pointRow).join('')}</div>`).join('')
+2893:function roomPanel(){
+2895:  const sideOpts=(cur,floor)=>Object.entries(SIDES).map(([k,v])=>`<option value="${k}" ${cur===k?'selected':''}>${v} стена</option>`).join('')+(floor?`<option value="floor" ${cur==='floor'?'selected':''}>В полу или на потолке</option>`:'');
+5944:function planSheetHtml(u){
+5947:  let bindTxt='';
+5950:      bindTxt=`${SIDES[pl.s]} стена: от ${horiz?'левого':'верхнего'} угла ${fmt0(rg.a*1000)} мм${pl.d>0.004?`, отступ от стены ${fmt0(pl.d*1000)} мм`:''}`; }
+5952:      bindTxt=`отдельно стоящее: ${fmt0(isl.h.d*1000)} мм от ${wallById(S.room,isl.h.s).nx>0?'левой':'правой'} стены, ${fmt0(isl.v.d*1000)} мм от ${wallById(S.room,isl.v.s).ny>0?'верхней':'нижней'}`; }
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$a=Get-Content -Encoding UTF8 index.html; $a[1958..1974]; $a[2859..2877]; $a[5943..5954]; rg -n '"'function (wallTitle|roomWalls|spanOnWall|backDist)|<script|</script>' index.html; Get-Content -Encoding UTF8 AGENTS.md; git diff --numstat -- index.html; node --version" in C:\Users\pro10\refectory-app
+ succeeded in 1521ms:
+function hoods(s, units){
+  const L=s.layout, o=s.norms.hoodOver, W=s.room.w, D=s.room.d;
+  const ex=s.points.filter(p=>p.type==='hood').map(p=>ptRect(s,p));
+  const covered=u=>{ if(!L[u.key]) return false; const b=bbox(u.c,L[u.key]), cx=b.x+b.w/2, cy=b.y+b.h/2; return ex.some(r=>cx>=r.x&&cx<=r.x+r.w&&cy>=r.y&&cy<=r.y+r.h); };
+  const hot=units.filter(u=>u.c.hot);
+  const rects=hot.filter(u=>L[u.key]&&!covered(u)).map(u=>{ const b=bbox(u.c,L[u.key]);
+    let x1=b.x-o, y1=b.y-o, x2=b.x+b.w+o, y2=b.y+b.h+o;
+    for(const w of roomWalls(s.room)) if(w.axis && backDist(s.room,w,b)<=0.4){ if(w.axis==='h'){ if(w.ny>0) y1=w.y1; else y2=w.y1; } else { if(w.nx>0) x1=w.x1; else x2=w.x1; } }   // зонт у стены — до стены
+    x1=Math.max(0,x1); y1=Math.max(0,y1); x2=Math.min(W,x2); y2=Math.min(D,y2); return {x:x1,y:y1,w:x2-x1,h:y2-y1}; });
+  let m=[...rects], ch=true;
+  while(ch){ ch=false;
+    out: for(let i=0;i<m.length;i++) for(let j=i+1;j<m.length;j++){ if(gap(m[i],m[j])<0.05){ const a=m[i],b=m[j],x=Math.min(a.x,b.x),y=Math.min(a.y,b.y);
+      m[i]={x,y,w:Math.max(a.x+a.w,b.x+b.w)-x,h:Math.max(a.y+a.h,b.y+b.h)-y}; m.splice(j,1); ch=true; break out; } } }
+  const notPl=hot.filter(u=>!L[u.key]);
+  const extra=notPl.reduce((a,u)=>a+(u.c.w+2*o)*(u.c.d+o),0), extraLen=notPl.reduce((a,u)=>a+u.c.w+2*o,0);
+  const list=m.map(r=>({...r, area:r.w*r.h, len:Math.max(r.w,r.h)}));
+  const area=list.reduce((a,r)=>a+r.area,0)+extra, len=list.reduce((a,r)=>a+r.len,0)+extraLen;
+function wallRows(){
+  return roomWalls(S.room).map(w=>w.id).map(side=>{ const els=wallEls(S,side); if(!els.length) return '';
+    const L=sideLen(S,side), horiz=wallById(S.room,side).axis!=='v', A=horiz?'Слева':'Сверху', B=horiz?'Справа':'Снизу';
+    return `<div class="chain-wall"><h4>${SIDES[side]} стена <span class="num">${fmt0(L*1000)} мм</span></h4>${els.map((o,i)=>{ const pv=els[i-1], nx=els[i+1];
+      const gb=o.off-(pv?pv.off+pv.w:0), ga=(nx?nx.off:L)-(o.off+o.w);
+      const cells=[chainIn(`data-chain="${o.id}:b"`,`${A}, от ${pv?OP_GEN[pv.type]:'угла'}`,gb,0,gb<-0.001),
+        chainIn(`data-chain="${o.id}:w"`,`Ширина ${o.type==='prot'&&o.niche?'ниши':OP_GEN[o.type]}`,o.w,1),
+        chainIn(`data-chain="${o.id}:a"`,`${B}, до ${nx?OP_GEN[nx.type]:'угла'}`,ga,0,ga<-0.001)];
+      if(o.type==='prot') cells.push(chainIn(`data-chain="${o.id}:d"`,o.niche?'Глубина ниши':'Глубина выступа',o.depth||0.3,1));
+      return `<div class="chain-row" aria-current="${!!(selRoom&&selRoom.id===o.id)}"><button type="button" class="ttl" data-pick="op:${o.id}">${opTitle(o)} <span class="muted" style="font-weight:400;font-size:12.5px">настроить</span></button>
+        <div class="chain-in ${cells.length===4?'four':''}">${cells.join('')}</div></div>${step===1&&selRoom&&selRoom.k==='op'&&selRoom.id===o.id?roomPanel().replace(' data-fs="plan"',''):''}`; }).join('')}</div>`; }).join('') + '<p class="hint" style="margin-top:6px">Все размеры в миллиметрах. Меняете одно число — соседнее пересчитывается само.</p>';
+}
+function pointRows(){
+  const groups=[...roomWalls(S.room).map(w=>w.id).map(sd=>[sd, S.points.filter(p=>p.side===sd).sort((a,b)=>a.off-b.off)]), ['floor', S.points.filter(p=>p.side==='floor')]];
+  return groups.filter(g=>g[1].length).map(([sd,ps])=>`<div class="chain-wall"><h4>${sd==='floor'?'В полу или на потолке':`${SIDES[sd]} стена <span class="num">${fmt0(sideLen(S,sd)*1000)} мм</span>`}</h4>${ps.map(pointRow).join('')}</div>`).join('')
+    + '<p class="hint" style="margin-top:6px">Все размеры в миллиметрах. Привязка считается от ближайшего угла или соседней точки на той же стене — так же, как на оранжевой размерной линии.</p>';
+}
+function pointRow(p){
+  const d=PT[p.type], hood=p.type==='hood', at=f=>`data-pchain="${p.id}:${f}"`; let cells;
+function planSheetHtml(u){
+  const c=u.c, no=posNo(u), pl=typeof unitPlace==='function'?unitPlace(u,S.room):null;
+  const need=[c.cw&&'ХВ',c.hw&&'ГВ',c.dr&&'К',c.gas&&'газ'].filter(Boolean);
+  let bindTxt='';
+  try{
+    if(pl&&pl.kind==='wall'){ const rg=alongRange(u,S.room,S.layout,pl.s), horiz=wallById(S.room,pl.s).axis!=='v';
+      bindTxt=`${SIDES[pl.s]} стена: от ${horiz?'левого':'верхнего'} угла ${fmt0(rg.a*1000)} мм${pl.d>0.004?`, отступ от стены ${fmt0(pl.d*1000)} мм`:''}`; }
+    else if(pl){ const isl=islandOf({b:pl.b,u},S.room);
+      bindTxt=`отдельно стоящее: ${fmt0(isl.h.d*1000)} мм от ${wallById(S.room,isl.h.s).nx>0?'левой':'правой'} стены, ${fmt0(isl.v.d*1000)} мм от ${wallById(S.room,isl.v.s).ny>0?'верхней':'нижней'}`; }
+  }catch(e){}
+  const pow=(c.kw||0)>0?`${fmt1(c.kw)} кВт · ${c.ph===3?'380':'220'} В`:'не нужно';
+  return `<div class="plan-sheet" id="psheet" role="dialog" aria-label="Выбранный аппарат">
+487:<script>
+1089:function roomWalls(room){ const o=room[RWK]; if(o!==undefined && o.w===room.w && o.d===room.d && o.poly===room.poly) return o.ws;
+1147:function backDist(room,w,b){ w=W_OF(room,w);
+1160:function spanOnWall(room,w,b){ w=W_OF(room,w); const O=w.offOrigin;
+1299:function wallTitle(room,id){ if(id==='floor') return 'пол'; if(!hasPoly(room)) return SIDE_RU[id]+' стена'; return wallName(room,id); }
+2011:</script>
+2013:<script>
+4144:</script>
+4145:<script>
+5074:</script>
+5075:<script>
+5358:</script>
+5359:<script>
+5528:</script>
+5529:<script>
+5809:</script>
+5810:<script>
+6140:</script>
+# Правила для исполнителя (Codex / GPT)
+
+Ты — исполнитель. Задачи ставит и проверяет другой агент; задание всегда лежит в `TASK.md`.
+
+1. Делай **только** то, что написано в `TASK.md`. Никаких «заодно улучшу».
+2. Не переформатируй код, не меняй отступы, кавычки, порядок строк вне зоны задания.
+3. Не трогай соседние функции, стили и тексты, если задание этого не требует.
+4. Не удаляй код, если удаление прямо не указано.
+5. Не создавай новые файлы, кроме упомянутых в задании. Приложение — один файл `index.html`, весь код остаётся в нём.
+6. Не делай `git commit`, `git reset`, `git checkout` — коммиты делает проверяющий.
+7. Интерфейс и тексты — на русском, в стиле существующих.
+8. Если задание неясно или противоречит коду — не угадывай: ничего не меняй и опиши проблему в конце ответа.
+9. В конце ответа коротко перечисли: какие функции/фрагменты изменены и зачем.
+10. Папку `versions/` и файл `versions.html` не открывай, не ищи в них и не меняй — это архив прошлых версий. Работай только с `index.html`.
+v26.13.0
+
+codex
+Все указанные места соответствуют заданию. Исправлю подписи и список стен через `wallTitle` и `roomWalls`, а в расчёте зонта добавлю проверку перекрытия проекции аппарата со стеной.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+const fs=require('fs');
+const path='index.html';
+let s=fs.readFileSync(path,'utf8');
+const replacements=[
+ ['"'${SIDES[side]} стена <span'"','"'${wallTitle(S.room,side).replace(/''^./,c=>c.toUpperCase())} <span'"'],
+ ['"'${SIDES[sd]} стена <span'"','"'${wallTitle(S.room,sd).replace(/''^./,c=>c.toUpperCase())} <span'"'],
+ ['"'${SIDES[pl.s]} стена: от'"','"'${wallTitle(S.room,pl.s).replace(/''^./,c=>c.toUpperCase())}: от'"'],
+ ['Object.entries(SIDES).map(([k,v])=>"'`<option value="${k}" ${cur===k?'"\\'selected\\':\\'\\'}>"'${v} стена</option>`)'"','roomWalls(S.room).map(w=>w.id).map(id=>"'`<option value="${id}" ${cur===id?'"\\'selected\\':\\'\\'}>"'${wallTitle(S.room,id).replace(/''^./,c=>c.toUpperCase())}</option>`)'"'],
+ [\"for(const w of roomWalls(s.room)) if(w.axis && backDist(s.room,w,b)<=0.4){ if(w.axis==='h'){ if(w.ny>0) y1=w.y1; else y2=w.y1; } else { if(w.nx>0) x1=w.x1; else x2=w.x1; } }\", \"for(const w of roomWalls(s.room)){ const sp=spanOnWall(s.room,w,b); if(w.axis && backDist(s.room,w,b)<=0.4 && sp[1]>0 && sp[0]<w.len){ if(w.axis==='h'){ if(w.ny>0) y1=w.y1; else y2=w.y1; } else { if(w.nx>0) x1=w.x1; else x2=w.x1; } } }\"]
+];
+for(const [a,b] of replacements){if(s.split(a).length"'!==2) throw Error('"'Expected unique target: '+a); s=s.replace(a,b);}
+fs.writeFileSync(path,s,'utf8');
+const vm=require('vm');
+const scripts=[...s.matchAll(/<script\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/g)];
+for(const [i,m] of scripts.entries())new vm.Script(m[1],{filename:'inline-'+i});
+console.log('Syntax OK: '+scripts.length+' scripts; replacements: '+replacements.length);
+'@ | node
+ git diff --check -- index.html
+ git diff --stat -- index.html
+ git diff -- index.html" in C:\Users\pro10\refectory-app
+ succeeded in 945ms:
+[stdin]:11
+for(const [a,b] of replacements){if(s.split(a).length!==2) throw Error('Expected unique target: '+a); s=s.replace(a,b);}
+                                                           ^
+
+Error: Expected unique target: ${SIDES[side]} ????? <span
+    at [stdin]:11:66
+    at runScriptInThisContext (node:internal/vm:219:10)
+    at node:internal/process/execution:485:12
+    at [stdin]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:483:60)
+    at evalFunction (node:internal/process/execution:317:30)
+    at evalTypeScript (node:internal/process/execution:329:3)
+    at node:internal/main/eval_stdin:51:5
+    at Socket.<anonymous> (node:internal/process/execution:239:5)
+    at Socket.emit (node:events:526:24)
+
+Node.js v26.13.0
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+@'"'
+const fs=require('fs');
+const path='index.html';
+let s=fs.readFileSync(path,'utf8');
+const replacements=[
+ ['"'${SIDES[side]} стена <span'"','"'${wallTitle(S.room,side).replace(/''^./,c=>c.toUpperCase())} <span'"'],
+ ['"'${SIDES[sd]} стена <span'"','"'${wallTitle(S.room,sd).replace(/''^./,c=>c.toUpperCase())} <span'"'],
+ ['"'${SIDES[pl.s]} стена: от'"','"'${wallTitle(S.room,pl.s).replace(/''^./,c=>c.toUpperCase())}: от'"'],
+ ['Object.entries(SIDES).map(([k,v])=>"'`<option value="${k}" ${cur===k?'"\\'selected\\':\\'\\'}>"'${v} стена</option>`)'"','roomWalls(S.room).map(w=>w.id).map(id=>"'`<option value="${id}" ${cur===id?'"\\'selected\\':\\'\\'}>"'${wallTitle(S.room,id).replace(/''^./,c=>c.toUpperCase())}</option>`)'"'],
+ [\"for(const w of roomWalls(s.room)) if(w.axis && backDist(s.room,w,b)<=0.4){ if(w.axis==='h'){ if(w.ny>0) y1=w.y1; else y2=w.y1; } else { if(w.nx>0) x1=w.x1; else x2=w.x1; } }\", \"for(const w of roomWalls(s.room)){ const sp=spanOnWall(s.room,w,b); if(w.axis && backDist(s.room,w,b)<=0.4 && sp[1]>0 && sp[0]<w.len){ if(w.axis==='h'){ if(w.ny>0) y1=w.y1; else y2=w.y1; } else { if(w.nx>0) x1=w.x1; else x2=w.x1; } } }\"]
+];
+for(const [a,b] of replacements){if(s.split(a).length"'!==2) throw Error('"'Expected unique target: '+a); s=s.replace(a,b);}
+fs.writeFileSync(path,s,'utf8');
+const vm=require('vm');
+const scripts=[...s.matchAll(/<script\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/g)];
+for(const [i,m] of scripts.entries())new vm.Script(m[1],{filename:'inline-'+i});
+console.log('Syntax OK: '+scripts.length+' scripts; replacements: '+replacements.length);
+'@ | node
+ git diff --check -- index.html
+ git diff --stat -- index.html
+ git diff -- index.html" in C:\Users\pro10\refectory-app
+ succeeded in 913ms:
+Syntax OK: 7 scripts; replacements: 5
+ index.html | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+diff --git a/index.html b/index.html
+index e20d6a8..6e743bf 100644
+--- a/index.html
++++ b/index.html
+@@ -1963,7 +1963,7 @@ function hoods(s, units){
+   const hot=units.filter(u=>u.c.hot);
+   const rects=hot.filter(u=>L[u.key]&&!covered(u)).map(u=>{ const b=bbox(u.c,L[u.key]);
+     let x1=b.x-o, y1=b.y-o, x2=b.x+b.w+o, y2=b.y+b.h+o;
+-    for(const w of roomWalls(s.room)) if(w.axis && backDist(s.room,w,b)<=0.4){ if(w.axis==='h'){ if(w.ny>0) y1=w.y1; else y2=w.y1; } else { if(w.nx>0) x1=w.x1; else x2=w.x1; } }   // зонт у стены — до стены
++    for(const w of roomWalls(s.room)){ const sp=spanOnWall(s.room,w,b); if(w.axis && backDist(s.room,w,b)<=0.4 && sp[1]>0 && sp[0]<w.len){ if(w.axis==='h'){ if(w.ny>0) y1=w.y1; else y2=w.y1; } else { if(w.nx>0) x1=w.x1; else x2=w.x1; } } }   // зонт у стены — до стены
+     x1=Math.max(0,x1); y1=Math.max(0,y1); x2=Math.min(W,x2); y2=Math.min(D,y2); return {x:x1,y:y1,w:x2-x1,h:y2-y1}; });
+   let m=[...rects], ch=true;
+   while(ch){ ch=false;
+@@ -2860,7 +2860,7 @@ function chainIn(attr,label,val,mid,neg){ return `<label class="${mid?'mid':''}"
+ function wallRows(){
+   return roomWalls(S.room).map(w=>w.id).map(side=>{ const els=wallEls(S,side); if(!els.length) return '';
+     const L=sideLen(S,side), horiz=wallById(S.room,side).axis!=='v', A=horiz?'Слева':'Сверху', B=horiz?'Справа':'Снизу';
+-    return `<div class="chain-wall"><h4>${SIDES[side]} стена <span class="num">${fmt0(L*1000)} мм</span></h4>${els.map((o,i)=>{ const pv=els[i-1], nx=els[i+1];
++    return `<div class="chain-wall"><h4>${wallTitle(S.room,side).replace(/^./,c=>c.toUpperCase())} <span class="num">${fmt0(L*1000)} мм</span></h4>${els.map((o,i)=>{ const pv=els[i-1], nx=els[i+1];
+       const gb=o.off-(pv?pv.off+pv.w:0), ga=(nx?nx.off:L)-(o.off+o.w);
+       const cells=[chainIn(`data-chain="${o.id}:b"`,`${A}, от ${pv?OP_GEN[pv.type]:'угла'}`,gb,0,gb<-0.001),
+         chainIn(`data-chain="${o.id}:w"`,`Ширина ${o.type==='prot'&&o.niche?'ниши':OP_GEN[o.type]}`,o.w,1),
+@@ -2871,7 +2871,7 @@ function wallRows(){
+ }
+ function pointRows(){
+   const groups=[...roomWalls(S.room).map(w=>w.id).map(sd=>[sd, S.points.filter(p=>p.side===sd).sort((a,b)=>a.off-b.off)]), ['floor', S.points.filter(p=>p.side==='floor')]];
+-  return groups.filter(g=>g[1].length).map(([sd,ps])=>`<div class="chain-wall"><h4>${sd==='floor'?'В полу или на потолке':`${SIDES[sd]} стена <span class="num">${fmt0(sideLen(S,sd)*1000)} мм</span>`}</h4>${ps.map(pointRow).join('')}</div>`).join('')
++  return groups.filter(g=>g[1].length).map(([sd,ps])=>`<div class="chain-wall"><h4>${sd==='floor'?'В полу или на потолке':`${wallTitle(S.room,sd).replace(/^./,c=>c.toUpperCase())} <span class="num">${fmt0(sideLen(S,sd)*1000)} мм</span>`}</h4>${ps.map(pointRow).join('')}</div>`).join('')
+     + '<p class="hint" style="margin-top:6px">Все размеры в миллиметрах. Привязка считается от ближайшего угла или соседней точки на той же стене — так же, как на оранжевой размерной линии.</p>';
+ }
+ function pointRow(p){
+@@ -2892,7 +2892,7 @@ let fitPalT=0; window.addEventListener('resize',()=>{ clearTimeout(fitPalT); fit
+ function zoomCtl(f){ return typeof planBarHtml==='function'?planBarHtml(f||'plan'):''; }
+ function roomPanel(){
+   if(!selRoom) return `<p class="hint" style="margin-top:8px">Элементы на плане можно перетаскивать. Нажмите на элемент или на «настроить», чтобы открыть его настройки.</p>`;
+-  const sideOpts=(cur,floor)=>Object.entries(SIDES).map(([k,v])=>`<option value="${k}" ${cur===k?'selected':''}>${v} стена</option>`).join('')+(floor?`<option value="floor" ${cur==='floor'?'selected':''}>В полу или на потолке</option>`:'');
++  const sideOpts=(cur,floor)=>roomWalls(S.room).map(w=>w.id).map(id=>`<option value="${id}" ${cur===id?'selected':''}>${wallTitle(S.room,id).replace(/^./,c=>c.toUpperCase())}</option>`).join('')+(floor?`<option value="floor" ${cur==='floor'?'selected':''}>В полу или на потолке</option>`:'');
+   const btns=`<div class="btns" style="margin-top:12px"><button class="btn danger" type="button" id="del-room">Удалить</button><button class="btn" type="button" id="desel">Готово</button></div>`;
+   if(selRoom.k==='op'){ const o=S.openings.find(x=>x.id===selRoom.id); if(!o) return '';
+     return `<div class="panel" id="rpanel" data-fs="plan" style="margin-top:10px"><h3>${opName(o)}</h3><div class="fields">
+@@ -5947,7 +5947,7 @@ function planSheetHtml(u){
+   let bindTxt='';
+   try{
+     if(pl&&pl.kind==='wall'){ const rg=alongRange(u,S.room,S.layout,pl.s), horiz=wallById(S.room,pl.s).axis!=='v';
+-      bindTxt=`${SIDES[pl.s]} стена: от ${horiz?'левого':'верхнего'} угла ${fmt0(rg.a*1000)} мм${pl.d>0.004?`, отступ от стены ${fmt0(pl.d*1000)} мм`:''}`; }
++      bindTxt=`${wallTitle(S.room,pl.s).replace(/^./,c=>c.toUpperCase())}: от ${horiz?'левого':'верхнего'} угла ${fmt0(rg.a*1000)} мм${pl.d>0.004?`, отступ от стены ${fmt0(pl.d*1000)} мм`:''}`; }
+     else if(pl){ const isl=islandOf({b:pl.b,u},S.room);
+       bindTxt=`отдельно стоящее: ${fmt0(isl.h.d*1000)} мм от ${wallById(S.room,isl.h.s).nx>0?'левой':'правой'} стены, ${fmt0(isl.v.d*1000)} мм от ${wallById(S.room,isl.v.s).ny>0?'верхней':'нижней'}`; }
+   }catch(e){}
+
+codex
+В `index.html` изменены только пять указанных фрагментов:
+
+- `wallRows`, `pointRows`, `planSheetHtml` — названия стен через `wallTitle` с заглавной буквы.
+- `roomPanel` — список всех стен текущего помещения.
+- `hoods` — проверка перекрытия проекции аппарата со стеной.
+
+Синтаксис всех семи скриптов и `git diff --check` проверены успешно. Сценарий в браузере не проверялся.
+tokens used
+20 154
+В `index.html` изменены только пять указанных фрагментов:
+
+- `wallRows`, `pointRows`, `planSheetHtml` — названия стен через `wallTitle` с заглавной буквы.
+- `roomPanel` — список всех стен текущего помещения.
+- `hoods` — проверка перекрытия проекции аппарата со стеной.
+
+Синтаксис всех семи скриптов и `git diff --check` проверены успешно. Сценарий в браузере не проверялся.

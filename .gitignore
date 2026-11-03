@@ -6,3 +6,5 @@ commit-msg.txt
 git-log.txt
 *.flag
 notify.txt
+bridge-state.txt
+bridge-log.txt

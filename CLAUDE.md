@@ -49,7 +49,7 @@
 - Сайт для коллег: https://pro100po.github.io/refectory-app/ ; история версий: https://pro100po.github.io/refectory-app/versions.html
 - После принятой правки (accept) наблюдатель сам делает коммит, кладёт копию `index.html` в `versions/`, обновляет `versions.html` и отправляет всё на GitHub (`git push origin main`). Делать это вручную не нужно.
 - Первая строка `commit-msg.txt` попадает в историю версий как описание — пиши её понятно для коллег: «Пункт аудита 3: …».
-- После accept проверь `git-log.txt`: если там ошибка push — сообщи пользователю.
+- После accept сам не жди и не читай лог — отправь помощника на **Haiku** (Agent, model: haiku, run_in_background): цикл «фоновый `sleep 30` → `device_list_dir` → есть ли `done.flag`», максимум 6 циклов; когда `done.flag` появился — прочитать `git-log.txt` и ответить одной строкой: «опубликовано» или текст ошибки (строки с error / rejected / fatal). Если ошибка — сообщи пользователю.
 - **Папку `versions/` и файл `versions.html` не читать, не искать в них и не менять** — это архив, лишнее чтение тратит лимиты. Поиск по коду — только в `index.html` (Grep с `path: index.html`).
 - Откат к старой версии — только по просьбе пользователя: `git checkout <хеш> -- index.html`, затем обычный accept.
 

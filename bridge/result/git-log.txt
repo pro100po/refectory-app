@@ -1,7 +1,0 @@
-﻿
-warning: in the working copy of 'versions.html', LF will be replaced by CRLF the next time Git touches it
-[main 00ce983] Пункт аудита 30.2, исправление: названия стен сложной формы в списках, выбор любой стены, зонт у внутреннего угла
- 4 files changed, 6149 insertions(+), 5 deletions(-)
- create mode 100644 versions/2026-11-03_1614.html
-To https://github.com/pro100po/refectory-app.git
-   d18f132..00ce983  main -> main

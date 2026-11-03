@@ -1,0 +1,46 @@
+diff --git a/index.html b/index.html
+index 6e743bf..a4b8434 100644
+--- a/index.html
++++ b/index.html
+@@ -1097,7 +1097,15 @@ function wallLen(room,id){ return wallById(room,id).len; }
+ function perimLen(room){ if(!room.poly) return 2*(room.w+room.d); const ws=roomWalls(room); return ws[ws.length-1].tEnd; }
+ function wallRot(w){ return w.ny>0?0 : w.nx<0?90 : w.ny<0?180 : w.nx>0?270 : null; }   // поворот аппарата, стоящего спиной к стене
+ // глубина помещения от стены внутрь (по габариту): для горизонтальной — d, для вертикальной — w
+-function wallInward(room,id){ const w=wallById(room,id); return w.axis==='h'?room.d:w.axis==='v'?room.w:Math.min(room.w,room.d); }
++function wallInward(room,id,off,len){ const w=wallById(room,id), fallback=w.axis==='h'?room.d:w.axis==='v'?room.w:Math.min(room.w,room.d);
++  if(!hasPoly(room)||off===undefined||!w.axis) return fallback;
++  let depth=Infinity;
++  for(const v of roomWalls(room)){
++    if(v.axis!==w.axis||v.nx!==-w.nx||v.ny!==-w.ny) continue;
++    const a=projectToWall(room,id,v.x1,v.y1), b=projectToWall(room,id,v.x2,v.y2);
++    if(a.dist>0 && Math.min(off+len,Math.max(a.off,b.off))-Math.max(off,Math.min(a.off,b.off))>1e-9) depth=Math.min(depth,a.dist);
++  }
++  return depth===Infinity?fallback:depth; }
+ function wallPoint(room,id,off){ const w=wallById(room,id), O=w.offOrigin, d=w.offDir; return {x:O.x+d.x*off, y:O.y+d.y*off}; }
+ // отрезок проёма на стене: от off до off+w, нормаль внутрь (вместо segOf)
+ function wallSeg(room,id,off,len){ const w=wallById(room,id), a=wallPoint(room,id,off), b=wallPoint(room,id,off+len); return {x1:a.x,y1:a.y,x2:b.x,y2:b.y,nx:w.nx,ny:w.ny}; }
+@@ -1335,12 +1343,12 @@ function segOf(s, o){ return wallSeg(s.room, o.side, o.off, o.w); }
+ function bandOf(s, o, depth){ return wallBand(s.room, o.side, o.off, o.w, depth); }
+ function doorBlock(s,o){ return bandOf(s,o, o.swing==='in' ? Math.max(o.w,0.9) : 0.9); }
+ function clampRoom(s){
+-  for(const o of s.openings){ const L=sideLen(s,o.side); o.w=Math.min(Math.max(o.type==='prot'?0.05:0.3,o.w),L); o.off=Math.min(Math.max(0,o.off),L-o.w); if(o.type==='prot') o.depth=Math.min(Math.max(0.05,o.depth||0.3),o.niche?3:wallInward(s.room,o.side)-0.5); }
++  for(const o of s.openings){ const L=sideLen(s,o.side); o.w=Math.min(Math.max(o.type==='prot'?0.05:0.3,o.w),L); o.off=Math.min(Math.max(0,o.off),L-o.w); if(o.type==='prot') o.depth=Math.min(Math.max(0.05,o.depth||0.3),o.niche?3:wallInward(s.room,o.side,o.off,o.w)-0.5); }
+   for(const p of s.points){
+     if(!p.side) migratePoint(s,p);
+     const hood=p.type==='hood';
+     if(p.side!=='floor'){ const L=sideLen(s,p.side);
+-      if(hood){ p.w=Math.min(Math.max(0.3,p.w||1.5),L); p.d=Math.min(Math.max(0.3,p.d||1),wallInward(s.room,p.side)); p.off=Math.min(Math.max(0,p.off),L-p.w); }
++      if(hood){ p.w=Math.min(Math.max(0.3,p.w||1.5),L); p.d=Math.min(Math.max(0.3,p.d||1),wallInward(s.room,p.side,p.off,p.w)); p.off=Math.min(Math.max(0,p.off),L-p.w); }
+       else p.off=Math.min(Math.max(0.05,p.off),L-0.05); }
+     else if(hood){ p.w=Math.min(Math.max(0.3,p.w||1.5),s.room.w); p.d=Math.min(Math.max(0.3,p.d||1),s.room.d); p.x=Math.min(Math.max(0,p.x),s.room.w-p.w); p.y=Math.min(Math.max(0,p.y),s.room.d-p.d); }
+     else { p.x=Math.min(Math.max(0.05,p.x),s.room.w-0.05); p.y=Math.min(Math.max(0.05,p.y),s.room.d-0.05); }
+@@ -5710,7 +5718,8 @@ function setAlong(u, s, start, el, what){
+   S.layoutManual=true; S.layoutRoom[u.key]=S.room.id;
+ }
+ function setOffset(u, s, d, el){
+-  const room=S.room, p=S.layout[u.key], b=bbox(u.c,p), hz=!isVert(room,s), sz=hz?b.h:b.w, lenPerp=wallInward(room,s);
++  const room=S.room, p=S.layout[u.key], b=bbox(u.c,p), hz=!isVert(room,s), sz=hz?b.h:b.w;
++  const sp=spanOnWall(room,s,b), lenPerp=wallInward(room,s,sp[0],sp[1]-sp[0]);
+   let v=Math.max(0,d), msg='';
+   // препятствие перед аппаратом — другой аппарат на той же линии
+   const others=curUnitsOf(room).filter(o=>o.key!==u.key&&S.layout[o.key]&&o.c.mount==='floor').map(o=>({o, b:bbox(o.c,S.layout[o.key])}));

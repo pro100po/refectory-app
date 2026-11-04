@@ -1504,8 +1504,9 @@ function swXY(g,t,ins){ const R=g.room, P=perimLen(R), cl=(v,a,b)=>Math.min(Math
   const q=cl(u,ins,w.len-ins); return {x:w.x1+w.dir.x*q+w.nx*ins, y:w.y1+w.dir.y*q+w.ny*ins}; }
 // точка слива — середина задней кромки; аппарат дальше 0,3 м от стены — к трассе добавляется перпендикуляр до ближайшей стены
 function swDrain(g,c,pos){ const b=bbox(c,pos), R=g.room, r=pos.rot;
-  const p= r===0?{x:b.x+b.w/2,y:b.y} : r===180?{x:b.x+b.w/2,y:b.y+b.h} : r===90?{x:b.x+b.w,y:b.y+b.h/2} : {x:b.x,y:b.y+b.h/2};
-  const bw=wallForRot(R,r,b), dist=id=>projectToWall(R,id,p.x,p.y).dist;
+  const f=posAng(pos)?frontDir(pos):null;
+  const p= f?{x:b.x+b.w/2-f.x*c.d/2,y:b.y+b.h/2-f.y*c.d/2} : r===0?{x:b.x+b.w/2,y:b.y} : r===180?{x:b.x+b.w/2,y:b.y+b.h} : r===90?{x:b.x+b.w,y:b.y+b.h/2} : {x:b.x,y:b.y+b.h/2};
+  const bw=f?wallById(R,pos.sw):wallForRot(R,r,b), dist=id=>projectToWall(R,id,p.x,p.y).dist;
   const side= bw && dist(bw.id)<=0.3+1e-6 ? bw.id : nearestWall(R,p.x,p.y).id;
   const a=Math.min(Math.max(projectToWall(R,side,p.x,p.y).off,0),wallLen(R,side)), st=Math.max(0,dist(side));
   return {p, side, t:swPerT(g,side,a), stub:st, cnt:st>0.3+1e-6?st:0}; }
@@ -1604,6 +1605,8 @@ function bbox(c,pos){ if(posAng(pos)!==0){ const b=baseSize(c,pos), a=posAng(pos
 function unitPoly(c,pos){ const b=bbox(c,pos); if(!posAng(pos)) return [{x:b.x,y:b.y},{x:b.x+b.w,y:b.y},{x:b.x+b.w,y:b.y+b.h},{x:b.x,y:b.y+b.h}];
   const bs=baseSize(c,pos), cx=b.x+b.w/2, cy=b.y+b.h/2, a=posAng(pos)*Math.PI/180, co=Math.cos(a), si=Math.sin(a);
   return [[-bs.w/2,-bs.h/2],[bs.w/2,-bs.h/2],[bs.w/2,bs.h/2],[-bs.w/2,bs.h/2]].map(([x,y])=>({x:cx+x*co-y*si,y:cy+x*si+y*co})); }
+function unitWallDist(room,s,c,pos){ if(!posAng(pos)) return sideDist(bbox(c,pos),s,room); return Math.min(...unitPoly(c,pos).map(p=>projectToWall(room,s,p.x,p.y).dist)); }
+function unitWallSpan(room,s,c,pos){ if(!posAng(pos)) return sideSpan(bbox(c,pos),s,room); const a=unitPoly(c,pos).map(p=>projectToWall(room,s,p.x,p.y).off); return [Math.min(...a),Math.max(...a)]; }
 function rectPoly(r){ return [{x:r.x,y:r.y},{x:r.x+r.w,y:r.y},{x:r.x+r.w,y:r.y+r.h},{x:r.x,y:r.y+r.h}]; }
 function frontPoly(c,pos,depth){ if(!posAng(pos)) return rectPoly(frontZone(bbox(c,pos),pos.rot,depth));
   const b=bbox(c,pos), bs=baseSize(c,pos), cx=b.x+b.w/2, cy=b.y+b.h/2, a=posAng(pos)*Math.PI/180, co=Math.cos(a), si=Math.sin(a);
@@ -2069,8 +2072,8 @@ function checkUnit(s, units, L, key){
   // газовый кран и розетки: аппарат у этой стены (ближе 0,3 м), перекрывает точку вдоль стены (±0,15 м)
   for(const q of s.points){ if((q.type!=='gas'&&q.type!=='sock')||!q.side||q.side==='floor') continue;
     const sd=q.side, gasQ=q.type==='gas';
-    const at=pl.filter(x=>{ const b=x.b, dist=backDist(s.room,sd,b);
-      if(dist>0.3+1e-6) return false; const [a0,a1]=spanOnWall(s.room,sd,b);
+    const at=pl.filter(x=>{ const dist=unitWallDist(s.room,sd,x.u.c,L[x.u.key]);
+      if(dist>0.3+1e-6) return false; const [a0,a1]=unitWallSpan(s.room,sd,x.u.c,L[x.u.key]);
       return a1>=q.off-0.15-1e-6 && a0<=q.off+0.15+1e-6; });
     if(!at.length || (one && !at.some(x=>x.u.key===key))) continue;
     const wallU=gasQ?null:at.find(x=>x.u.c.mount==='wall'), fl2=at.filter(x=>x.u.c.mount==='floor').sort((a,b)=>b.u.c.h-a.u.c.h);
@@ -3403,7 +3406,8 @@ function dropRoom(ev){ if(!planUnified()) return {room:S.room, p:svgPt(ev), off:
 function needOn(){ const v=VIEW.layers.need; return v==null ? netsDesign(S) : !!v; }
 function needLayerSvg(k){ if(typeof needMarks!=='function') return ''; k=k||1; const q=v=>+v.toFixed(2), mh=15/k, fs=9.5/k, gp=2/k; let out='';
   for(const u of curUnits()){ const p=S.layout[u.key]; if(!p) continue; const ms=needMarks(u.c); if(!ms.length) continue;
-    const b=bbox(u.c,p), X=b.x*100, Y=b.y*100, w=b.w*100, h=b.h*100, vert=p.rot===90||p.rot===270, sz=ms.map(m=>(m[0].length*5.6+7)/k);
+    const skew=posAng(p), b=skew?baseSize(u.c,p):bbox(u.c,p), X=skew?0:b.x*100, Y=skew?0:b.y*100, w=b.w*100, h=b.h*100, vert=p.rot===90||p.rot===270, sz=ms.map(m=>(m[0].length*5.6+7)/k);
+    if(skew) out+=`<g transform="${skewTransform(u.c,p)}">`;
     // вдоль задней кромки (противоположна фронту), не влезает — следующий ряд ближе к фронту
     const len=(vert?h:w)-4/k, lines=[[]]; let used=0;
     ms.forEach((m,i)=>{ const st=vert?mh:sz[i]; if(lines[lines.length-1].length && used+st>len){ lines.push([]); used=0; } lines[lines.length-1].push(i); used+=st+gp; });
@@ -3412,7 +3416,7 @@ function needLayerSvg(k){ if(typeof needMarks!=='function') return ''; k=k||1; c
         const cx = vert ? (p.rot===90 ? X+w-mw/2-3/k-inward : X+mw/2+3/k+inward) : X+w/2+t+mw/2;
         const cy = vert ? Y+h/2+t+mh/2 : (p.rot===0 ? Y+mh/2+3/k+inward : Y+h-mh/2-3/k-inward);
         out+=`<rect x="${q(cx-mw/2)}" y="${q(cy-mh/2)}" width="${q(mw)}" height="${q(mh)}" rx="${q(3/k)}" fill="var(${m[1]})"/><text x="${q(cx)}" y="${q(cy)}" font-size="${q(fs)}" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#fff">${m[0]}</text>`;
-        t+=(vert?mh:mw)+gp; }); }); }
+        t+=(vert?mh:mw)+gp; }); }); if(skew) out+='</g>'; }
   return out?`<g class="need-layer" style="pointer-events:none">${out}</g>`:''; }
 function wrapWords(t,max){ const lines=[]; let cur='';
   for(const w of t.split(/\s+/)){ if(w.length>max) return null; if(!cur) cur=w; else if((cur+' '+w).length<=max) cur+=' '+w; else { lines.push(cur); cur=w; } }
@@ -4562,13 +4566,16 @@ function printPlanSvg(opts){
       body=zones+eq+hs+walls+ops+hoodsOnly+nums+(typeof equipDimsSvg==='function'?equipDimsSvg(S.room, curUnits(), {print:true}):'');
     } else if(layer==='need'){
       let eq='', marks='', nums=''; const avoid=[];   // подписи длины слива не закрывают метки подключений и номера
-      for(const u of units){ const p=S.layout[u.key], b=bbox(u.c,p), w=b.w*100, h=b.h*100, X=b.x*100, Y=b.y*100;
-        eq+=`<rect x="${X}" y="${Y}" width="${w}" height="${h}" fill="#ffffff" stroke="${ink2}" stroke-width="1.4" ${u.c.mount==='wall'?'stroke-dasharray="3 5"':u.src==='have'?'stroke-dasharray="7 4"':''}/>`;
+      for(const u of units){ const p=S.layout[u.key], skew=posAng(p), b=bbox(u.c,p), bs=skew?baseSize(u.c,p):b, w=bs.w*100, h=bs.h*100, X=skew?0:b.x*100, Y=skew?0:b.y*100;
+        eq+=skew?`<polygon points="${unitPoly(u.c,p).map(q=>`${q.x*100},${q.y*100}`).join(' ')}" fill="#ffffff" stroke="${ink2}" stroke-width="1.4" ${u.c.mount==='wall'?'stroke-dasharray="3 5"':u.src==='have'?'stroke-dasharray="7 4"':''}/>`:`<rect x="${X}" y="${Y}" width="${w}" height="${h}" fill="#ffffff" stroke="${ink2}" stroke-width="1.4" ${u.c.mount==='wall'?'stroke-dasharray="3 5"':u.src==='have'?'stroke-dasharray="7 4"':''}/>`;
+        const a=skew*Math.PI/180, co=Math.cos(a), si=Math.sin(a), toPlan=(x,y)=>({x:(b.x+b.w/2)*100+(x-w/2)*co-(y-h/2)*si, y:(b.y+b.h/2)*100+(x-w/2)*si+(y-h/2)*co});
+        const markBox=(x,y,w,h)=>{ if(!skew) return {x,y,w,h}; const ps=rectPoly({x,y,w,h}).map(q=>toPlan(q.x,q.y)), xs=ps.map(q=>q.x), ys=ps.map(q=>q.y), x0=Math.min(...xs), y0=Math.min(...ys); return {x:x0,y:y0,w:Math.max(...xs)-x0,h:Math.max(...ys)-y0}; };
         const pp=pos&&pos.unit(u);
         // задняя кромка: противоположна фронту обслуживания
         const back = p.rot===0?{x:X+w/2,y:Y+11,v:false} : p.rot===180?{x:X+w/2,y:Y+h-11,v:false} : p.rot===90?{x:X+w-24,y:Y+h/2,v:true} : {x:X+24,y:Y+h/2,v:true};
         const ms=needMarks(u.c);
         if(ms.length){ // метки вдоль задней кромки; не влезают — следующий ряд ближе к фронту
+          if(skew) marks+=`<g transform="${skewTransform(u.c,p)}">`;
           const mh=18, gap=3, len=(back.v?h:w)-6, sz=ms.map(m=>m[0].length*7.6+9);
           const lines=[[]]; let used=0;
           ms.forEach((m,i)=>{ const step=back.v?mh:sz[i]; if(lines[lines.length-1].length && used+step>len){ lines.push([]); used=0; } lines[lines.length-1].push(i); used+=step+gap; });
@@ -4578,13 +4585,14 @@ function printPlanSvg(opts){
               const cx = back.v ? back.x+(p.rot===90?-1:1)*(inward+ (colW-mw)/2*0) : back.x+t+mw/2;
               const cy = back.v ? back.y+t+mh/2 : back.y+(p.rot===0?1:-1)*inward;
               const col=mono?'#ffffff':`var(${m[1]})`, tc=mono?ink:'#ffffff';
-              avoid.push({x:cx-mw/2-2, y:cy-mh/2-2, w:mw+4, h:mh+4});
+              avoid.push(markBox(cx-mw/2-2, cy-mh/2-2, mw+4, mh+4));
               marks+=`<rect x="${cx-mw/2}" y="${cy-mh/2}" width="${mw}" height="${mh}" rx="3" fill="${col}" stroke="${mono?ink:col}" stroke-width="1.2"/><text x="${cx}" y="${cy}" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="${tc}">${m[0]}</text>`;
-              t+=(back.v?mh:mw)+gap; }); }); }
-        if(pp){ const fx = p.rot===0?{x:X+w/2,y:Y+h-18} : p.rot===180?{x:X+w/2,y:Y+18} : p.rot===90?{x:X+18,y:Y+h/2} : {x:X+w-18,y:Y+h/2};
+              t+=(back.v?mh:mw)+gap; }); }); if(skew) marks+='</g>'; }
+        if(pp){ let fx = p.rot===0?{x:X+w/2,y:Y+h-18} : p.rot===180?{x:X+w/2,y:Y+18} : p.rot===90?{x:X+18,y:Y+h/2} : {x:X+w-18,y:Y+h/2};
+          if(skew) fx=toPlan(fx.x,fx.y);
           nums+=numCircle(fx.x, fx.y, pp.no); avoid.push({x:fx.x-16, y:fx.y-16, w:32, h:32}); }
       }
-      const zs=[...new Set(units.filter(u=>needMarks(u.c).length).map(u=>{ const r=S.layout[u.key].rot; return r===0?'t':r===180?'b':r===90?'r':'l'; }))];
+      const zs=[...new Set(units.filter(u=>needMarks(u.c).length).map(u=>{ const p=S.layout[u.key], r=p.rot; return posAng(p)?p.sw:r===0?'t':r===180?'b':r===90?'r':'l'; }))];
       // трассы слива до выпуска канализации — пунктиром вдоль стен; длиннее предела и «нет пути» — красным
       const swg=curGeom(), swl=[]; for(const u of units){ if(!hasDrain(u.c)) continue; const r=sewerRoute(swg,u,S.layout); if(r) swl.push({r, emph:false, label:true}); }
       for(const p of swg.points){ if(p.type==='hood') continue; const m=ptMarkXY(swg,p,null); avoid.push({x:m.x-14, y:m.y-14, w:28, h:28}); }
@@ -4708,7 +4716,9 @@ function bindingRows(room, pos){
     for(const [s,segs] of Object.entries(ch.sides)) segs.forEach((g,i)=>{ if(g.kind!=='unit'||!g.bold) return; const n=segs[i+1];
       rows.push({k:[order[s], g.a], r:[String((pos.unit(g.x.u)||{}).no||''), g.x.u.c.n, wallTitle(room,s), fmt0(g.a*1000), fmt0((g.sz||(g.e-g.a))*1000), n?(n.kind==='gap'?fmt0((n.e-n.a)*1000):'0'):'0', fmt0(g.d*1000)]}); });
     for(const isl of ch.islands){ const b=isl.x.b; rows.push({k:[4,b.x], r:[String((pos.unit(isl.x.u)||{}).no||''), isl.x.u.c.n, 'отдельно стоящее', `${fmt0(b.x*1000)} от левой, ${fmt0(b.y*1000)} от верхней`, fmt0(b.w*1000), '—', '—']}); }
-    for(const w of ch.wall){ const pl=unitPlace(w.u, room), rg=alongRange(w.u, room, S.layout, pl.s);
+    for(const w of ch.wall){ const pl=unitPlace(w.u, room);
+      if(pl.kind==='skew'){ rows.push({k:[5+order[pl.s], pl.a], r:[String((pos.unit(w.u)||{}).no||''), w.u.c.n+' (настенное)', wallTitle(room,pl.s), fmt0(pl.a*1000), fmt0(w.u.c.w*1000), '—', '0']}); continue; }
+      const rg=alongRange(w.u, room, S.layout, pl.s);
       rows.push({k:[5+order[pl.s], rg.a], r:[String((pos.unit(w.u)||{}).no||''), w.u.c.n+' (настенное)', wallTitle(room,pl.s), fmt0(rg.a*1000), fmt0(rg.size*1000), fmt0((rg.hi-rg.a-rg.size)*1000), fmt0(pl.d*1000)]}); }
     rows.sort((a,b)=>a.k[0]-b.k[0]||a.k[1]-b.k[1]); return rows.map(x=>x.r);
   } finally{ S.cur=c0; } }
@@ -5782,13 +5792,13 @@ const r3=v=>Math.round(v*1000)/1000;
 // цепочки по стенам, острова, настенное
 function equipChains(room, units, layout){
   const W=room.w, D=room.d, L=layout||S.layout;
-  const placed=units.filter(u=>L[u.key]).map(u=>{ const p=L[u.key], b=bbox(u.c,p); return {u, p, b, back:wallOfRect(room,b,p.rot)}; });
+  const placed=units.filter(u=>L[u.key]).map(u=>{ const p=L[u.key], b=bbox(u.c,p); return {u, p, b, back:posAng(p)?p.sw:wallOfRect(room,b,p.rot)}; });
   const floor=placed.filter(x=>x.u.c.mount==='floor'), wall=placed.filter(x=>x.u.c.mount==='wall');
   const sides={}, inChain=new Set(), offsets=[];
   for(const s of roomWalls(room).map(w=>w.id)){
     const len=SIDE_LEN(room,s), its=[];
-    for(const x of floor){ const d=sideDist(x.b,s,room), bold=x.back===s;
-      if((bold && d<=DIM_OFF+1e-6) || (!bold && d<=DIM_TOL)){ const [a,e]=sideSpan(x.b,s,room), am=Math.round(Math.max(0,a)*1000), sz=Math.round((e-a)*1000); its.push({a:am/1000, e:Math.min(len,(am+sz)/1000), sz:sz/1000, x, bold, d}); inChain.add(x.u.key);   // целые мм
+    for(const x of floor){ const d=unitWallDist(room,s,x.u.c,x.p), bold=x.back===s;
+      if((bold && d<=DIM_OFF+1e-6) || (!bold && d<=DIM_TOL)){ const [a,e]=unitWallSpan(room,s,x.u.c,x.p), am=Math.round(Math.max(0,a)*1000), sz=Math.round((e-a)*1000); its.push({a:am/1000, e:Math.min(len,(am+sz)/1000), sz:sz/1000, x, bold, d:posAng(x.p)&&bold?0:d}); inChain.add(x.u.key);   // целые мм
         if(bold && d>0.005) offsets.push({x, s, d}); } }
     its.sort((p,q)=>p.a-q.a||q.e-p.e);
     const segs=[]; let cur=0;
@@ -5801,14 +5811,14 @@ function equipChains(room, units, layout){
     else if(segs.length) segs[segs.length-1].e=len;
     if(its.length) sides[s]=segs;
   }
-  const islands=floor.filter(x=>!inChain.has(x.u.key)).map(x=>islandOf(x,room));
+  const islands=floor.filter(x=>!posAng(x.p)&&!inChain.has(x.u.key)).map(x=>islandOf(x,room));
   return {sides, islands, offsets, floor, wall, placed};
 }
 // отдельно стоящий: ближайшая стена по горизонтали и по вертикали (при равенстве — левая, верхняя)
 function islandOf(x,room){ const b=x.b, ws=roomWalls(room), pick=ax=>{ let best=null; for(const w of ws.filter(w=>w.axis===ax).sort((a,c)=>(ax==='v'?c.nx-a.nx:c.ny-a.ny))){ const d=backDist(room,w,b); if(!best||d<best.d) best={s:w.id, d}; } return best; };
   return {x, h:pick('v'), v:pick('h')}; }
 // где стоит аппарат: у стены (спиной, отступ ≤ 300 мм) или отдельно
-function unitPlace(u, room, layout){ const L=layout||S.layout, p=L[u.key]; if(!p) return null; const b=bbox(u.c,p), back=wallOfRect(room,b,p.rot);
+function unitPlace(u, room, layout){ const L=layout||S.layout, p=L[u.key]; if(!p) return null; const b=bbox(u.c,p); if(posAng(p)&&p.sw) return {kind:'skew', s:p.sw, b, d:0, a:unitWallSpan(room,p.sw,u.c,p)[0]}; const back=wallOfRect(room,b,p.rot);
   if(back && sideDist(b,back,room)<=DIM_OFF+1e-6) return {kind:'wall', s:back, b, d:sideDist(b,back,room)};
   if(u.c.mount==='wall'){ const ds=roomWalls(room).map(w=>w.id).map(s=>[s,sideDist(b,s,room)]).sort((a,c)=>a[1]-c[1]); return {kind:'wall', s:ds[0][0], b, d:ds[0][1]}; }
   return {kind:'island', b}; }
@@ -5940,7 +5950,7 @@ function selDimsSvg(room,u,ch,fs){
   const line=(x1,y1,x2,y2,txt,c,vert)=>{ c=c||ac; const mx=(x1+x2)/2, my=(y1+y2)/2;
     return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="2"/><line x1="${x1-(vert?6:0)}" y1="${y1-(vert?0:6)}" x2="${x1+(vert?6:0)}" y2="${y1+(vert?0:6)}" stroke="${c}" stroke-width="2"/><line x1="${x2-(vert?6:0)}" y1="${y2-(vert?0:6)}" x2="${x2+(vert?6:0)}" y2="${y2+(vert?0:6)}" stroke="${c}" stroke-width="2"/>`
       + `<text x="${vert?mx-7:mx}" y="${vert?my:my-7}" font-size="${fs}" font-family="var(--f-mono)" font-weight="700" text-anchor="middle" fill="${c}" paint-order="stroke" stroke="var(--sheet)" stroke-width="4"${vert?` transform="rotate(-90 ${mx-7} ${my})"`:''}>${txt}</text>`; };
-  if(!pl) return '';
+  if(!pl||pl.kind==='skew') return '';
   const b=pl.b;
   if(pl.kind==='island'){ const isl=islandOf({b,u},room); o+=islandSvg(room,isl,ac,fs,ac).replace(/stroke-width="1.1"/g,'stroke-width="2"').replace(/font-size="[\d.]+"/g,`font-size="${fs}" font-weight="700"`); }
   else {
@@ -5965,6 +5975,7 @@ function selDimsSvg(room,u,ch,fs){
 function selDimsHtml(u){
   const room=S.room, pl=unitPlace(u,room); if(!pl) return '';
   const fld=(key,label,val)=>`<label class="pos-f"><span>${esc(label)}</span><input type="text" inputmode="decimal" data-num autocomplete="off" min="0" data-pos="${key}" value="${fmt0r(val*1000)}"></label>`;
+  if(pl.kind==='skew') return `<div class="pos-row">${fld('skt',`${wallFrom(room,pl.s).replace(/^./,c=>c.toUpperCase())}, мм`,pl.a)}</div>`;
   if(pl.kind==='island') return `<div class="pos-row">${fld('x','От левой стены, мм',pl.b.x)}${fld('y','От верхней стены, мм',pl.b.y)}</div>`;
   const s=pl.s, vert=isVert(room,s), rg=alongRange(u,room,S.layout,s);
   const A=vert?'Сверху':'Слева', B=vert?'Снизу':'Справа', C=vert?'От верхнего угла':'От левого угла';
@@ -6012,7 +6023,8 @@ function bindEquipDims(){
   const u=sel&&curUnits().find(x=>x.key===sel);
   if(u&&S.layout[u.key]){ const room=S.room;
     main.querySelectorAll('[data-pos]').forEach(el=>el.addEventListener('change',()=>{ const pl=unitPlace(u,room), v=parseFloat(String(el.value).replace(',','.'))/1000; if(!pl||!isFinite(v)) return; const f=el.dataset.pos;
-      if(pl.kind==='island'){ setIsland(u, f==='y'?'y':'x', v, el); }
+      if(f==='skt'&&pl.kind==='skew'){ const p=S.layout[u.key], w=wallById(room,p.sw), q=wallPoint(room,p.sw,v+u.c.w/2), b=bbox(u.c,p); p.x=q.x+w.nx*u.c.d/2-b.w/2; p.y=q.y+w.ny*u.c.d/2-b.h/2; skewPlace(room,u,p,p.sw); S.layoutManual=true; S.layoutRoom[u.key]=room.id; }
+      else if(pl.kind==='island'){ setIsland(u, f==='y'?'y':'x', v, el); }
       else { const rg=alongRange(u,room,S.layout,pl.s);
         if(f==='start') setAlong(u,pl.s,v,el,'start');
         if(f==='lo') setAlong(u,pl.s,rg.lo+v,el,'lo');
@@ -6233,7 +6245,8 @@ function planSheetHtml(u){
   const need=[c.cw&&'ХВ',c.hw&&'ГВ',c.dr&&'К',c.gas&&'газ'].filter(Boolean);
   let bindTxt='';
   try{
-    if(pl&&pl.kind==='wall'){ const rg=alongRange(u,S.room,S.layout,pl.s), horiz=wallById(S.room,pl.s).axis!=='v';
+    if(pl&&pl.kind==='skew') bindTxt=`${wallTitle(S.room,pl.s).replace(/^./,c=>c.toUpperCase())}: ${fmt0(pl.a*1000)} мм ${wallFrom(S.room,pl.s)}`;
+    else if(pl&&pl.kind==='wall'){ const rg=alongRange(u,S.room,S.layout,pl.s), horiz=wallById(S.room,pl.s).axis!=='v';
       bindTxt=`${wallTitle(S.room,pl.s).replace(/^./,c=>c.toUpperCase())}: от ${horiz?'левого':'верхнего'} угла ${fmt0(rg.a*1000)} мм${pl.d>0.004?`, отступ от стены ${fmt0(pl.d*1000)} мм`:''}`; }
     else if(pl){ const isl=islandOf({b:pl.b,u},S.room);
       bindTxt=`отдельно стоящее: ${fmt0(isl.h.d*1000)} мм от ${wallById(S.room,isl.h.s).nx>0?'левой':'правой'} стены, ${fmt0(isl.v.d*1000)} мм от ${wallById(S.room,isl.v.s).ny>0?'верхней':'нижней'}`; }

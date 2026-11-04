@@ -387,7 +387,7 @@ html.set-lock,html.set-lock body{overflow:hidden}
 .rmp-wide{grid-column:1/-1}
 .rmp-warn{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:var(--r);font-size:13.5px}
 .shp-controls{display:flex;flex-direction:column;gap:12px}
-.shp-template-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:6px;align-items:stretch}
+.shp-template-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:6px;align-items:stretch}
 .shp-template{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-width:0;min-height:64px;padding:5px 3px;font-size:12.5px;line-height:1.15;white-space:normal;overflow-wrap:anywhere}
 .shp-handle{touch-action:none}
 .shp-template[aria-pressed="true"],.shp-rot[aria-pressed="true"]{background:var(--steel-soft);border-color:var(--steel);color:var(--ink)}
@@ -423,7 +423,7 @@ html.set-lock,html.set-lock body{overflow:hidden}
   .rmp-foot{display:flex;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule)}
   .rmp-foot .btn{flex:1 1 auto}
   html:has(#rmp-side) main{padding-bottom:62vh} }
-@media (max-width:390px){ .shp-fields{grid-template-columns:minmax(0,1fr)} .shp-template-row{grid-template-columns:repeat(4,minmax(0,1fr))} .shp-custom-label{grid-column:1/-1;justify-self:end} }
+@media (max-width:390px){ .shp-fields{grid-template-columns:minmax(0,1fr)} .shp-template-row{grid-template-columns:repeat(5,minmax(0,1fr))} .shp-custom-label{grid-column:1/-1;justify-self:end} }
 /* окно «Новое помещение» */
 .nr-dlg{width:min(600px,100%)}
 .nr-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1214,7 +1214,7 @@ function roomArea(room){ if(!hasPoly(room)) return room.w*room.d; const P=room.p
 function contourPts(room,off){ const P=roomPoly(room), ws=roomWalls(room), n=P.length; return P.map((p,i)=>{ const prev=ws[(i+n-1)%n], cur=ws[i], dot=prev.nx*cur.nx+prev.ny*cur.ny; return {x:p.x*100-(prev.nx+cur.nx)*off/(1+dot),y:p.y*100-(prev.ny+cur.ny)*off/(1+dot)}; }); }
 function innerRect(room){ if(!hasPoly(room)) return {x:0,y:0,w:room.w,h:room.d};
   const P=roomPoly(room), xs=[...new Set(P.map(p=>p.x))].sort((a,b)=>a-b), ys=[...new Set(P.map(p=>p.y))].sort((a,b)=>a-b), nx=xs.length-1, ny=ys.length-1;
-  const inside=Array.from({length:ny},(_,j)=>Array.from({length:nx},(_,i)=>pointInRoom(room,(xs[i]+xs[i+1])/2,(ys[j]+ys[j+1])/2)));
+  const inside=Array.from({length:ny},(_,j)=>Array.from({length:nx},(_,i)=>pointInRoom(room,(xs[i]+xs[i+1])/2,(ys[j]+ys[j+1])/2,1e-9)&&pointInRoom(room,xs[i],ys[j],1e-9)&&pointInRoom(room,xs[i+1],ys[j],1e-9)&&pointInRoom(room,xs[i],ys[j+1],1e-9)&&pointInRoom(room,xs[i+1],ys[j+1],1e-9)));
   const bad=Array.from({length:ny+1},()=>Array(nx+1).fill(0));
   for(let j=1;j<=ny;j++) for(let i=1;i<=nx;i++) bad[j][i]=(inside[j-1][i-1]?0:1)+bad[j-1][i]+bad[j][i-1]-bad[j-1][i-1];
   let best={x:xs[0],y:ys[0],w:0,h:0}, area=0;
@@ -1225,14 +1225,22 @@ function innerRect(room){ if(!hasPoly(room)) return {x:0,y:0,w:room.w,h:room.d};
 // стены по контуру
 function wallsPathSvg(room,T,stroke){ const P=contourPts(room,T/2), d=P.map((p,i)=>`${i?'L':'M'}${p.x},${p.y}`).join(' ')+' Z'; return `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${T}" stroke-linejoin="miter"/>`; }
 /* ---------- форма помещения (30.2): шаблоны, проверка контура, смена формы ---------- */
+function trapGeom(p){
+  if(!p) return null;
+  const a=Number(p.a), b=Number(p.b), kind=p.kind==='iso'||p.kind==='free'?p.kind:'right'; let to, D;
+  if(kind==='right'){ to=p.side==='r'?a-b:0; D=Number(p.h); }
+  else { const c=Number(p.c), d=Number(p.d); to=kind==='iso'?(a-b)/2:(c*c-d*d)/(2*(a-b))+(a-b)/2;
+    const sq=c*c-to*to; if(!Number.isFinite(c)||(kind==='free'&&!Number.isFinite(d))||sq<=0) return null; D=Math.sqrt(sq); }
+  return [a,b,to,D].every(Number.isFinite)&&D>0?{a,b,to,D}:null; }
 function shapeDefaults(tpl,W,D){ const r=v=>Math.round(v*10)/10, cw=r(W/3), cd=r(D/3);
   if(tpl==='rect') return {W,D};
   if(tpl==='L') return {W,D,cw,cd};
   if(tpl==='U') return {W,D,cw,cd,co:(W-cw)/2};
   if(tpl==='T'){ const lw=cw, ll=cd; return {W,D,lw,lo:(W-lw)/2,ll}; }
+  if(tpl==='trap'){ const a=W, b=r(W*2/3); return {kind:'right',side:'l',a,b,h:D,c:Math.round(D*1000)/1000,d:Math.round(Math.hypot(a-b,D)*1000)/1000}; }
   return null; }
 function shapeTemplate(tpl,rot,p){
-  if(!p||!Number.isFinite(Number(p.W))||!Number.isFinite(Number(p.D))) return {pts:[],roles:[]};
+  if(!p||(tpl!=='trap'&&(!Number.isFinite(Number(p.W))||!Number.isFinite(Number(p.D))))) return {pts:[],roles:[]};
   const W=Number(p.W), D=Number(p.D); let pts=[], roles=[];
   if(tpl==='rect'){ pts=[{x:0,y:0},{x:W,y:0},{x:W,y:D},{x:0,y:D}]; roles=['top','right','bottom','left']; }
   else if(tpl==='L'){
@@ -1244,6 +1252,9 @@ function shapeTemplate(tpl,rot,p){
   } else if(tpl==='T'){
     const lw=Number(p.lw), lo=Number(p.lo), ll=Number(p.ll); if(!Number.isFinite(lw)||!Number.isFinite(lo)||!Number.isFinite(ll)) return {pts:[],roles:[]};
     pts=[{x:0,y:0},{x:W,y:0},{x:W,y:D-ll},{x:lo+lw,y:D-ll},{x:lo+lw,y:D},{x:lo,y:D},{x:lo,y:D-ll},{x:0,y:D-ll}]; roles=['top','right','barR','legR','legBottom','legL','barL','left'];
+  } else if(tpl==='trap'){
+    const g=trapGeom(p); if(!g) return {pts:[],roles:[]};
+    pts=[{x:0,y:0},{x:g.a,y:0},{x:g.to+g.b,y:g.D},{x:g.to,y:g.D}]; roles=['long','sideR','short','sideL'];
   } else return {pts:[],roles:[]};
   let turn=((Math.trunc(Number(rot)||0)%4)+4)%4;
   while(turn--) pts=pts.map(q=>({x:-q.y,y:q.x}));
@@ -1271,9 +1282,11 @@ function shapeError(pts){
   if(Math.abs(area2)<=1e-12) return 'Контур не замкнут';
   const walls=[];
   for(let i=0;i<n;i++){ const a=P[i], b=P[(i+1)%n], dx=b.x-a.x, dy=b.y-a.y;
-    if(Math.abs(dx)>1e-9&&Math.abs(dy)>1e-9) return `Стена ${i+1} — не под прямым углом`;
     walls.push({a,b,dx,dy,len:Math.hypot(dx,dy)}); }
   for(let i=0;i<n;i++) if(walls[i].len<0.3) return `Стена ${i+1} короче 300 мм`;
+  for(let i=0;i<n;i++){ const prev=walls[(i+n-1)%n], cur=walls[i], turn=prev.dx*cur.dy-prev.dy*cur.dx;
+    if(turn*area2>0){ const cos=-(prev.dx*cur.dx+prev.dy*cur.dy)/(prev.len*cur.len), angle=Math.acos(Math.max(-1,Math.min(1,cos)))*180/Math.PI;
+      if(angle<30-1e-9) return `Угол между стенами ${(i+n-1)%n+1} и ${i+1} меньше 30°`; } }
   const cross=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x), on=(a,b,p)=>p.x>=Math.min(a.x,b.x)-1e-9&&p.x<=Math.max(a.x,b.x)+1e-9&&p.y>=Math.min(a.y,b.y)-1e-9&&p.y<=Math.max(a.y,b.y)+1e-9;
   const intersects=(a,b,c,d)=>{ const ab1=cross(a,b,c), ab2=cross(a,b,d), cd1=cross(c,d,a), cd2=cross(c,d,b);
     if(((ab1>1e-9&&ab2< -1e-9)||(ab1< -1e-9&&ab2>1e-9))&&((cd1>1e-9&&cd2< -1e-9)||(cd1< -1e-9&&cd2>1e-9))) return true;
@@ -1288,6 +1301,14 @@ function shapeError(pts){
   return null; }
 function shapeParamsError(tpl,p){
   if(!p) return 'Не заданы размеры формы'; const W=Number(p.W), D=Number(p.D);
+  if(tpl==='trap'){
+    const kind=p.kind==='iso'||p.kind==='free'?p.kind:'right', keys=['a','b',...(kind==='right'?['h']:kind==='iso'?['c']:['c','d'])];
+    if(keys.some(k=>!Number.isFinite(Number(p[k]))||Number(p[k])<0.3||Number(p[k])>30)) return 'Размеры должны быть от 300 до 30 000 мм';
+    if(Number(p.b)>=Number(p.a)) return 'Короткая стена должна быть короче длинной';
+    const g=trapGeom(p);
+    if(!g||g.D<0.3) return kind==='iso'?'Из таких стен трапеция не складывается: боковая стена должна быть длиннее половины разницы длинной и короткой':'Из таких стен трапеция не складывается: проверьте длины боковых стен';
+    if(Math.max(g.a,g.to+g.b)-Math.min(0,g.to)>30) return 'Размеры должны быть от 300 до 30 000 мм';
+    return null; }
   if(!Number.isFinite(W)||!Number.isFinite(D)||W<0.3||D<0.3||W>30||D>30) return 'Размеры должны быть от 300 до 30 000 мм';
   if(tpl==='L'&&(Number(p.cw)>=W||Number(p.cd)>=D)) return 'Вырез должен быть меньше габарита помещения';
   if(tpl==='U'&&(Number(p.cw)>=W||Number(p.cd)>=D||Number(p.co)<0||Number(p.co)+Number(p.cw)>W)) return 'Вырез должен помещаться внутри габарита помещения';
@@ -2639,7 +2660,13 @@ function shapeSvg(tpl,rot,p){
   return `<svg class="shp-svg" viewBox="0 0 40 28" aria-hidden="true"><polygon points="${points}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>`; }
 function shapeCurrentTpl(r){ return r.shape?r.shape.tpl:(hasPoly(r)?'custom':'rect'); }
 function shapeCurrentParams(r,tpl){ return r.shape&&r.shape.tpl===tpl&&r.shape.p?{...r.shape.p}:shapeDefaults(tpl,r.w,r.d); }
-function shapeFieldHtml(tpl,p){
+function shapeFieldHtml(tpl,p,r){
+  if(tpl==='trap'){
+    const kind=p.kind==='iso'||p.kind==='free'?p.kind:'right', side=p.side==='r'?'r':'l', built=shapeTemplate(tpl,r&&r.shape&&r.shape.rot||0,p);
+    const label=(text,role,required)=>{ const id=r&&r.shape&&r.shape.roles&&r.shape.roles[role]; return text+(id?' — '+wallName(r,id):required?' — стена '+(built.roles.indexOf(role)+1):'')+', мм'; };
+    const specs=[['a',label('Длинная стена','long')],['b',label('Короткая стена','short')],...(kind==='right'?[['h',label('Прямая боковая стена',side==='r'?'sideR':'sideL')]]:kind==='iso'?[['c','Боковые стены, мм']]:[['c',label('Боковая стена','sideL',true)],['d',label('Боковая стена','sideR',true)]])];
+    const g=trapGeom(p), hint=g?`${kind==='right'?'Косая стена — '+fmt0(Math.hypot(g.a-g.b,g.D)*1000)+' мм · ':''}Между длинной и короткой стенами — ${fmt0(g.D*1000)} мм · углы у длинной стены — ${Math.round(Math.atan2(g.D,g.to)*180/Math.PI)}° и ${Math.round(Math.atan2(g.D,g.a-g.b-g.to)*180/Math.PI)}° · габарит — ${fmt0(Math.max(...built.pts.map(q=>q.x))*1000)} × ${fmt0(Math.max(...built.pts.map(q=>q.y))*1000)} мм`:'';
+    return seg('trap-kind',kind,[['right','Прямоугольная'],['iso','Равнобедренная'],['free','Разносторонняя']])+`<div class="fields shp-fields">${specs.map(([key,text])=>num(`shp-${key}`,text,Math.round(p[key]*1000),10,300,30000,'',`data-shp-param="${key}"`)).join('')}</div>`+(kind==='right'?seg('trap-side',side,[['l','Прямая стена слева'],['r','Прямая стена справа']]):'')+(hint?`<p class="hint">${hint}</p>`:''); }
   const specs=tpl==='L'?[['D','Общая длина ↕'],['W','Общая ширина ↔'],['cd','Вырез ↕'],['cw','Вырез ↔']]
     :tpl==='U'?[['D','Общая длина ↕'],['W','Общая ширина ↔'],['cd','Глубина выреза ↕'],['cw','Ширина выреза ↔'],['co','Отступ выреза ↔']]
     :tpl==='T'?[['D','Общая длина ↕'],['W','Общая ширина ↔'],['lw','Ширина ножки ↔'],['lo','Отступ ножки ↔'],['ll','Длина ножки ↕']]:[];
@@ -2647,7 +2674,7 @@ function shapeFieldHtml(tpl,p){
 let stepWallSel=null;
 let stepFarSel='far';
 function shapeSecHtml(r){
-  const tpl=shapeCurrentTpl(r), curRot=r.shape&&r.shape.rot||0, p=shapeCurrentParams(r,tpl), templates=[['rect','Прямо&shy;угольник'],['L','Г'],['U','П'],['T','Т']];
+  const tpl=shapeCurrentTpl(r), curRot=r.shape&&r.shape.rot||0, p=shapeCurrentParams(r,tpl), templates=[['rect','Прямо&shy;угольник'],['L','Г'],['U','П'],['T','Т'],['trap','Трапе&shy;ция']];
   const choices=`<div class="shp-template-row">${templates.map(([key,label])=>`<button type="button" class="btn tap shp-template" data-shape-tpl="${key}" aria-pressed="${tpl===key}">${shapeSvg(key,0,shapeDefaults(key,3,2))}<span>${label}</span></button>`).join('')}${tpl==='custom'?'<span class="shp-custom-label">Своя форма</span>':''}</div>`;
   const rotation=tpl!=='custom'&&tpl!=='rect'?`<div class="shp-rotation"><span class="lbl">Поворот</span><div class="shp-rot-row">${[0,1,2,3].map(rot=>`<button type="button" class="btn tap shp-rot" data-shape-rot="${rot}" aria-pressed="${Number(curRot)===rot}" aria-label="Поворот ${rot*90} градусов">${shapeSvg(tpl,rot,p)}<span>${rot*90}°</span></button>`).join('')}</div></div>`:'';
   const walls=tpl==='custom'?`<div class="shp-wall-list">${roomWalls(r).map(w=>`<div class="shp-wall-row"><b>Стена ${w.i+1}</b>${num(`shp-wall-${esc(w.id)}`,'Длина, мм',Math.round(w.len*1000),10,300,30000,'',`data-wall-len="${esc(w.id)}"`)}</div>`).join('')}</div>`:'';
@@ -2655,7 +2682,7 @@ function shapeSecHtml(r){
   const stepBlock=`<div class="shp-step"><h4>Уступ на стене</h4><label class="field"><span>Стена</span><select data-step-wall>${stepWalls.map(w=>{ const title=wallTitle(r,w.id); return `<option value="${esc(w.id)}" ${w.id===stepWall.id?'selected':''}>${esc(title.charAt(0).toUpperCase()+title.slice(1))}</option>`; }).join('')}</select></label>
     <div class="fields shp-fields">${num('step-off','Место уступа, мм — '+wallFrom(r,stepWall.id),Math.round(stepWall.len*50)*10,10,0,stepWall.len*1000,'','data-step-off')}${num('step-depth','Глубина, мм',600,10,300,'','','data-step-depth')}</div>
     ${seg('step-far',stepFarSel,[['far','Утопить дальнюю часть'],['near','Утопить ближнюю часть']])}<button type="button" class="btn tap shp-action" data-step-apply>Добавить уступ</button></div>`;
-  return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p)}${walls}${stepBlock}<div class="shp-error-slot"></div></div>`; }
+  return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p,r)}${walls}${stepBlock}<div class="shp-error-slot"></div></div>`; }
 function shapeShowError(sec,el,msg){ if(el) el.setAttribute('aria-invalid','true'); const slot=sec.querySelector('.shp-error-slot'); if(slot) slot.innerHTML=`<p class="rmp-warn shp-warn" role="alert">${esc(msg)}</p>`; }
 function applyRoomShape(r,shape,sec,el){
   const result=setRoomShape(r,shape); if(result.error){ shapeShowError(sec,el,result.error); return false; }
@@ -2663,7 +2690,17 @@ function applyRoomShape(r,shape,sec,el){
 function bindShapeEditor(){
   const sec=document.querySelector('[data-rpsec="shape"]'); if(!sec) return;
   const stepWall=sec.querySelector('[data-step-wall]'); stepWall&&stepWall.addEventListener('change',()=>{ stepWallSel=stepWall.value; render(); });
-  segBind(sec,(key,value)=>{ if(key==='step-far') stepFarSel=value; });
+  segBind(sec,(key,value)=>{ if(key==='step-far') stepFarSel=value;
+    if(key!=='trap-kind'&&key!=='trap-side') return;
+    const r=S.room; if(shapeCurrentTpl(r)!=='trap') return;
+    const p=shapeCurrentParams(r,'trap'), rot=r.shape&&r.shape.rot||0;
+    if(key==='trap-kind'){ const g=trapGeom(p); if(!g) return; const mm=v=>Math.round(v*1000)/1000;
+      if(value==='right'){ p.h=mm(g.D); p.side=Math.abs(g.to)<Math.abs(g.to-(g.a-g.b))?'l':'r'; }
+      else if(value==='iso') p.c=mm(Math.hypot((g.a-g.b)/2,g.D));
+      else if(value==='free'){ p.c=mm(Math.hypot(g.to,g.D)); p.d=mm(Math.hypot(g.a-g.b-g.to,g.D)); }
+      p.kind=value;
+    } else p.side=value;
+    applyRoomShape(r,{tpl:'trap',rot,p},sec,sec.querySelector(`[data-seg="${key}"]`)); });
   const stepApply=sec.querySelector('[data-step-apply]'); stepApply&&stepApply.addEventListener('click',()=>{
     const offEl=sec.querySelector('[data-step-off]'), depthEl=sec.querySelector('[data-step-depth]'), read=el=>Number(String(el.value).replace(/\s+/g,'').replace(',','.')), off=read(offEl), depth=read(depthEl), id=stepWall.value, w=roomWalls(S.room).find(q=>q.id===id);
     if(!w) return;

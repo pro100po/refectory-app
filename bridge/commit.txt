@@ -1,4 +1,4 @@
-Пункт аудита 30.2.2, шаг «Помещения»: слои в меню «Слои ▾» — строка инструментов не переносится и при открытой панели
+Пункт аудита 30.2: «Уступ на стене» — ступенчатые помещения (лесенка, Z-форма) в разделе «Форма»
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01DPNhGBGisPV3z5ToH2Zf4P

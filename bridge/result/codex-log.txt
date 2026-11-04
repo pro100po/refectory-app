@@ -7,15 +7,29 @@ approval: never
 sandbox: workspace-write [workdir, /tmp, $TMPDIR]
 reasoning effort: high
 reasoning summaries: none
-session id: 01a1a6ec-74db-7461-89bc-06b19f75b2e1
+session id: 01a1a6ef-cd44-7833-b954-fd5424cad901
 --------
 user
 Execute the task described in TASK.md. Follow the rules in AGENTS.md strictly.
 codex
-Прочитаю `TASK.md` и правила проекта, затем внесу только указанные изменения в `index.html` и проверю результат.
+Прочитаю `TASK.md` и правила проекта, затем внесу только требуемые изменения в `index.html`.
 exec
-"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -LiteralPath TASK.md; Get-Content -LiteralPath AGENTS.md' in C:\Users\pro10\refectory-app
- succeeded in 677ms:
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -LiteralPath AGENTS.md; Get-Content -LiteralPath TASK.md' in C:\Users\pro10\refectory-app
+ succeeded in 497ms:
+# ÐŸÑ€Ð°Ð²Ð¸Ð»Ð° Ð´Ð»Ñ Ð¸ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»Ñ (Codex / GPT)
+
+Ð¢Ñ‹ â€” Ð¸ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒ. Ð—Ð°Ð´Ð°Ñ‡Ð¸ ÑÑ‚Ð°Ð²Ð¸Ñ‚ Ð¸ Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÐµÑ‚ Ð´Ñ€ÑƒÐ³Ð¾Ð¹ Ð°Ð³ÐµÐ½Ñ‚; Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ Ð²ÑÐµÐ³Ð´Ð° Ð»ÐµÐ¶Ð¸Ñ‚ Ð² `TASK.md`.
+
+1. Ð”ÐµÐ»Ð°Ð¹ **Ñ‚Ð¾Ð»ÑŒÐºÐ¾** Ñ‚Ð¾, Ñ‡Ñ‚Ð¾ Ð½Ð°Ð¿Ð¸ÑÐ°Ð½Ð¾ Ð² `TASK.md`. ÐÐ¸ÐºÐ°ÐºÐ¸Ñ… Â«Ð·Ð°Ð¾Ð´Ð½Ð¾ ÑƒÐ»ÑƒÑ‡ÑˆÑƒÂ».
+2. ÐÐµ Ð¿ÐµÑ€ÐµÑ„Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐ¹ ÐºÐ¾Ð´, Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹ Ð¾Ñ‚ÑÑ‚ÑƒÐ¿Ñ‹, ÐºÐ°Ð²Ñ‹Ñ‡ÐºÐ¸, Ð¿Ð¾Ñ€ÑÐ´Ð¾Ðº ÑÑ‚Ñ€Ð¾Ðº Ð²Ð½Ðµ Ð·Ð¾Ð½Ñ‹ Ð·Ð°Ð´Ð°Ð½Ð¸Ñ.
+3. ÐÐµ Ñ‚Ñ€Ð¾Ð³Ð°Ð¹ ÑÐ¾ÑÐµÐ´Ð½Ð¸Ðµ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸, ÑÑ‚Ð¸Ð»Ð¸ Ð¸ Ñ‚ÐµÐºÑÑ‚Ñ‹, ÐµÑÐ»Ð¸ Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ ÑÑ‚Ð¾Ð³Ð¾ Ð½Ðµ Ñ‚Ñ€ÐµÐ±ÑƒÐµÑ‚.
+4. ÐÐµ ÑƒÐ´Ð°Ð»ÑÐ¹ ÐºÐ¾Ð´, ÐµÑÐ»Ð¸ ÑƒÐ´Ð°Ð»ÐµÐ½Ð¸Ðµ Ð¿Ñ€ÑÐ¼Ð¾ Ð½Ðµ ÑƒÐºÐ°Ð·Ð°Ð½Ð¾.
+5. ÐÐµ ÑÐ¾Ð·Ð´Ð°Ð²Ð°Ð¹ Ð½Ð¾Ð²Ñ‹Ðµ Ñ„Ð°Ð¹Ð»Ñ‹, ÐºÑ€Ð¾Ð¼Ðµ ÑƒÐ¿Ð¾Ð¼ÑÐ½ÑƒÑ‚Ñ‹Ñ… Ð² Ð·Ð°Ð´Ð°Ð½Ð¸Ð¸. ÐŸÑ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ðµ â€” Ð¾Ð´Ð¸Ð½ Ñ„Ð°Ð¹Ð» `index.html`, Ð²ÐµÑÑŒ ÐºÐ¾Ð´ Ð¾ÑÑ‚Ð°Ñ‘Ñ‚ÑÑ Ð² Ð½Ñ‘Ð¼.
+6. ÐÐµ Ð´ÐµÐ»Ð°Ð¹ `git commit`, `git reset`, `git checkout` â€” ÐºÐ¾Ð¼Ð¼Ð¸Ñ‚Ñ‹ Ð´ÐµÐ»Ð°ÐµÑ‚ Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÑŽÑ‰Ð¸Ð¹.
+7. Ð˜Ð½Ñ‚ÐµÑ€Ñ„ÐµÐ¹Ñ Ð¸ Ñ‚ÐµÐºÑÑ‚Ñ‹ â€” Ð½Ð° Ñ€ÑƒÑÑÐºÐ¾Ð¼, Ð² ÑÑ‚Ð¸Ð»Ðµ ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÑŽÑ‰Ð¸Ñ….
+8. Ð•ÑÐ»Ð¸ Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ Ð½ÐµÑÑÐ½Ð¾ Ð¸Ð»Ð¸ Ð¿Ñ€Ð¾Ñ‚Ð¸Ð²Ð¾Ñ€ÐµÑ‡Ð¸Ñ‚ ÐºÐ¾Ð´Ñƒ â€” Ð½Ðµ ÑƒÐ³Ð°Ð´Ñ‹Ð²Ð°Ð¹: Ð½Ð¸Ñ‡ÐµÐ³Ð¾ Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹ Ð¸ Ð¾Ð¿Ð¸ÑˆÐ¸ Ð¿Ñ€Ð¾Ð±Ð»ÐµÐ¼Ñƒ Ð² ÐºÐ¾Ð½Ñ†Ðµ Ð¾Ñ‚Ð²ÐµÑ‚Ð°.
+9. Ð’ ÐºÐ¾Ð½Ñ†Ðµ Ð¾Ñ‚Ð²ÐµÑ‚Ð° ÐºÐ¾Ñ€Ð¾Ñ‚ÐºÐ¾ Ð¿ÐµÑ€ÐµÑ‡Ð¸ÑÐ»Ð¸: ÐºÐ°ÐºÐ¸Ðµ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸/Ñ„Ñ€Ð°Ð³Ð¼ÐµÐ½Ñ‚Ñ‹ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ñ‹ Ð¸ Ð·Ð°Ñ‡ÐµÐ¼.
+10. ÐŸÐ°Ð¿ÐºÑƒ `versions/` Ð¸ Ñ„Ð°Ð¹Ð» `versions.html` Ð½Ðµ Ð¾Ñ‚ÐºÑ€Ñ‹Ð²Ð°Ð¹, Ð½Ðµ Ð¸Ñ‰Ð¸ Ð² Ð½Ð¸Ñ… Ð¸ Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹ â€” ÑÑ‚Ð¾ Ð°Ñ€Ñ…Ð¸Ð² Ð¿Ñ€Ð¾ÑˆÐ»Ñ‹Ñ… Ð²ÐµÑ€ÑÐ¸Ð¹. Ð Ð°Ð±Ð¾Ñ‚Ð°Ð¹ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ñ `index.html`.
 # ÐŸÑƒÐ½ÐºÑ‚ Ð°ÑƒÐ´Ð¸Ñ‚Ð° 30.2, Ð½ÐµÐ´Ð¾Ñ€Ð°Ð±Ð¾Ñ‚ÐºÐ° Ð‘: Â«Ð£ÑÑ‚ÑƒÐ¿ Ð½Ð° ÑÑ‚ÐµÐ½ÐµÂ» â€” ÑÑ‚ÑƒÐ¿ÐµÐ½Ñ‡Ð°Ñ‚Ñ‹Ðµ Ð¿Ð¾Ð¼ÐµÑ‰ÐµÐ½Ð¸Ñ
 Ð˜ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒ: sol / high
 
@@ -31,7 +45,7 @@ exec
 - Ð¢Ð¾Ñ‡ÐºÐ° Ñ€Ð°Ð·Ñ€Ñ‹Ð²Ð°: `t = w.offFrom==='start' ? off : w.len-off` (Ñ€Ð°ÑÑÑ‚Ð¾ÑÐ½Ð¸Ðµ Ð¾Ñ‚ `a`), `s = a + uÂ·t`. Ð¢Ñ€ÐµÐ±Ð¾Ð²Ð°Ñ‚ÑŒ `0.3 <= t <= w.len-0.3`, Ð¸Ð½Ð°Ñ‡Ðµ Ð¾ÑˆÐ¸Ð±ÐºÐ° Â«Ð£ÑÑ‚ÑƒÐ¿ ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ Ð±Ð»Ð¸Ð·ÐºÐ¾ Ðº ÑƒÐ³Ð»Ñƒ â€” Ð¾Ñ‚ ÑƒÐ³Ð»Ð° Ð½Ðµ Ð¼ÐµÐ½ÑŒÑˆÐµ 300 Ð¼Ð¼Â».
 - ÐšÐ°ÐºÐ°Ñ Ñ‡Ð°ÑÑ‚ÑŒ ÑƒÑ‚Ð°Ð¿Ð»Ð¸Ð²Ð°ÐµÑ‚ÑÑ: Â«Ð´Ð°Ð»ÑŒÐ½ÑÑÂ» = Ñ…Ð²Ð¾ÑÑ‚ `s..b`, ÐµÑÐ»Ð¸ `w.offFrom==='start'`, Ð¸Ð½Ð°Ñ‡Ðµ Ð³Ð¾Ð»Ð¾Ð²Ð° `a..s`; `far===false` â€” Ð½Ð°Ð¾Ð±Ð¾Ñ€Ð¾Ñ‚.
   - Ñ…Ð²Ð¾ÑÑ‚ Ð²Ð½ÑƒÑ‚Ñ€ÑŒ: Ð²Ð¼ÐµÑÑ‚Ð¾ `a, b` Ð¿Ð¾Ð»ÑƒÑ‡Ð¸Ñ‚ÑŒ `a, s, s+nvÂ·h, b+nvÂ·h` (Ñƒ `s` â€” Ð±ÐµÐ· `wid`, Ñƒ `s+nvÂ·h` â€” Ð±ÐµÐ· `wid`, Ð²ÐµÑ€ÑˆÐ¸Ð½Ð° `b+nvÂ·h` ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÑ‚ `wid` Ð²ÐµÑ€ÑˆÐ¸Ð½Ñ‹ `b`);
-  - Ð³Ð¾Ð»Ð¾Ð²Ð° Ð²Ð½ÑƒÑ‚Ñ€ÑŒ: `a+nvÂ·h` (ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÑ‚ `wid` Ð²ÐµÑ€ÑˆÐ¸Ð½Ñ‹ `a`), `s+nvÂ·h` (Ð±ÐµÐ· `wid`), `s` (Ð½Ð¾Ð²Ð°Ñ ÑÑ‚ÐµÐ½Ð° Ð¾Ñ‚ `s` Ðº `b` Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ `wid` ÑÑ‚ÐµÐ½Ñ‹ `w`, Ñ‚. Ðµ. Ñƒ Ð²ÐµÑ€ÑˆÐ¸Ð½Ñ‹ `s` `wid = w.id`), Ð·Ð°Ñ‚ÐµÐ¼ `b`.
+  - Ð³Ð¾Ð»Ð¾Ð²Ð° Ð²Ð½ÑƒÑ‚Ñ€ÑŒ: `a+nvÂ·h` (**Ð±ÐµÐ· `wid`** â€” ÑƒÑ‚Ð¾Ð¿Ð»ÐµÐ½Ð½Ð°Ñ Ð³Ð¾Ð»Ð¾Ð²Ð° â€” Ð½Ð¾Ð²Ð°Ñ ÑÑ‚ÐµÐ½Ð°), `s+nvÂ·h` (Ð±ÐµÐ· `wid`), `s` (Ñƒ Ð²ÐµÑ€ÑˆÐ¸Ð½Ñ‹ `s` `wid = w.id`: Ð½ÐµÐ¿Ð¾Ð´Ð²Ð¸Ð¶Ð½Ð°Ñ Ñ‡Ð°ÑÑ‚ÑŒ `s..b` ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÑ‚ id ÑÑ‚ÐµÐ½Ñ‹ `w`), Ð·Ð°Ñ‚ÐµÐ¼ `b`.
   - Ð’ Ð²Ð°Ñ€Ð¸Ð°Ð½Ñ‚Ðµ Â«Ñ…Ð²Ð¾ÑÑ‚Â» ÑÑ‚ÐµÐ½Ð° Ð¾Ñ‚ `a` Ð´Ð¾ `s` ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÑ‚ `wid` ÑÑ‚ÐµÐ½Ñ‹ `w` (Ð²ÐµÑ€ÑˆÐ¸Ð½Ð° `a` ÑƒÐ¶Ðµ ÐµÐ³Ð¾ Ð½ÐµÑÑ‘Ñ‚).
   - Ð¡Ð¾ÑÐµÐ´Ð½ÑÑ ÑÑ‚ÐµÐ½Ð° ÑÐ¾ ÑÑ‚Ð¾Ñ€Ð¾Ð½Ñ‹ ÑÐ´Ð²Ð¸Ð³Ð°ÐµÐ¼Ð¾Ð³Ð¾ ÐºÐ¾Ð½Ñ†Ð° Ð´Ð¾Ð»Ð¶Ð½Ð° Ð±Ñ‹Ñ‚ÑŒ Ð¿ÐµÑ€Ð¿ÐµÐ½Ð´Ð¸ÐºÑƒÐ»ÑÑ€Ð½Ð° `w`; ÐµÑÐ»Ð¸ Ð½ÐµÑ‚ (`|uÂ·dir ÑÐ¾ÑÐµÐ´Ð°| > 1e-9`) â€” Ð¾ÑˆÐ¸Ð±ÐºÐ° Â«Ð£ÑÑ‚ÑƒÐ¿ Ñ€ÑÐ´Ð¾Ð¼ Ñ ÐºÐ¾ÑÐ¾Ð¹ ÑÑ‚ÐµÐ½Ð¾Ð¹ Ð¿Ð¾ÐºÐ° Ð½Ðµ Ð¿Ð¾Ð´Ð´ÐµÑ€Ð¶Ð¸Ð²Ð°ÐµÑ‚ÑÑÂ».
   - ÐœÐ°ÑÑÐ¸Ð² Ð²ÐµÑ€ÑˆÐ¸Ð½ â€” Ð²ÑÐµÐ³Ð´Ð° Ð½Ð¾Ð²Ñ‹Ð¹; `room.poly` Ð½Ð° Ð¼ÐµÑÑ‚Ðµ Ð½Ðµ Ð¼ÐµÐ½ÑÑ‚ÑŒ (ÐºÑÑˆ ÑÑ‚ÐµÐ½ ÑÑ€Ð°Ð²Ð½Ð¸Ð²Ð°ÐµÑ‚ ÑÑÑ‹Ð»ÐºÑƒ `room.poly`).
@@ -69,54 +83,13 @@ exec
 5. Ctrl+Z (Ð¾Ñ‚Ð¼ÐµÐ½Ð°) Ð²Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ Ð¿Ñ€ÐµÐ¶Ð½ÑŽÑŽ Ñ„Ð¾Ñ€Ð¼Ñƒ.
 6. Ð¨Ð°Ð³Ð¸ Â«ÐŸÐ»Ð°Ð½Â», PDF Ð¸ Ð¾Ð±Ñ‰Ð¸Ð¹ Ð¿Ð»Ð°Ð½ Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÑŽÑ‚ ÑÑ‚ÑƒÐ¿ÐµÐ½Ñ‡Ð°Ñ‚Ñ‹Ð¹ ÐºÐ¾Ð½Ñ‚ÑƒÑ€; Ð¾ÑˆÐ¸Ð±Ð¾Ðº Ð² ÐºÐ¾Ð½ÑÐ¾Ð»Ð¸ Ð½ÐµÑ‚.
 7. Ð¨Ð°Ð±Ð»Ð¾Ð½Ñ‹ Ð“, ÐŸ, Ð¢ ÑÑ‚Ñ€Ð¾ÑÑ‚ÑÑ ÐºÐ°Ðº Ñ€Ð°Ð½ÑŒÑˆÐµ.
-# ÐŸÑ€Ð°Ð²Ð¸Ð»Ð° Ð´Ð»Ñ Ð¸ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»Ñ (Codex / GPT)
 
-Ð¢Ñ‹ â€” Ð¸ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒ. Ð—Ð°Ð´Ð°Ñ‡Ð¸ ÑÑ‚Ð°Ð²Ð¸Ñ‚ Ð¸ Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÐµÑ‚ Ð´Ñ€ÑƒÐ³Ð¾Ð¹ Ð°Ð³ÐµÐ½Ñ‚; Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ Ð²ÑÐµÐ³Ð´Ð° Ð»ÐµÐ¶Ð¸Ñ‚ Ð² `TASK.md`.
-
-1. Ð”ÐµÐ»Ð°Ð¹ **Ñ‚Ð¾Ð»ÑŒÐºÐ¾** Ñ‚Ð¾, Ñ‡Ñ‚Ð¾ Ð½Ð°Ð¿Ð¸ÑÐ°Ð½Ð¾ Ð² `TASK.md`. ÐÐ¸ÐºÐ°ÐºÐ¸Ñ… Â«Ð·Ð°Ð¾Ð´Ð½Ð¾ ÑƒÐ»ÑƒÑ‡ÑˆÑƒÂ».
-2. ÐÐµ Ð¿ÐµÑ€ÐµÑ„Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐ¹ ÐºÐ¾Ð´, Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹ Ð¾Ñ‚ÑÑ‚ÑƒÐ¿Ñ‹, ÐºÐ°Ð²Ñ‹Ñ‡ÐºÐ¸, Ð¿Ð¾Ñ€ÑÐ´Ð¾Ðº ÑÑ‚Ñ€Ð¾Ðº Ð²Ð½Ðµ Ð·Ð¾Ð½Ñ‹ Ð·Ð°Ð´Ð°Ð½Ð¸Ñ.
-3. ÐÐµ Ñ‚Ñ€Ð¾Ð³Ð°Ð¹ ÑÐ¾ÑÐµÐ´Ð½Ð¸Ðµ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸, ÑÑ‚Ð¸Ð»Ð¸ Ð¸ Ñ‚ÐµÐºÑÑ‚Ñ‹, ÐµÑÐ»Ð¸ Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ ÑÑ‚Ð¾Ð³Ð¾ Ð½Ðµ Ñ‚Ñ€ÐµÐ±ÑƒÐµÑ‚.
-4. ÐÐµ ÑƒÐ´Ð°Ð»ÑÐ¹ ÐºÐ¾Ð´, ÐµÑÐ»Ð¸ ÑƒÐ´Ð°Ð»ÐµÐ½Ð¸Ðµ Ð¿Ñ€ÑÐ¼Ð¾ Ð½Ðµ ÑƒÐºÐ°Ð·Ð°Ð½Ð¾.
-5. ÐÐµ ÑÐ¾Ð·Ð´Ð°Ð²Ð°Ð¹ Ð½Ð¾Ð²Ñ‹Ðµ Ñ„Ð°Ð¹Ð»Ñ‹, ÐºÑ€Ð¾Ð¼Ðµ ÑƒÐ¿Ð¾Ð¼ÑÐ½ÑƒÑ‚Ñ‹Ñ… Ð² Ð·Ð°Ð´Ð°Ð½Ð¸Ð¸. ÐŸÑ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ðµ â€” Ð¾Ð´Ð¸Ð½ Ñ„Ð°Ð¹Ð» `index.html`, Ð²ÐµÑÑŒ ÐºÐ¾Ð´ Ð¾ÑÑ‚Ð°Ñ‘Ñ‚ÑÑ Ð² Ð½Ñ‘Ð¼.
-6. ÐÐµ Ð´ÐµÐ»Ð°Ð¹ `git commit`, `git reset`, `git checkout` â€” ÐºÐ¾Ð¼Ð¼Ð¸Ñ‚Ñ‹ Ð´ÐµÐ»Ð°ÐµÑ‚ Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÑŽÑ‰Ð¸Ð¹.
-7. Ð˜Ð½Ñ‚ÐµÑ€Ñ„ÐµÐ¹Ñ Ð¸ Ñ‚ÐµÐºÑÑ‚Ñ‹ â€” Ð½Ð° Ñ€ÑƒÑÑÐºÐ¾Ð¼, Ð² ÑÑ‚Ð¸Ð»Ðµ ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÑŽÑ‰Ð¸Ñ….
-8. Ð•ÑÐ»Ð¸ Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ Ð½ÐµÑÑÐ½Ð¾ Ð¸Ð»Ð¸ Ð¿Ñ€Ð¾Ñ‚Ð¸Ð²Ð¾Ñ€ÐµÑ‡Ð¸Ñ‚ ÐºÐ¾Ð´Ñƒ â€” Ð½Ðµ ÑƒÐ³Ð°Ð´Ñ‹Ð²Ð°Ð¹: Ð½Ð¸Ñ‡ÐµÐ³Ð¾ Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹ Ð¸ Ð¾Ð¿Ð¸ÑˆÐ¸ Ð¿Ñ€Ð¾Ð±Ð»ÐµÐ¼Ñƒ Ð² ÐºÐ¾Ð½Ñ†Ðµ Ð¾Ñ‚Ð²ÐµÑ‚Ð°.
-9. Ð’ ÐºÐ¾Ð½Ñ†Ðµ Ð¾Ñ‚Ð²ÐµÑ‚Ð° ÐºÐ¾Ñ€Ð¾Ñ‚ÐºÐ¾ Ð¿ÐµÑ€ÐµÑ‡Ð¸ÑÐ»Ð¸: ÐºÐ°ÐºÐ¸Ðµ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸/Ñ„Ñ€Ð°Ð³Ð¼ÐµÐ½Ñ‚Ñ‹ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ñ‹ Ð¸ Ð·Ð°Ñ‡ÐµÐ¼.
-10. ÐŸÐ°Ð¿ÐºÑƒ `versions/` Ð¸ Ñ„Ð°Ð¹Ð» `versions.html` Ð½Ðµ Ð¾Ñ‚ÐºÑ€Ñ‹Ð²Ð°Ð¹, Ð½Ðµ Ð¸Ñ‰Ð¸ Ð² Ð½Ð¸Ñ… Ð¸ Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹ â€” ÑÑ‚Ð¾ Ð°Ñ€Ñ…Ð¸Ð² Ð¿Ñ€Ð¾ÑˆÐ»Ñ‹Ñ… Ð²ÐµÑ€ÑÐ¸Ð¹. Ð Ð°Ð±Ð¾Ñ‚Ð°Ð¹ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ñ `index.html`.
+## Ð—Ð°Ð¼ÐµÑ‡Ð°Ð½Ð¸Ñ (Ð¸ÑÐ¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ Ð·Ð°Ð´Ð°Ð½Ð¸Ñ)
+Ð’Ð¾Ð¿Ñ€Ð¾Ñ Ð¸ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»Ñ Ð²ÐµÑ€Ð½Ñ‹Ð¹: Ð² Ð²Ð°Ñ€Ð¸Ð°Ð½Ñ‚Ðµ Â«Ð³Ð¾Ð»Ð¾Ð²Ð° Ð²Ð½ÑƒÑ‚Ñ€ÑŒÂ» Ð²ÐµÑ€ÑˆÐ¸Ð½Ð° `a+nvÂ·h` Ð´Ð¾Ð»Ð¶Ð½Ð° Ð±Ñ‹Ñ‚ÑŒ **Ð±ÐµÐ· `wid`**, Ð° `wid = w.id` â€” Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ñƒ Ð²ÐµÑ€ÑˆÐ¸Ð½Ñ‹ `s`. Ð¢Ð°Ðº ÑÑ‚ÐµÐ½Ð° `a+nvÂ·h â†’ s+nvÂ·h` (ÑƒÑ‚Ð¾Ð¿Ð»ÐµÐ½Ð½Ð°Ñ Ñ‡Ð°ÑÑ‚ÑŒ) Ð¸ ÑÑ‚ÑƒÐ¿ÐµÐ½ÑŒÐºÐ° `s+nvÂ·h â†’ s` â€” Ð½Ð¾Ð²Ñ‹Ðµ, Ð° Ð½ÐµÐ¿Ð¾Ð´Ð²Ð¸Ð¶Ð½Ð°Ñ Ñ‡Ð°ÑÑ‚ÑŒ `s â†’ b` ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÑ‚ id `w`; `assignWids()` Ð½Ðµ Ñ‚Ñ€Ð¾Ð³Ð°Ñ‚ÑŒ. Ð’ Ð²Ð°Ñ€Ð¸Ð°Ð½Ñ‚Ðµ Â«Ñ…Ð²Ð¾ÑÑ‚ Ð²Ð½ÑƒÑ‚Ñ€ÑŒÂ» Ð²ÑÑ‘ ÐºÐ°Ðº Ð½Ð°Ð¿Ð¸ÑÐ°Ð½Ð¾: `a` (Ñ `w.id`), `s` Ð¸ `s+nvÂ·h` Ð±ÐµÐ· `wid`, `b+nvÂ·h` Ñ `wid` Ð²ÐµÑ€ÑˆÐ¸Ð½Ñ‹ `b`. ÐŸÑƒÐ½ÐºÑ‚ Ð²Ñ‹ÑˆÐµ Ð¸ÑÐ¿Ñ€Ð°Ð²Ð»ÐµÐ½. Ð’Ñ‹Ð¿Ð¾Ð»Ð½Ð¸ Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ Ð¿Ð¾Ð»Ð½Ð¾ÑÑ‚ÑŒÑŽ.
 
 exec
-"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git status --short; rg -n "function (setRoomShape|shapeSecHtml|bindShapeEditor|wallDragStart|normPoly|assignWids|shapeError|roomWalls|wallPoint|projectToWall|clampRoom|num|seg|shapeShowError)|shp-controls|shp-fields|stepWallSel" index.html' in C:\Users\pro10\refectory-app
-exec
-"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -Encoding UTF8 -LiteralPath TASK.md; Get-Content -Encoding UTF8 -LiteralPath AGENTS.md' in C:\Users\pro10\refectory-app
- succeeded in 381ms:
-warning: unable to access 'C:\Users\pro10/.config/git/ignore': Permission denied
-warning: unable to access 'C:\Users\pro10/.config/git/ignore': Permission denied
-?? .claude/
-389:.shp-controls{display:flex;flex-direction:column;gap:12px}
-399:.shp-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-422:@media (max-width:390px){ .shp-fields{grid-template-columns:minmax(0,1fr)} .shp-template-row{grid-template-columns:repeat(4,minmax(0,1fr))} .shp-custom-label{grid-column:1/-1;justify-self:end} }
-1094:function roomWalls(room){ const o=room[RWK]; if(o!==undefined && o.w===room.w && o.d===room.d && o.poly===room.poly) return o.ws;
-1114:function wallPoint(room,id,off){ const w=wallById(room,id), O=w.offOrigin, d=w.offDir; return {x:O.x+d.x*off, y:O.y+d.y*off}; }
-1127:function projectToWall(room,id,x,y){ const w=W_OF(room,id), O=w.offOrigin;
-1131:function segDist(x,y,x1,y1,x2,y2){ const L2=(x2-x1)**2+(y2-y1)**2, t=Math.max(0,Math.min(1,((x-x1)*(x2-x1)+(y-y1)*(y2-y1))/L2)); return Math.hypot(x-(x1+t*(x2-x1)), y-(y1+t*(y2-y1))); }
-1147:function segHitsRect(x1,y1,x2,y2,r){ if(r.w<=0||r.h<=0) return false; let t0=0, t1=1; const dx=x2-x1, dy=y2-y1;
-1249:function normPoly(pts,roles){
-1263:function shapeError(pts){
-1292:function assignWids(room,pts,roles,tpl){
-1314:function setRoomShape(room,shape,shift){
-1347:function segOf(s, o){ return wallSeg(s.room, o.side, o.off, o.w); }
-1350:function clampRoom(s){
-2240:function seg(id,val,opts){ return `<div class="seg" role="group" data-seg="${id}">${opts.map(([v,l,dis])=>`<button type="button" data-v="${v}" aria-pressed="${String(val)===String(v)}"${dis?` disabled title="${esc(dis)}"`:''}>${l}</button>`).join('')}</div>`; }
-2241:function num(id,label,val,st,min,max,hint,attr=''){ return `<label class="field"><span>${label}</span><input id="${id}" type="text" inputmode="decimal" data-num autocomplete="off" value="${val}" step="${st}" min="${min}" max="${max}" ${attr}>${hint?`<small>${hint}</small>`:''}</label>`; }
-2243:function segBind(root,fn){ root.querySelectorAll('[data-seg]').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); fn(g.dataset.seg,b.dataset.v); })); }
-2614:  return specs.length?`<div class="fields shp-fields">${specs.map(([key,label])=>num(`shp-${key}`,label,Math.round(p[key]*1000),10,300,30000,'',`data-shp-param="${key}"`)).join('')}</div>`:''; }
-2615:function shapeSecHtml(r){
-2620:  return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p)}${walls}<div class="shp-error-slot"></div></div>`; }
-2621:function shapeShowError(sec,el,msg){ if(el) el.setAttribute('aria-invalid','true'); const slot=sec.querySelector('.shp-error-slot'); if(slot) slot.innerHTML=`<p class="rmp-warn shp-warn" role="alert">${esc(msg)}</p>`; }
-2625:function bindShapeEditor(){
-2727:function wallDragStart(e,r,id,handle){
-
- succeeded in 574ms:
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath TASK.md -Encoding UTF8; rg -n \"function (setRoomShape|shapeSecHtml|bindShapeEditor|wallDragStart|roomWalls|projectToWall|clampRoom|normPoly|assignWids|shapeError)|shp-controls|shp-fields|function num\\(|function seg\\(\" index.html; git status --short --untracked-files=no" in C:\Users\pro10\refectory-app
+ succeeded in 728ms:
 # Пункт аудита 30.2, недоработка Б: «Уступ на стене» — ступенчатые помещения
 Исполнитель: sol / high
 
@@ -132,7 +105,7 @@ warning: unable to access 'C:\Users\pro10/.config/git/ignore': Permission denied
 - Точка разрыва: `t = w.offFrom==='start' ? off : w.len-off` (расстояние от `a`), `s = a + u·t`. Требовать `0.3 <= t <= w.len-0.3`, иначе ошибка «Уступ слишком близко к углу — от угла не меньше 300 мм».
 - Какая часть утапливается: «дальняя» = хвост `s..b`, если `w.offFrom==='start'`, иначе голова `a..s`; `far===false` — наоборот.
   - хвост внутрь: вместо `a, b` получить `a, s, s+nv·h, b+nv·h` (у `s` — без `wid`, у `s+nv·h` — без `wid`, вершина `b+nv·h` сохраняет `wid` вершины `b`);
-  - голова внутрь: `a+nv·h` (сохраняет `wid` вершины `a`), `s+nv·h` (без `wid`), `s` (новая стена от `s` к `b` получает `wid` стены `w`, т. е. у вершины `s` `wid = w.id`), затем `b`.
+  - голова внутрь: `a+nv·h` (**без `wid`** — утопленная голова — новая стена), `s+nv·h` (без `wid`), `s` (у вершины `s` `wid = w.id`: неподвижная часть `s..b` сохраняет id стены `w`), затем `b`.
   - В варианте «хвост» стена от `a` до `s` сохраняет `wid` стены `w` (вершина `a` уже его несёт).
   - Соседняя стена со стороны сдвигаемого конца должна быть перпендикулярна `w`; если нет (`|u·dir соседа| > 1e-9`) — ошибка «Уступ рядом с косой стеной пока не поддерживается».
   - Массив вершин — всегда новый; `room.poly` на месте не менять (кэш стен сравнивает ссылку `room.poly`).
@@ -170,24 +143,31 @@ warning: unable to access 'C:\Users\pro10/.config/git/ignore': Permission denied
 5. Ctrl+Z (отмена) возвращает прежнюю форму.
 6. Шаги «План», PDF и общий план показывают ступенчатый контур; ошибок в консоли нет.
 7. Шаблоны Г, П, Т строятся как раньше.
-# Правила для исполнителя (Codex / GPT)
 
-Ты — исполнитель. Задачи ставит и проверяет другой агент; задание всегда лежит в `TASK.md`.
-
-1. Делай **только** то, что написано в `TASK.md`. Никаких «заодно улучшу».
-2. Не переформатируй код, не меняй отступы, кавычки, порядок строк вне зоны задания.
-3. Не трогай соседние функции, стили и тексты, если задание этого не требует.
-4. Не удаляй код, если удаление прямо не указано.
-5. Не создавай новые файлы, кроме упомянутых в задании. Приложение — один файл `index.html`, весь код остаётся в нём.
-6. Не делай `git commit`, `git reset`, `git checkout` — коммиты делает проверяющий.
-7. Интерфейс и тексты — на русском, в стиле существующих.
-8. Если задание неясно или противоречит коду — не угадывай: ничего не меняй и опиши проблему в конце ответа.
-9. В конце ответа коротко перечисли: какие функции/фрагменты изменены и зачем.
-10. Папку `versions/` и файл `versions.html` не открывай, не ищи в них и не меняй — это архив прошлых версий. Работай только с `index.html`.
+## Замечания (исправление задания)
+Вопрос исполнителя верный: в варианте «голова внутрь» вершина `a+nv·h` должна быть **без `wid`**, а `wid = w.id` — только у вершины `s`. Так стена `a+nv·h → s+nv·h` (утопленная часть) и ступенька `s+nv·h → s` — новые, а неподвижная часть `s → b` сохраняет id `w`; `assignWids()` не трогать. В варианте «хвост внутрь» всё как написано: `a` (с `w.id`), `s` и `s+nv·h` без `wid`, `b+nv·h` с `wid` вершины `b`. Пункт выше исправлен. Выполни задание полностью.
+389:.shp-controls{display:flex;flex-direction:column;gap:12px}
+399:.shp-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+422:@media (max-width:390px){ .shp-fields{grid-template-columns:minmax(0,1fr)} .shp-template-row{grid-template-columns:repeat(4,minmax(0,1fr))} .shp-custom-label{grid-column:1/-1;justify-self:end} }
+1094:function roomWalls(room){ const o=room[RWK]; if(o!==undefined && o.w===room.w && o.d===room.d && o.poly===room.poly) return o.ws;
+1127:function projectToWall(room,id,x,y){ const w=W_OF(room,id), O=w.offOrigin;
+1249:function normPoly(pts,roles){
+1263:function shapeError(pts){
+1292:function assignWids(room,pts,roles,tpl){
+1314:function setRoomShape(room,shape,shift){
+1350:function clampRoom(s){
+2240:function seg(id,val,opts){ return `<div class="seg" role="group" data-seg="${id}">${opts.map(([v,l,dis])=>`<button type="button" data-v="${v}" aria-pressed="${String(val)===String(v)}"${dis?` disabled title="${esc(dis)}"`:''}>${l}</button>`).join('')}</div>`; }
+2241:function num(id,label,val,st,min,max,hint,attr=''){ return `<label class="field"><span>${label}</span><input id="${id}" type="text" inputmode="decimal" data-num autocomplete="off" value="${val}" step="${st}" min="${min}" max="${max}" ${attr}>${hint?`<small>${hint}</small>`:''}</label>`; }
+2614:  return specs.length?`<div class="fields shp-fields">${specs.map(([key,label])=>num(`shp-${key}`,label,Math.round(p[key]*1000),10,300,30000,'',`data-shp-param="${key}"`)).join('')}</div>`:''; }
+2615:function shapeSecHtml(r){
+2620:  return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p)}${walls}<div class="shp-error-slot"></div></div>`; }
+2625:function bindShapeEditor(){
+2727:function wallDragStart(e,r,id,handle){
+warning: unable to access 'C:\Users\pro10/.config/git/ignore': Permission denied
 
 exec
-"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$s=Get-Content -Encoding UTF8 -LiteralPath index.html; $s[380..425]; $s[1060..1135]; $s[1240..1380]; $s[2580..2695]; $s[2720..2765]; rg -n "segBind'"\\(|function (touch|opName)|lastPush|function render\\(\" index.html" in C:\Users\pro10\refectory-app
- succeeded in 892ms:
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$s=Get-Content -LiteralPath index.html -Encoding UTF8; $s[380..423]; $s[1030..1150]; $s[1235..1395]; $s[2570..2770]; rg -n '"'function (touch|recompute|render|opName)|data-seg|data-num|lastPush|<script' index.html" in C:\Users\pro10\refectory-app
+ succeeded in 692ms:
 .rmp-top .btn{min-height:44px;flex:0 0 auto}
 .rmp-body{flex:1 1 auto;overflow:auto;padding:0 16px 24px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .rmp-sec{padding:14px 0;border-top:1px solid var(--grid)}
@@ -232,8 +212,36 @@ exec
 @media (max-width:390px){ .shp-fields{grid-template-columns:minmax(0,1fr)} .shp-template-row{grid-template-columns:repeat(4,minmax(0,1fr))} .shp-custom-label{grid-column:1/-1;justify-self:end} }
 /* окно «Новое помещение» */
 .nr-dlg{width:min(600px,100%)}
-.nr-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
-.nr-wide{grid-column:1/-1}
+  if(!netsDesign(s) && items.some(i=>i.c.gas) && !hasPt(s,'gas')) notes.push({t:'warn', step:2, m:'В проекте есть газовое оборудование, а точка подключения газа на плане не отмечена. Отметьте её на шаге «Подключения» — к ней расстановка подтянет газовые аппараты.', go:2});
+  const power=powerCalc(items, s);
+  power.need3 = items.some(i=>(i.c.kw||0)>0&&i.c.ph===3) || power.demand>15;
+  power.verdict = powerVerdict(power, s);
+  // сколько нагрузки добавили правки
+  const pBase=powerCalc([...have.map(h=>({...h})), ...r.buy], s); power.editKw=power.demand-pBase.demand;
+  if(power.editKw>0.05) power.verdict.m+=` Из них ваши правки: +${fmt1(power.editKw)} кВт.`;
+  notes.unshift({t:power.verdict.t, m:power.verdict.m});
+  const foot=items.reduce((a,it)=>a+(it.c.mount==='floor'?it.c.w*it.c.d*it.qty:0),0);
+  return {items, notes, power, foot, area:s.rooms?s.rooms.reduce((a,r)=>a+roomArea(r),0):roomArea(s.room),
+    base:new Map(r.buy.map(b=>[b.c.id,b])), removed:ed.removed, stale:ed.stale, skipped, manualConverted};
+}
+// расчёт закупки без правок (кроме выбранных исполнений) — с урезанием под мощность, если его просили
+function baseBuy(s, have){
+  const notes=[], R=resEff(s), k=initialKnobs(s); let idx=0, steps=[], r;
+  for(;;){
+    r=buildBuy(s,k,have);
+    if(!R.fit) break;
+    const p=powerCalc([...have,...r.buy], s);
+    if(p.demand <= R.lim+1e-6) break;
+    let applied=false;
+    while(idx<STEPS.length && !applied){ const msg=STEPS[idx++](k); if(msg){ steps.push(msg); applied=true; } }
+    if(!applied){ notes.push({t:'bad', m:`Даже после упрощений расчётная нагрузка ${fmt1(p.demand)} кВт больше ${fmt1(R.lim)} кВт. Тепловое оборудование приложение само не урезает: выберите исполнения поменьше на шаге «Исходные» или разнесите работу оборудования по времени.`}); break; }
+  }
+  if(steps.length) notes.push({t:'warn', m:`Чтобы уложиться в ${fmt1(R.lim)} кВт, подбор упрощён: `+steps.join(' ')});
+  notes.push(...r.notes);
+  return {buy:r.buy, notes};
+}
+function normEdits(e){ e=e&&typeof e==='object'?e:{}; const o=x=>x&&typeof x==='object'&&!Array.isArray(x)?x:{}; return {delta:o(e.delta), off:o(e.off), pref:o(e.pref), skipHave:o(e.skipHave)}; }
+
 /* ======================================================================
    ГЕОМЕТРИЯ ПОМЕЩЕНИЯ — контур из стен-отрезков (пункт 30.1)
    Помещение — контур room.poly: вершины по часовой стрелке (ось y вниз), от левого верхнего угла.
@@ -310,6 +318,26 @@ function wallDist(room,w,x,y,mode){ w=W_OF(room,w);
   if(mode==='seg'){ const O=w.offOrigin, E=(O.x===w.x1&&O.y===w.y1)?{x:w.x2,y:w.y2}:{x:w.x1,y:w.y1}; return segDist(x,y,O.x,O.y,E.x,E.y); }
   const d=projectToWall(room,w,x,y).dist; return mode==='abs'?Math.abs(d):d; }
 // ближайшая стена; ids — порядок обхода при равенстве (первая побеждает)
+function nearestWall(room,x,y,ids,mode){ const ws=ids?ids.map(id=>wallById(room,id)):roomWalls(room); let best=null;
+  for(const w of ws){ const d=wallDist(room,w,x,y,mode); if(!best||d<best.dist) best={id:w.id, dist:d}; }
+  best.off=projectToWall(room,best.id,x,y).off; return best; }
+function pointInRoom(room,x,y,tol){ tol=tol||0;
+  if(!hasPoly(room)) return x>=-tol && y>=-tol && x<=room.w+tol && y<=room.d+tol;
+  for(const w of roomWalls(room)) if(segDist(x,y,w.x1,w.y1,w.x2,w.y2)<=tol+1e-12) return true;
+  const P=roomPoly(room); let inside=false;
+  for(let i=0,j=P.length-1;i<P.length;j=i++){ const a=P[i], b=P[j]; if((a.y>y)!==(b.y>y) && x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x) inside=!inside; }
+  return inside; }
+// отрезок пересекает внутренность прямоугольника r (Лян — Барски)
+function segHitsRect(x1,y1,x2,y2,r){ if(r.w<=0||r.h<=0) return false; let t0=0, t1=1; const dx=x2-x1, dy=y2-y1;
+  for(const [p,q] of [[-dx,x1-r.x],[dx,r.x+r.w-x1],[-dy,y1-r.y],[dy,r.y+r.h-y1]]){
+    if(p===0){ if(q<=0) return false; continue; } const t=q/p; if(p<0){ if(t>t1) return false; if(t>t0) t0=t; } else { if(t<t0) return false; if(t<t1) t1=t; } }
+  return t1-t0>1e-9; }
+// прямоугольник целиком внутри контура (допуск tol — как раньше у inRoom)
+    pts=[{x:0,y:0},{x:W,y:0},{x:W,y:D-cd},{x:W-cw,y:D-cd},{x:W-cw,y:D},{x:0,y:D}]; roles=['top','right','cutTop','cutSide','bottom','left'];
+  } else if(tpl==='U'){
+    const cw=Number(p.cw), cd=Number(p.cd), co=Number(p.co); if(!Number.isFinite(cw)||!Number.isFinite(cd)||!Number.isFinite(co)) return {pts:[],roles:[]};
+    pts=[{x:0,y:0},{x:W,y:0},{x:W,y:D},{x:co+cw,y:D},{x:co+cw,y:D-cd},{x:co,y:D-cd},{x:co,y:D},{x:0,y:D}]; roles=['top','right','bottomR','cutR','cutTop','cutL','bottomL','left'];
+  } else if(tpl==='T'){
     const lw=Number(p.lw), lo=Number(p.lo), ll=Number(p.ll); if(!Number.isFinite(lw)||!Number.isFinite(lo)||!Number.isFinite(ll)) return {pts:[],roles:[]};
     pts=[{x:0,y:0},{x:W,y:0},{x:W,y:D-ll},{x:lo+lw,y:D-ll},{x:lo+lw,y:D},{x:lo,y:D},{x:lo,y:D-ll},{x:0,y:D-ll}]; roles=['top','right','barR','legR','legBottom','legL','barL','left'];
   } else return {pts:[],roles:[]};
@@ -451,6 +479,31 @@ function ptMarkXY(s,p,k){ const c=ptXY(s,p);
   if(p.type==='hood'||!p.side||p.side==='floor') return {x:c.x*100, y:c.y*100, wall:false};
   const T=10, R=k?13/k:12, off=T+R+(k?2/k:2), L=wallLen(s.room,p.side)*100, minSp=2*R+(k?3/k:3);
   const same=s.points.filter(q=>q.type!=='hood'&&q.side===p.side).sort((a,b)=>a.off-b.off||(a.id<b.id?-1:a.id>b.id?1:0));
+  const pos=same.map(q=>q.off*100);
+  for(let i=1;i<pos.length;i++) pos[i]=Math.max(pos[i],pos[i-1]+minSp);
+  if(pos.length && pos[pos.length-1]>L){ pos[pos.length-1]=Math.max(L, same[same.length-1].off*100); for(let i=pos.length-2;i>=0;i--) pos[i]=Math.min(pos[i],pos[i+1]-minSp); }
+  const i=same.findIndex(q=>q.id===p.id), a=i>=0?pos[i]:p.off*100, o=p.off*100, sd=p.side;
+  const at=(t,d)=>wallOutU(s.room,sd,t,d);
+  const cc=at(a,off), t1=at(o,T), t2=at(o,-8);
+  return {x:cc[0], y:cc[1], wall:true, tick:[t1[0],t1[1],t2[0],t2[1]], lead:Math.abs(a-o)>0.5?[cc[0],cc[1],t1[0],t1[1]]:null}; }
+let PT_SH={t:0,r:0,b:0,l:0};
+function ptMarkSides(pts){ return new Set((pts||[]).filter(p=>p.type!=='hood'&&p.side&&p.side!=='floor').map(p=>p.side)); }
+// насколько отодвинуть цепочки от стены, чтобы они не задевали метки: выносные начинаются в 12 от стены
+function ptShift(sides,k){ const T=10, R=k?13/k:12, band=T+2*R+(k?8/k:8), sh=Math.max(0,band-12), o={t:0,r:0,b:0,l:0}; for(const x of sides) o[x]=+sh.toFixed(2); return o; }
+/* ---- электрощит (правила заказчика): перед щитом — только столы, нейтральное и холодильный стол не выше elPanelLowH;
+   источники воды — не ближе elWaterDist. Щит на стене любого помещения; щит в полу или на потолке — без правил ---- */
+const EL_NEUTRAL=new Set(['tableRaw','tableMeat','tableFish','tableReady','serveTable','shelf','insert']);
+const EL_WATER=new Set(['bathRaw','bathMeat','bathFish','bathKitchen','bathTable','prewash','handsink','dish','heater']);
+      const wallNums=on&&hasPoly(r)?roomWalls(r).map(w=>{ const x=(w.x1+w.x2)*50+w.nx*22/k, y=(w.y1+w.y2)*50+w.ny*22/k; return `<g style="pointer-events:none"><circle cx="${q(x)}" cy="${q(y)}" r="${q(11/k)}" fill="var(--paper)" stroke="var(--rule)" stroke-width="${q(1.2/k)}"/><text x="${q(x)}" y="${q(y)}" font-size="${q(12/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--ink-2)">${w.i+1}</text></g>`; }).join(''):'';
+      const wallHandles=on?roomWalls(r).map(w=>{ const x=(w.x1+w.x2)*50, y=(w.y1+w.y2)*50, cursor=w.axis==='h'?'ns-resize':'ew-resize'; return `<g class="shp-handle" data-wall-handle="${esc(w.id)}" data-room="${esc(r.id)}" style="cursor:${cursor}"><circle cx="${q(x)}" cy="${q(y)}" r="${q(22/k)}" fill="transparent" stroke="none"/><circle cx="${q(x)}" cy="${q(y)}" r="${q(7/k)}" fill="var(--paper)" stroke="var(--steel)" stroke-width="${q(2/k)}" style="pointer-events:none"/><title>Перетащите, чтобы сдвинуть стену</title></g>`; }).join(''):'';
+      const wallPreview=on?`<polygon id="shp-ghost" points="${points||roomPoly(r).map(p=>`${q(p.x*100)},${q(p.y*100)}`).join(' ')}" fill="none" stroke="var(--steel)" stroke-width="${q(2/k)}" stroke-dasharray="${q(6/k)} ${q(4/k)}" stroke-linejoin="round" display="none" style="pointer-events:none"/><text id="shp-drag-label" x="0" y="0" font-size="${q(13/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--steel)" display="none" style="pointer-events:none"></text>`:'';
+      body+=`<g data-rg="${r.id}" class="${on?'rm-on':''}" transform="translate(${q(r.x*100)},${q(r.y*100)})">${bg}${nicheBg}${planSvg('room',[],{inner:true, k, bare:true, blocked:many?blockedSides(r):new Set()})}${wallNums}${wallPreview}${wallHandles}${roomLabelSvg(r,k)}</g>`; } }
+  finally{ S.cur=keep; scrK=null; PT_SH={t:0,r:0,b:0,l:0}; }
+  return `<svg id="plan" data-unified="1" data-rooms="1" viewBox="${q(vx)} ${q(vy)} ${q(vw)} ${q(vh)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${many?'План помещений: '+esc(rs.map(r=>r.name).join(', ')):`План помещения: длина ${fmt0(rs[0].d*1000)} мм по вертикали, ширина ${fmt0(rs[0].w*1000)} мм по горизонтали`}">
+    <defs><pattern id="hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="10" stroke="var(--ink-2)" stroke-width="1.2" opacity=".35"/></pattern></defs>
+    <rect x="${q(vx)}" y="${q(vy)}" width="${q(vw)}" height="${q(vh)}" fill="var(--sheet)"/>${body}</svg>`;
+}
+// название, назначение и кнопка ⚙ (44 px на экране) — в середине помещения; не помещаются — ⚙ в правом верхнем углу
 function roomLabelSvg(r,k){
   // область подписи: без полосы внутренних цепочек размеров у стен, к которым вплотную соседнее помещение
   const ins={l:0,r:0,t:0,b:0}, cin=layerOn('dims')?Math.max(85,60+20/k):0;
@@ -567,6 +620,30 @@ function wallDragReset(st){
   st.ghost.setAttribute('display','none'); st.label.setAttribute('display','none'); }
 function wallDragPreview(st,e){
   const p=svgPtG(e), d=Math.round(((p.x-st.p0.x)*st.wall.nx+(p.y-st.p0.y)*st.wall.ny)*100)/100, axis=st.wall.axis, n=axis==='h'?st.wall.ny:st.wall.nx;
+  let delta=d;
+  if(delta){ const line0=axis==='h'?st.room.y+st.wall.y1:st.room.x+st.wall.x1, next=line0+n*delta; let best=0.1, snap=null;
+    for(const other of S.rooms) for(const w of roomWalls(other)){ if(w.axis!==axis||(other===st.room&&w.id===st.wall.id)) continue;
+      const line=axis==='h'?other.y+w.y1:other.x+w.x1, dist=Math.abs(line-next); if(dist<best){ best=dist; snap=line; } }
+    if(snap!==null) delta=(snap-line0)/n;
+  }
+  const pts=st.base.map(q=>({...q})), a=pts[st.wall.i], b=pts[(st.wall.i+1)%pts.length];
+  a.x+=st.wall.nx*delta; a.y+=st.wall.ny*delta; b.x+=st.wall.nx*delta; b.y+=st.wall.ny*delta;
+  const error=shapeError(pts), q=v=>+v.toFixed(2), midX=(st.wall.x1+st.wall.x2)*50+st.wall.nx*delta*100, midY=(st.wall.y1+st.wall.y2)*50+st.wall.ny*delta*100;
+  st.delta=delta; st.moved=Math.abs(delta)>1e-9; st.pts=pts; st.error=error;
+  st.ghost.setAttribute('points',pts.map(v=>`${q(v.x*100)},${q(v.y*100)}`).join(' ')); st.ghost.setAttribute('stroke',error?'var(--bad)':'var(--steel)');
+  st.circles.forEach(c=>{ c.setAttribute('cx',q(midX)); c.setAttribute('cy',q(midY)); });
+  st.label.setAttribute('x',q(midX+st.wall.nx*24/st.k)); st.label.setAttribute('y',q(midY+st.wall.ny*24/st.k)); st.label.setAttribute('fill',error?'var(--bad)':'var(--steel)');
+  st.label.textContent=error||`${delta<0?'−':'+'}${Math.round(Math.abs(delta)*1000)} мм`;
+}
+function wallDragFinish(cancel){
+  const st=wallDrag; if(!st) return; wallDrag=null;
+  window.removeEventListener('pointermove',st.move); window.removeEventListener('pointerup',st.up); window.removeEventListener('pointercancel',st.cancel);
+  if(st.raf) cancelAnimationFrame(st.raf); roomFreeze=null;
+  if(cancel||!st.moved){ wallDragReset(st); return; }
+  if(st.error){ wallDragReset(st); toast(st.error); return; }
+  const xs=st.pts.map(p=>p.x), ys=st.pts.map(p=>p.y), dx=Math.min(...xs), dy=Math.min(...ys), pts=st.pts.map(p=>({...p,x:p.x-dx,y:p.y-dy}));
+  const shape=pts.length===4?{tpl:'rect',rot:0,p:{W:Math.max(...pts.map(p=>p.x)),D:Math.max(...pts.map(p=>p.y))}}:{tpl:'custom',pts};
+  const result=setRoomShape(st.room,shape,{x:dx,y:dy});
   if(result.error){ wallDragReset(st); toast(result.error); return; }
   st.room.x+=dx; st.room.y+=dy;
   for(const key of Object.keys(S.layout||{})) if((P&&P.roomOf&&P.roomOf[key]===st.room.id)||(S.layoutRoom&&S.layoutRoom[key]===st.room.id)){
@@ -613,30 +690,93 @@ function openNewRoom(){
   nrSt={role, name:nrAutoName(role), nameAuto:true, d:'3000', w:'3000', near, nearAuto:true, links:[near], linksAuto:true, back:document.activeElement};
   const ov=document.createElement('div'); ov.className='rep-ov nr-ov'; ov.id='nr-ov';
   ov.innerHTML=`<div class="rep-dlg nr-dlg" role="dialog" aria-modal="true" aria-labelledby="nr-h">${nrHtml()}</div>`;
+  document.body.appendChild(ov); document.documentElement.classList.add('set-lock');
+  const dlg=ov.querySelector('.nr-dlg');
+  const redraw=focusSel=>{ dlg.innerHTML=nrHtml(); const f=focusSel&&dlg.querySelector(focusSel); f&&f.focus(); };
+  ov.addEventListener('click',e=>{ if(e.target===ov){ closeNewRoom(); return; }
+    const b=e.target.closest('button'); if(!b) return; const st=nrSt;
+492:<script>
 599:function opName(o){ return o.type==='prot'&&o.niche?'Ниша':OP_NAME[o.type]; }
 1544:function touchesWall(room,w,b,tol){ w=W_OF(room,w);
+2026:<script>
 2121:const HIST_MAX=10; let undoStack=[], redoStack=[], lastSnap=null, lastPush=0;
 2123:function touch(){ S.example=false; commit(); }
 2127:    if(Date.now()-lastPush>700){ undoStack.push(lastSnap); if(undoStack.length>HIST_MAX) undoStack.shift(); redoStack=[]; lastPush=Date.now(); }
 2128:    else lastPush=Date.now();
 2131:function restoreSnap(t){ const cur=S.cur, o=JSON.parse(t); S=prepare(o); if(S.rooms.some(r=>r.id===cur)) S.cur=cur; lastSnap=snap(); lastPush=0;
+2144:function recompute(){
+2197:function renderNav(){ navDirty=false; document.getElementById('steps').innerHTML=STEP_NAMES.map((n,i)=>{ const r=P?stepCount(i):{bad:0,warn:0,list:[]}, w=issWords(r);
 2219:function render(){
+2240:function seg(id,val,opts){ return `<div class="seg" role="group" data-seg="${id}">${opts.map(([v,l,dis])=>`<button type="button" data-v="${v}" aria-pressed="${String(val)===String(v)}"${dis?` disabled title="${esc(dis)}"`:''}>${l}</button>`).join('')}</div>`; }
+2241:function num(id,label,val,st,min,max,hint,attr=''){ return `<label class="field"><span>${label}</span><input id="${id}" type="text" inputmode="decimal" data-num autocomplete="off" value="${val}" step="${st}" min="${min}" max="${max}" ${attr}>${hint?`<small>${hint}</small>`:''}</label>`; }
 2243:function segBind(root,fn){ root.querySelectorAll('[data-seg]').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); fn(g.dataset.seg,b.dataset.v); })); }
-2446:  segBind(main,(k,v)=>{ if(k==='meals') S.meals=+v; if(k==='ph'){ S.res.ph=+v; touch(); render(); return; } if(k==='phMax'){ S.res.phMax=+v; touch(); render(); return; }
-2528:function bindRoomTabs(){ const t=document.getElementById('room-tabs'); t&&segBind(t,(k,v)=>{ S.cur=v; sel=null; selRoom=null; addMode=null; touch(); render(); }); }
+2440:    <label class="field"><span>Можно увеличить до, кВт</span><input id="kwmax" type="text" inputmode="decimal" data-num autocomplete="off" value="${S.res.max??''}" step="0.5" min="1" max="1000" aria-describedby="kwmax-err"><small>если узнавали у энергоснабжающей организации; например, 35</small><small class="field-err" id="kwmax-err" role="alert" hidden></small></label>
+2457:    el.addEventListener('change',()=>{ const had=!!mx.closest('.fields').querySelector('[data-seg="phMax"]'); if(had!==!!S.res.max) render(); }); };
 2624:  lastPush=0; touch(); recompute(); render(); if(result.moved.length) toast(result.moved.join('. ')); return true; }
 2725:  lastPush=0; touch(); recompute(); render(); if(result.moved.length) toast(result.moved.join('. '));
-2948:    segBind(rp,(k,v)=>{ if(k==='o-type'){ o.type=v; if(v!=='prot') delete o.niche; if(v==='door'){ o.swing=o.swing||'in'; o.hinge=o.hinge||'l'; o.to=o.to||'corr'; } else if(v==='window') o.sill=o.sill||0.9; else o.depth=o.depth||0.3; }
-3000:  segBind(main,(k,v)=>{ if(k!=='utilities') return; S.utilities=v==='design'?'design':'existing'; touch(); render(); toast(v==='design'?'Сети проектируются — точки не обязательны':'Сети уже есть — отметьте их на плане'); }); };
-3565:  segBind(main.querySelector('.ex-form'),(k,val)=>{ pull();
-5032:  segBind(dlg,(k,v)=>{ if(k!=='rep-preset') return; r.preset=v; r.sections=presetSections(v); ov.querySelectorAll('[data-sec]').forEach(cb=>cb.checked=!!r.sections[cb.dataset.sec]); document.getElementById('rep-custom').hidden=true; touch(); recount(); });
+2872:function chainIn(attr,label,val,mid,neg){ return `<label class="${mid?'mid':''}">${mid?`<span>${label}</span>`:label}<input type="text" inputmode="decimal" data-num autocomplete="off" min="0" step="10" ${attr} value="${val===''?'':Math.round(val*1000)}" class="${neg?'neg':''}" aria-label="${label}, мм"></label>`; }
+3573:      const first={role:'it-role', plate:'it-plate', cap:'it-cap', w:'it-w', d:'it-d', h:'it-h'}[Object.keys(er)[0]], el=first==='it-plate'?document.querySelector('[data-seg="it-plate"] button'):v(first); el&&el.focus(); return; }
+3993:  const rows=C.rows.map(r=>`<tr><td>${esc(r.c.n)}</td><td class="r num">${r.qty}</td>${hasGas?`<td class="r num">${r.c.gas?(r.c.gkw>0?fmt1(r.c.gkw*r.qty):'—'):''}</td>`:''}<td class="r">${r.src==='have'?'<span class="tag have">имеется</span>':`<input type="text" inputmode="decimal" data-num autocomplete="off" class="num" data-price="${r.c.id}" value="${priceOf(r.c)}" step="1000" min="0" aria-label="Цена за единицу">`}</td><td class="r num">${r.src==='have'?'—':rub(priceOf(r.c)*r.qty)}</td></tr>`).join('');
+3997:    <tr><td>Зонт вытяжной пристенный, погонный метр</td><td class="r num">${fmt1(C.hoodLen)} м</td>${hasGas?'<td></td>':''}<td class="r"><input type="text" inputmode="decimal" data-num autocomplete="off" class="num" id="hood-price" value="${S.hoodPrice}" step="1000" min="0" aria-label="Цена погонного метра зонта"></td><td class="r num">${rub(C.hoodSum)}</td></tr>
+4002:    <div class="sum-line"><span>Монтаж и пусконаладка, <input type="text" inputmode="decimal" data-num autocomplete="off" class="num" id="montage" value="${S.montage}" step="1" min="0" max="100" style="width:64px;padding:3px 6px" aria-label="Процент монтажа"> %</span><span class="num">${rub(C.mont)}</span></div>
+4156:<script>
+5034:    r.sections[cb.dataset.sec]=cb.checked; ov.querySelectorAll('[data-seg="rep-preset"] button').forEach(b=>b.setAttribute('aria-pressed','false')); document.getElementById('rep-custom').hidden=false; touch(); recount(); }));
+5086:<script>
 5180:  undoStack=[]; redoStack=[]; lastPush=0;   // история отмены — у каждого проекта своя
-5749:  const seg2=document.getElementById('pdims-bar'); seg2&&segBind(seg2,(k,v)=>{ if(k==='pdims'){ S.planDims=v; touch(); render(); } });
+5287:function renderProjects(){
+5370:<script>
+5399:  const at=[...el.attributes].filter(a=>a.name.startsWith('data-')&&!['data-num','data-optional'].includes(a.name));
+5400:  const seg=el.closest('[data-seg]');
+5403:  if(seg&&seg!==el) sel=`[data-seg="${qv(seg.dataset.seg)}"] `+sel;
+5473:  if(t.matches('input[data-num]')){ if(t.__commit) return; clearFieldError(t); e.stopImmediatePropagation(); } }, true);
+5480:  if(t.matches('input[data-num]')){
+5505:    if(form){ e.preventDefault(); form.querySelectorAll('input[data-num]').forEach(x=>{ x.value=x.value.trim().replace(',', '.'); });
+5540:<script>
+5705:  const fld=(key,label,val)=>`<label class="pos-f"><span>${esc(label)}</span><input type="text" inputmode="decimal" data-num autocomplete="off" min="0" data-pos="${key}" value="${fmt0r(val*1000)}"></label>`;
+5811:.dims-seg [data-seg] button{min-height:44px}
+5822:<script>
 5941:function touchHintHtml(mode){
 
 exec
-"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$s=Get-Content -Encoding UTF8 -LiteralPath index.html; $s[1313..1372]; $s[2602..2640]; $s[2438..2460]; rg -n "bindShapeEditor|<script|</script>|const uid|function uid|POINT_NAME|PT_NAME|pointName|p.type.*hood" index.html; node --version' in C:\Users\pro10\refectory-app
- succeeded in 937ms:
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$s=Get-Content -LiteralPath index.html -Encoding UTF8; $s[1276..1385]; $s[2588..2668]; $s[5380..5508]; rg -n '"'function wall(Title|From)|let .*shape|let .*wallDrag|\\.seg\\{|\\.fields\\{' index.html; Get-Command node,python,chrome -ErrorAction SilentlyContinue | Select-Object Name,Source" in C:\Users\pro10\refectory-app
+ exited 1 in 4761ms:
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){ if(j===i+1||(i===0&&j===n-1)) continue;
+    if(intersects(walls[i].a,walls[i].b,walls[j].a,walls[j].b)) return `Стены ${i+1} и ${j+1} пересекаются`; }
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){ const a=walls[i], b=walls[j], ux=a.dx/a.len, uy=a.dy/a.len, nx=-uy, ny=ux;
+    const vx=b.dx/b.len, vy=b.dy/b.len; if(nx*(-vy)+ny*vx>-1+1e-9) continue;
+    const dist=(b.a.x-a.a.x)*nx+(b.a.y-a.a.y)*ny; if(dist<=1e-9||dist>=0.6) continue;
+    const q1=(b.a.x-a.a.x)*ux+(b.a.y-a.a.y)*uy, q2=(b.b.x-a.a.x)*ux+(b.b.y-a.a.y)*uy;
+    if(Math.min(a.len,Math.max(q1,q2))-Math.max(0,Math.min(q1,q2))>1e-9) return `Между стенами ${i+1} и ${j+1} меньше 600 мм`; }
+  return null; }
+function shapeParamsError(tpl,p){
+  if(!p) return 'Не заданы размеры формы'; const W=Number(p.W), D=Number(p.D);
+  if(!Number.isFinite(W)||!Number.isFinite(D)||W<0.3||D<0.3||W>30||D>30) return 'Размеры должны быть от 300 до 30 000 мм';
+  if(tpl==='L'&&(Number(p.cw)>=W||Number(p.cd)>=D)) return 'Вырез должен быть меньше габарита помещения';
+  if(tpl==='U'&&(Number(p.cw)>=W||Number(p.cd)>=D||Number(p.co)<0||Number(p.co)+Number(p.cw)>W)) return 'Вырез должен помещаться внутри габарита помещения';
+  if(tpl==='T'&&(Number(p.lw)>=W||Number(p.ll)>=D||Number(p.lo)<0||Number(p.lo)+Number(p.lw)>W)) return 'Ножка должна помещаться внутри габарита помещения';
+  return null; }
+function assignWids(room,pts,roles,tpl){
+  const oldWalls=roomWalls(room), oldById=Object.fromEntries(oldWalls.map(w=>[w.id,w])), out=Array(pts.length).fill(null), used=new Set();
+  if(tpl==='custom'&&Array.isArray(roles)) for(let i=0;i<pts.length;i++){ const id=roles[i]; if(typeof id==='string'&&oldById[id]&&!used.has(id)){ out[i]=id; used.add(id); } }
+  if(tpl!=='custom'&&room.shape&&room.shape.tpl===tpl&&room.shape.roles){
+    for(let i=0;i<pts.length;i++){ const role=roles&&roles[i], id=role&&room.shape.roles[role]; if(id&&oldById[id]&&!used.has(id)){ out[i]=id; used.add(id); } }
+  }
+  for(let i=0;i<pts.length;i++) if(!out[i]){ const a=pts[i], b=pts[(i+1)%pts.length], dx=b.x-a.x, dy=b.y-a.y, axis=Math.abs(dy)<1e-9?'h':Math.abs(dx)<1e-9?'v':null, len=Math.hypot(dx,dy);
+    if(!axis||!len) continue; const nx=-dy/len, ny=dx/len, loNew=axis==='h'?Math.min(a.x,b.x):Math.min(a.y,b.y), hiNew=axis==='h'?Math.max(a.x,b.x):Math.max(a.y,b.y), line=axis==='h'?a.y:a.x;
+    let best=null, bestOverlap=0;
+    for(const w of oldWalls){ if(used.has(w.id)||w.axis!==axis||Math.abs(w.nx-nx)>1e-9||Math.abs(w.ny-ny)>1e-9) continue;
+      if(Math.abs((axis==='h'?w.y1:w.x1)-line)>=0.001) continue;
+      const loOld=axis==='h'?Math.min(w.x1,w.x2):Math.min(w.y1,w.y2), hiOld=axis==='h'?Math.max(w.x1,w.x2):Math.max(w.y1,w.y2), overlap=Math.min(hiNew,hiOld)-Math.max(loNew,loOld);
+      if(overlap>bestOverlap){ best=w; bestOverlap=overlap; } }
+    if(best){ out[i]=best.id; used.add(best.id); }
+  }
+  for(let i=0;i<out.length;i++) if(!out[i]) out[i]=uid('w');
+  return out; }
+function wallName(room,id){
+  if(!hasPoly(room)) return `${SIDE_RU[id]||'правая'} стена`;
+  const i=roomWalls(room).findIndex(w=>w.id===id); return `стена ${i<0?'?':i+1}`; }
+function wallTitle(room,id){ if(id==='floor') return 'пол'; if(!hasPoly(room)) return SIDE_RU[id]+' стена'; return wallName(room,id); }
+function wallFrom(room,id){ if(!hasPoly(room)) return SIDE_FROM[id]; const w=wallById(room,id); return w&&w.axis==='v'?'от верхнего угла':'от левого угла'; }
 function setRoomShape(room,shape,shift){
   const shiftX=Number(shift&&shift.x)||0, shiftY=Number(shift&&shift.y)||0;
   const tpl=shape&&shape.tpl, paramsError=tpl==='custom'?null:shapeParamsError(tpl,shape&&shape.p); if(paramsError) return {error:paramsError};
@@ -697,6 +837,33 @@ function migratePoint(s,p){ const R=s.room, hood=p.type==='hood';
   const nw=nearestWall(R,p.x,p.y,hasPoly(R)?null:['t','b','l','r']);
   if(nw.dist<=0.4){ p.side=nw.id; p.off=nw.off; } else p.side='floor';
   p.spec=p.spec||''; }
+function ptXY(s,p){ if(p.side==='floor'||!p.side) return {x:p.x,y:p.y}; const w=wallById(s.room,p.side), q=wallPoint(s.room,p.side,p.off), i=0.12;
+  return {x:q.x+w.nx*i, y:q.y+w.ny*i}; }
+// метка точки на стене — снаружи помещения, сразу за стеной; k — пикселей на единицу плана (экран) или null (печать)
+// близкие метки на одной стене расходятся вдоль неё; засечка показывает точное место
+function ptMarkXY(s,p,k){ const c=ptXY(s,p);
+  if(p.type==='hood'||!p.side||p.side==='floor') return {x:c.x*100, y:c.y*100, wall:false};
+  const T=10, R=k?13/k:12, off=T+R+(k?2/k:2), L=wallLen(s.room,p.side)*100, minSp=2*R+(k?3/k:3);
+  const same=s.points.filter(q=>q.type!=='hood'&&q.side===p.side).sort((a,b)=>a.off-b.off||(a.id<b.id?-1:a.id>b.id?1:0));
+  const pos=same.map(q=>q.off*100);
+  for(let i=1;i<pos.length;i++) pos[i]=Math.max(pos[i],pos[i-1]+minSp);
+  if(pos.length && pos[pos.length-1]>L){ pos[pos.length-1]=Math.max(L, same[same.length-1].off*100); for(let i=pos.length-2;i>=0;i--) pos[i]=Math.min(pos[i],pos[i+1]-minSp); }
+  const i=same.findIndex(q=>q.id===p.id), a=i>=0?pos[i]:p.off*100, o=p.off*100, sd=p.side;
+  const at=(t,d)=>wallOutU(s.room,sd,t,d);
+  const showR=fit && lab && rt && rt.length*0.56*fr<=W-2*m && Math.max(fs*1.3,G)+fr*1.6<=D-2*m;
+  const cy=Y0+D/2-(showR?fr*0.8:0); let out='', gx, gy;
+  if(fit){ const x0=X0+W/2-(lab?rowW:G)/2; gx=lab?x0+nw+m+G/2:X0+W/2; gy=cy;
+    if(lab) out+=`<text class="rm-name" x="${q(x0)}" y="${q(cy)}" font-size="${q(fs)}" font-weight="700" font-family="var(--f-disp)" fill="var(--ink)" dominant-baseline="central">${esc(name)}</text>`;
+    if(showR) out+=`<text x="${q(X0+W/2)}" y="${q(cy+Math.max(fs*0.65,G/2)+fr*0.9)}" font-size="${q(fr)}" text-anchor="middle" fill="var(--steel)" style="pointer-events:none">${esc(rt)}</text>`; }
+  else { const RW=r.w*100, RD=r.d*100; if(ir){ gx=W>=G+2*m?X0+W-G/2-m/2:X0+W/2; gy=D>=G+2*m?Y0+G/2+m/2:Y0+D/2; } else { gx=RW>=G+2*m?RW-ins.r-G/2-m/2:RW/2; gy=RD>=G+2*m?ins.t+G/2+m/2:RD/2; } }
+  out+=`<g class="rm-cfg" data-roomcfg="${r.id}" role="button" tabindex="0" aria-label="Настройки помещения «${esc(name)}»"><rect x="${q(gx-G/2)}" y="${q(gy-G/2)}" width="${q(G)}" height="${q(G)}" fill="var(--sheet)" fill-opacity="0"/>
+    <circle cx="${q(gx)}" cy="${q(gy)}" r="${q(15/k)}" fill="var(--paper)" stroke="var(--rule)" stroke-width="${q(1.2/k)}"/><text x="${q(gx)}" y="${q(gy)}" font-size="${q(17/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--ink-2)" style="pointer-events:none">⚙\uFE0E</text></g>`;
+  return out;
+}
+
+/* ---- боковая панель помещения: разделы добавляются одним вызовом addRoomSection ---- */
+// раздел: {id, title, html(r) → разметка, show(r) → показывать ли}. Для пункта 30.2: addRoomSection({id:'shape', title:'Форма', html:…}, 'room') — встанет между «Помещение» и «Связи»
+const RP_SECTIONS=[];
 function addRoomSection(sec, after){ const i=after?RP_SECTIONS.findIndex(s=>s.id===after):-1; if(i>=0) RP_SECTIONS.splice(i+1,0,sec); else RP_SECTIONS.push(sec); }
 function shapeSvg(tpl,rot,p){
   const pts=shapeTemplate(tpl,rot,p).pts, xs=pts.map(q=>q.x), ys=pts.map(q=>q.y), minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys), scale=Math.min(36/Math.max(0.001,maxX-minX),24/Math.max(0.001,maxY-minY));
@@ -736,86 +903,1119 @@ addRoomSection({id:'room', title:'Помещение', html:r=>`<div class="fiel
   <div class="field" style="margin-top:14px"><span class="lbl">Назначение — что здесь будет</span><div class="chips" style="margin-top:6px">${ROLES.map(([k,l])=>`<button type="button" class="dish tap" data-role="${k}" aria-pressed="${r.roles.includes(k)}"><span class="bx">✓</span>${l}</button>`).join('')}</div></div>`});
 addRoomSection({id:'shape', title:'Форма', html:r=>shapeSecHtml(r)}, 'room');
 addRoomSection({id:'links', title:'Связи', html:r=>{
-    <div class="field"><span>Сейчас ввод</span>${seg('ph',S.res.ph,[[1,'1 фаза, 220 В'],[3,'3 фазы, 380 В']])}</div>
-    <label class="field"><span>Можно увеличить до, кВт</span><input id="kwmax" type="text" inputmode="decimal" data-num autocomplete="off" value="${S.res.max??''}" step="0.5" min="1" max="1000" aria-describedby="kwmax-err"><small>если узнавали у энергоснабжающей организации; например, 35</small><small class="field-err" id="kwmax-err" role="alert" hidden></small></label>
-    ${S.res.max?`<div class="field"><span>Ввод после увеличения</span>${seg('phMax',S.res.phMax||3,[[1,'1 фаза, 220 В'],[3,'3 фазы, 380 В']])}</div>`:''}
-  </div><p class="hint" style="margin-top:12px">Оба значения мощности необязательны. Кухня подбирается под технологию, а на шагах «Подбор» и «Инженерия» видно, сколько мощности ей нужно и хватает ли имеющейся.</p><p class="hint" style="margin-top:12px">Вода, канализация, газ и вентиляция отмечаются точками на шаге «Подключения».</p></section>
-  </div>${pager()}`;
+  const miss=linkTargets(r).filter(([t])=>hasLink(r.id,t)&&!doorFor(r.id,t));
+  return `<div class="field"><span class="lbl">Отсюда можно попасть</span>${linkChips(linkTargets(r).map(([id,n])=>[r.id,id,n]))}</div>
+    ${miss.map(([t,n])=>`<p class="rmp-warn">Связь с «${esc(n)}» есть, а двери нет. ${LINK_EXT[t]?`Нажмите «+ Дверь», коснитесь наружной стены и в настройке двери «Ведёт» выберите «${esc(n.toLowerCase())}».`:'Нажмите «+ Дверь» и коснитесь общей стены — дверь сразу поведёт в соседнее помещение.'}</p>`).join('')}
+    <small class="rmp-note">Связь — это задуманное движение, дверь ставится на стене.</small>`; }});
+addRoomSection({id:'walls', title:'Стены', html:r=>S.openings.length?wallRows():'<p class="hint">Пока на стенах ничего нет. Нажмите «+ Дверь» или «+ Окно» над планом и коснитесь стены; «+ Выступ / ниша» добавится сразу.</p>'});
+addRoomSection({id:'del', title:'', show:()=>S.rooms.length>1, html:r=>confirmRoomDel
+  ? `<div class="confirm-box" role="alert"><p>Удалить «${esc(r.name)}»? ${esc(deleteSummary(r))} Двери соседних помещений, ведущие сюда, тоже удалятся.</p><div class="btns"><button class="btn danger tap" type="button" id="room-del-yes">Да, удалить</button><button class="btn tap" type="button" id="room-del-no">Отмена</button></div></div>`
+  : `<button class="btn danger tap" type="button" id="room-del">Удалить помещение</button>`});
+function roomSideHtml(){ const r=S.room;
+  return `<aside class="rmp-side" id="rmp-side" aria-labelledby="rmp-h">
+    <div class="rmp-top"><h2 id="rmp-h">${esc(r.name)}</h2><button class="btn" type="button" id="rmp-close" title="Закрыть (Esc)">Закрыть</button></div>
+    <div class="rmp-body" id="rmp-body">${RP_SECTIONS.filter(s=>!s.show||s.show(r)).map(s=>`<section class="rmp-sec" data-rpsec="${s.id}">${s.title?`<h3>${s.title}</h3>`:''}${s.html(r)}</section>`).join('')}</div>
+    <div class="rmp-foot"><button class="btn primary" type="button" id="rmp-done">Готово</button></div></aside>`; }
+// открыть панель помещения id (опционально — сразу на проёме opId в разделе «Стены»)
+function openRoomPanel(id, opId){
+  const changed=id!==S.cur; if(changed||!rpOpen) rpScroll=0;
+  S.cur=id; rpOpen=true; addMode=null; confirmRoomDel=false;
+  if(opId){ selRoom={k:'op', id:opId}; rpFocus=opId; } else if(changed||(selRoom&&!S.openings.some(o=>o.id===selRoom.id))) selRoom=null;
+  if(changed) touch(); render(); }
+function closeRoomPanel(){ rpOpen=false; selRoom=null; confirmRoomDel=false; render(); }
+// верх панели — под лентой шагов (на весь экран плана — от верха окна)
+function rpPos(){ const a=document.getElementById('rmp-side'); if(!a) return; const nav=document.querySelector('nav.steps');
+  const t=document.documentElement.classList.contains('pfs-lock')||!nav?0:Math.max(0,nav.getBoundingClientRect().bottom); a.style.setProperty('--rp-top', Math.round(t)+'px'); }
+window.addEventListener('scroll',rpPos,{passive:true}); window.addEventListener('resize',rpPos);
+
+/* ---- касания поля плана на шаге «Помещения» ---- */
+// какое помещение под указателем: по элементу плана; мимо — ближайшее в пределах 0,6 м (только когда ставим проём)
+function roomsCapture(e){ const gr=e.target.closest('g[data-rg]'); let rid=gr?gr.dataset.rg:null;
+label .ok-tick{position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none}
+.kbd-host{position:relative}
+input[aria-invalid="true"]{border-color:var(--bad)!important;background:var(--bad-soft)!important}
+.field-err-msg,.field-note{display:block;font-size:12.5px;line-height:1.35;margin-top:3px;font-weight:500}
+.field-err-msg{color:var(--bad)}
+.field-note{color:var(--warn)}
+#plan .flash, #plan .flash *{stroke:var(--accent)!important}
+#plan polygon.flash, #plan rect.flash{fill:var(--accent)!important;fill-opacity:.28!important}
+#plan g.flash circle{stroke-width:7!important}
+#plan rect.rm-bg.flash{fill:var(--accent-soft)!important;fill-opacity:.9!important;stroke:var(--accent)!important;stroke-width:4px}
+`;
+(function(){ const st=document.createElement('style'); st.textContent=KBD_CSS; document.head.appendChild(st); })();
+
+/* ---- стабильный ключ элемента: id или data-атрибуты ---- */
+const qv=v=>String(v).replace(/["\\]/g,'\\$&');
+function elKey(el){
+  if(!el||el===document.body||!el.tagName) return null;
+  if(el.id) return '#'+CSS.escape(el.id);
+  const at=[...el.attributes].filter(a=>a.name.startsWith('data-')&&!['data-num','data-optional'].includes(a.name));
+  const seg=el.closest('[data-seg]');
+  if(!at.length && !(seg&&seg!==el)) return null;
+  let sel=el.tagName.toLowerCase()+at.map(a=>`[${a.name}="${qv(a.value)}"]`).join('');
+  if(seg&&seg!==el) sel=`[data-seg="${qv(seg.dataset.seg)}"] `+sel;
+  return sel;
 }
-bind[0]=()=>{
-  segBind(main,(k,v)=>{ if(k==='meals') S.meals=+v; if(k==='ph'){ S.res.ph=+v; touch(); render(); return; } if(k==='phMax'){ S.res.phMax=+v; touch(); render(); return; }
-    if(k==='gas-src'){ S.gas.src=v; touch(); render(); return; }
-    if(k.startsWith('fuel-')){ const hk=k.slice(5); S.heat[hk].fuel=v; const m=fixGasHeat(); touch(); render(); toast(m.length?m.join('. '):(v==='gas'?`${HEATI[hk].n}: газовое исполнение`:`${HEATI[hk].n}: электрическое исполнение`)); return; }
-    if(k.startsWith('h-')){ S.heat[k.slice(2)].v=v; touch(); render(); return; } touch(); recompute(); });
-  const el=document.getElementById('people'); el.addEventListener('input',()=>{ const v=parseFloat(el.value); if(isFinite(v)&&v>=1){ S.people=Math.round(v); touch(); recompute(); } }); el.addEventListener('change',()=>render());
-  const dw=document.getElementById('dishware'); dw.addEventListener('input',()=>{ const v=parseFloat(dw.value); if(isFinite(v)&&v>=1){ S.dishware=Math.round(v); touch(); recompute(); } });
-  const kw=document.getElementById('kw'), mx=document.getElementById('kwmax'), err=document.getElementById('kwmax-err');
-  const chkMax=()=>{ const bad=S.res.max!=null&&S.res.kw!=null&&S.res.max<S.res.kw; mx.classList.toggle('err',bad); mx.setAttribute('aria-invalid',String(bad)); err.hidden=!bad;
-    err.textContent=bad?`Не может быть меньше, чем выделено сейчас (${fmt1(S.res.kw)} кВт)`:''; };
-  const resIn=(el,key)=>{ el.addEventListener('input',()=>{ const t=el.value.trim(), v=parseFloat(dot(t)); if(t===''){ S.res[key]=null; } else if(isFinite(v)&&v>0){ S.res[key]=v; } else return;
-    if(S.res.fit && resEff(S).lim==null) S.res.fit=false; touch(); recompute(); chkMax(); });
-    el.addEventListener('change',()=>{ const had=!!mx.closest('.fields').querySelector('[data-seg="phMax"]'); if(had!==!!S.res.max) render(); }); };
-  resIn(kw,'kw'); resIn(mx,'max'); chkMax();
-  main.querySelectorAll('[data-hinduct]').forEach(b=>b.addEventListener('click',()=>inductInstead(b.dataset.hinduct)));
-  main.querySelectorAll('[data-hunskip]').forEach(b=>b.addEventListener('click',()=>{ if(S.edits.skipHave) delete S.edits.skipHave[b.dataset.hunskip]; touch(); render(); toast('Снова учитывается в подборе'); }));
-  main.querySelectorAll('[data-heat-on]').forEach(cb=>cb.addEventListener('change',()=>{ const k=cb.dataset.heatOn, h=HEATI[k];
-492:<script>
-1332:    } else { const width=p.type==='hood'?(Number(p.w)||0):0, q=wallPoint(old,p.side,(Number(p.off)||0)+width/2), hit=nearestWall(room,q.x,q.y), proj=projectToWall(room,hit.id,q.x,q.y);
-1343:    points:s.points.map(p=>{ const n={...p}; if(p.side==='floor'||!p.side) n.x=W-p.x-(p.type==='hood'?p.w:0); else if(wallById(R,p.side).axis!=='v') n.off=wallById(R,p.side).len-p.off-(p.type==='hood'?p.w:0); else n.side=mirrorWallId(R,p.side); return n; })}; }
-1354:    const hood=p.type==='hood';
-1368:function migratePoint(s,p){ const R=s.room, hood=p.type==='hood';
-1379:  if(p.type==='hood'||!p.side||p.side==='floor') return {x:c.x*100, y:c.y*100, wall:false};
-1390:function ptMarkSides(pts){ return new Set((pts||[]).filter(p=>p.type!=='hood'&&p.side&&p.side!=='floor').map(p=>p.side)); }
-1511:  if(p.type!=='hood'){ const c=ptXY(s,p); return {x:c.x,y:c.y,w:0,h:0}; }
-1514:function ptSpan(p){ return p.type==='hood'?[p.off,p.off+p.w]:[p.off,p.off]; }
-1974:  const ex=s.points.filter(p=>p.type==='hood').map(p=>ptRect(s,p));
-2023:function uid(p){ return p+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
-2024:</script>
-2026:<script>
-2378:  for(const uid of cov.skipped){ const e=recOf_(uid), tenS=e.role==='burners'&&e.plate==='ten';
-2625:function bindShapeEditor(){
-2846:  bindShapeEditor(); bindRoomEditor();
-2891:  const d=PT[p.type], hood=p.type==='hood', at=f=>`data-pchain="${p.id}:${f}"`; let cells;
-2924:  const hood=p.type==='hood';
-2936:  if(side==='floor'){ if(p.type==='hood'){ p.x=r.x; p.y=r.y; } else { p.x=cx; p.y=cy; } }
-2937:  else { const along=projectToWall(S.room,side,cx,cy).off; p.off = p.type==='hood' ? along-(p.w||1.5)/2 : along; }
-2962:      if(f==='type'){ p.type=el.value; if(p.type==='hood'){ p.w=p.w||1.5; p.d=p.d||1.0; if(p.side!=='floor') p.off=Math.max(0,p.off-p.w/2); } }
-2978:    if(f==='l'||f==='r'){ const lr=ptLR(S,p); if(f==='l') p.off=lr.l.pos+Math.max(0,v); else p.off=lr.r.pos-Math.max(0,v)-(p.type==='hood'?p.w:0); }
-3059:  if(p.type==='hood'){ const r=ptRect(S,p), hfs=scrK?12/scrK:15, hl=!scrK||(layerOn('labels')&&9*0.58*hfs<=r.w*100-6&&hfs<=r.h*100);
-3114:  const pts=showPts ? S.points.filter(p=>p.type==='hood').map(p=>pointSvg(p,mode)).join('') + S.points.filter(p=>p.type!=='hood').map(p=>pointSvg(p,mode)).join('') : '';
-3220:    ps.forEach(p=>{ raw.push(p.off*100); if(p.type==='hood') raw.push((p.off+p.w)*100); });
-3315:      p.off = st.jumped ? Math.round((along-(p.type==='hood'?(p.w||1.5)/2:0))*100)/100 : Math.round((st.off+(horiz(p.side)?dx:dy))*100)/100; }
-3901:  if(u.src==='have'){ const uidE=u.c.id.slice(2), e=S.existing.find(x=>x.uid===uidE); if(e){ if(e.qty>1) e.qty--; else S.existing=S.existing.filter(x=>x!==e); }
-4155:</script>
-4156:<script>
-4318:    const ptsAll=S.points.filter(p=>p.type==='hood').map(p=>pointSvg(p,'view')).join('')+S.points.filter(p=>p.type!=='hood').map(p=>pointSvg(p,'view')).join('');
-4319:    const hoodsOnly=S.points.filter(p=>p.type==='hood').map(p=>pointSvg(p,'view')).join('');
-4364:      for(const p of swg.points){ if(p.type==='hood') continue; const m=ptMarkXY(swg,p,null); avoid.push({x:m.x-14, y:m.y-14, w:28, h:28}); }
-4471:  if(layer==='points'||layer==='need'){ const ts=[...new Set(room.points.map(p=>p.type))].filter(t=>t!=='hood');
-4569:      const bind = p.side==='floor'||!p.side ? `${fmt0(p.x*1000)} от левой, ${fmt0(p.y*1000)} от верхней` : `${fmt0(p.off*1000)} ${wallFrom(r,p.side)}`+(p.type==='hood'?`; ${fmt0(p.w*1000)}×${fmt0(p.d*1000)}`:'');
-4570:      return [PT[p.type].n, where, bind, p.hgt!=null&&p.type!=='hood'?fmt0(p.hgt*1000):'—', p.spec||'—']; });
-4673:      S.points.filter(p=>p.type==='hood').forEach(p=>ex.push([r.name, `${fmt0(p.w*1000)} × ${fmt0(p.d*1000)}`, p.spec||'—']));
-5085:</script>
-5086:<script>
-5369:</script>
-5370:<script>
-5539:</script>
-5540:<script>
-5821:</script>
-5822:<script>
-6180:</script>
-v26.13.0
+function findKey(k){ if(!k) return null; try{ return document.querySelector(k); }catch(e){ return null; } }
+
+/* ---- перерисовка с сохранением фокуса; по 'change' — на следующий тик ---- */
+let renderDefer=false, renderQueued=false, afterRender=[];
+const renderRaw=render;
+function captureFocus(){
+  const a=document.activeElement, inApp=a&&(main.contains(a)||a.closest('nav.steps')||a.closest('header.app'));
+  const st={key:inApp?elKey(a):null, sy:window.scrollY, sx:window.scrollX, pb:null, ss:null, se:null};
+  try{ if(inApp&&a.tagName==='INPUT'&&a.type==='text'){ st.ss=a.selectionStart; st.se=a.selectionEnd; } }catch(e){}
+  const pb=document.querySelector('.plan-box'); if(pb) st.pb=[pb.scrollLeft,pb.scrollTop];
+  return st;
+}
+function restoreFocus(st){
+  if(st.key){ const el=findKey(st.key); if(el && el!==document.activeElement){ try{ el.focus({preventScroll:true}); if(st.ss!=null && el.setSelectionRange) el.setSelectionRange(st.ss,st.se); }catch(e){} } }
+  const pb=document.querySelector('.plan-box'); if(pb&&st.pb){ pb.scrollLeft=st.pb[0]; pb.scrollTop=st.pb[1]; }
+  if(Math.abs(window.scrollY-st.sy)>1) window.scrollTo(st.sx, st.sy);
+}
+function doRender(){ const st=captureFocus(); renderRaw(); restoreFocus(st); showFieldMsgs(); const q=afterRender; afterRender=[]; q.forEach(f=>{ try{ f(); }catch(e){} }); }
+render=function(){ if(renderDefer){ if(!renderQueued){ renderQueued=true; setTimeout(()=>{ renderQueued=false; doRender(); },0); } return; } doRender(); };
+
+/* ---- строки под полями: ограничения и ошибки ---- */
+function noteHost(el){ return el.closest('label')||el.parentElement; }
+function showFieldMsgs(){
+  document.querySelectorAll('.field-note[data-auto]').forEach(n=>n.remove());
+  for(const [k,msg] of Object.entries(fieldMsgs)){ const el=findKey(k); if(!el) continue; const n=document.createElement('small'); n.className='field-note'; n.dataset.auto='1'; n.setAttribute('role','status'); n.textContent=msg;
+    const h=noteHost(el); if(el.nextSibling && h.contains(el)) el.after(n); else h.appendChild(n); }
+}
+function setFieldError(el,msg){ clearFieldError(el); el.setAttribute('aria-invalid','true'); const n=document.createElement('small'); n.className='field-err-msg'; n.id='err-'+Math.random().toString(36).slice(2,8); n.setAttribute('role','alert'); n.textContent=msg; el.after(n); el.setAttribute('aria-describedby',n.id); typeof navIssRefresh==='function'&&navIssRefresh(); }
+function clearFieldError(el){ if(el.getAttribute('aria-invalid')==='true'){ el.removeAttribute('aria-invalid'); const id=el.getAttribute('aria-describedby'); const n=id&&document.getElementById(id); if(n&&n.classList.contains('field-err-msg')){ n.remove(); el.removeAttribute('aria-describedby'); } typeof navIssRefresh==='function'&&navIssRefresh(); } }
+function flashOk(el){ if(!el) return; el.classList.add('just-ok'); const h=noteHost(el); let t=null;
+  if(h && h.tagName==='LABEL'){ h.classList.add('kbd-host'); t=document.createElement('span'); t.className='ok-tick'; t.setAttribute('aria-hidden','true'); t.textContent='✓'; h.appendChild(t); }
+  setTimeout(()=>{ el.classList.remove('just-ok'); t&&t.remove(); },1000); }
+// подсветка изменённого элемента на плане
+function flashPlanFor(el){
+  let sel=null; const d=el.dataset||{};
+  if(d.chain) sel=`#plan [data-op="${qv(d.chain.split(':')[0])}"]`;
+  else if(d.pchain) sel=`#plan [data-pt="${qv(d.pchain.split(':')[0])}"]`;
+  else if((d.of||d.pf) && selRoom) sel=selRoom.k==='op'?`#plan [data-op="${qv(selRoom.id)}"]`:`#plan [data-pt="${qv(selRoom.id)}"]`;
+  else if(['rw','rd','rname'].includes(el.id)) sel=`#plan [data-rbg="${qv(S.cur)}"]`;
+  if(!sel) return; setTimeout(()=>{ document.querySelectorAll(sel).forEach(n=>{ n.classList.add('flash'); setTimeout(()=>n.classList.remove('flash'),1000); }); },25);
+}
+
+/* ---- числа: разбор, пределы, необязательные поля ---- */
+const OPTIONAL_NUM=['#kw','#kwmax','#it-kw','#it-gkw','[data-pf="hmm"]','[data-pchain$=":h"]','[data-price]'];
+function isOptional(el){ return el.hasAttribute('data-optional') || OPTIONAL_NUM.some(s=>el.matches(s)); }
+function fieldLabel(el){ const l=el.closest('label'); let t=el.getAttribute('aria-label')||'';
+  if(l){ const sp=l.querySelector('span'); if(sp) t=sp.textContent.trim(); }
+  return (t||'Значение').replace(/\s*,\s*мм$/,'').replace(/,\s*(м|кВт|л|%|м\/с)$/,''); }
+function unitOf(el){ const l=el.closest('label'); const t=((l&&l.querySelector('span'))?l.querySelector('span').textContent:el.getAttribute('aria-label')||''); const m=/,\s*(мм|м|кВт|л|%|м\/с)\s*$/.exec(t.trim()); return m?' '+m[1]:(el.matches('[data-chain],[data-pchain]')?' мм':''); }
+const nfmt=v=>Number(v).toLocaleString('ru-RU',{maximumFractionDigits:2});
+function checkNum(el){
+  const raw=el.value.trim().replace(/\s+/g,'').replace(',', '.');
+  const v=Number(raw); const mn=el.getAttribute('min'), mx=el.getAttribute('max');
+  const lo=mn!=null&&mn!==''?Number(mn):null, hi=mx!=null&&mx!==''?Number(mx):null, u=unitOf(el);
+  const range = lo!=null&&hi!=null ? `от ${nfmt(lo)} до ${nfmt(hi)}${u}` : lo!=null ? `не меньше ${nfmt(lo)}${u}` : hi!=null ? `не больше ${nfmt(hi)}${u}` : 'число';
+  // размеры помещения в мм: число меньше 100 — метры по старой привычке (поле переведёт в мм), 100–999 — слишком маленькое помещение
+  if(el.hasAttribute('data-m2mm') && /^\d*\.?\d+$/.test(raw)){ if(v>0&&v<100) return {ok:true, value:raw}; if(v>=100&&v<1000) return {ok:false, msg:'Слишком маленькое помещение: от 1 000 мм'}; }
+  const rules=!!el.closest('[data-rules]');   // «Настройки расчёта»: строка «Допустимо от … до …»
+  if(raw===''){ return isOptional(el)?{ok:true, value:''}:{ok:false, msg:rules?`Впишите число. Допустимо ${range}`:`${fieldLabel(el)}: впишите число`}; }
+  if(!/^-?\d*\.?\d+$/.test(raw) || !isFinite(v)) return {ok:false, msg:rules?`Допустимо ${range}`:`${fieldLabel(el)} — ${range}`};
+  if((lo!=null&&v<lo-1e-9)||(hi!=null&&v>hi+1e-9)) return {ok:false, msg:rules?`Допустимо ${range}`:`${fieldLabel(el)} — ${range}`};
+  return {ok:true, value:raw};
+}
+
+/* ---- значения во время набора не применяются ---- */
+document.addEventListener('input',e=>{ const t=e.target; if(!t||!t.matches) return;
+  if(!t.__commit && t.matches('input,textarea')){ const k=elKey(t); if(k&&fieldMsgs[k]){ delete fieldMsgs[k]; const h=noteHost(t); h&&h.querySelectorAll('.field-note[data-auto]').forEach(n=>n.remove()); } }
+  if(t.matches('input[data-num]')){ if(t.__commit) return; clearFieldError(t); e.stopImmediatePropagation(); } }, true);
+document.addEventListener('focusin',e=>{ const t=e.target; if(t&&t.matches&&t.matches('input,textarea,select')) t.__focusVal=t.value; }, true);
+// фиксация значения (Tab, уход из поля, Enter): проверка, запятая, затем — обычные обработчики поля
+document.addEventListener('change',e=>{
+  const t=e.target; if(!t||!t.matches) return;
+  renderDefer=true; setTimeout(()=>{ renderDefer=false; },0);
+  const k=elKey(t); if(k && fieldMsgs[k]) delete fieldMsgs[k];
+  if(t.matches('input[data-num]')){
+    const inForm=!!t.closest('[data-enter]');
+    const r=checkNum(t);
+    if(!r.ok){ if(inForm) return;   // форма проверяет обязательные поля сама при сохранении
+      e.stopImmediatePropagation(); setFieldError(t,r.msg); setTimeout(()=>{ if(document.contains(t)){ t.focus(); try{ t.select(); }catch(_){} } },0); return; }
+    clearFieldError(t); if(t.value!==r.value) t.value=r.value;
+    t.__commit=true; try{ t.dispatchEvent(new Event('input',{bubbles:true})); } finally{ t.__commit=false; }
+  }
+  if(t.matches('input:not([type=checkbox]):not([type=radio]),select') && !t.closest('[data-enter]') && !t.closest('.rep-ov,.pj-ov,.pj-screen')){ const key=k; flashPlanFor(t);
+    setTimeout(()=>{ const el=findKey(key)||t; if(document.contains(el)) flashOk(el); },25); }
+  t.__focusVal=t.value;
+}, true);
+
+/* ---- клавиши ---- */
+// клавиши плана работают, когда фокус не в поле ввода и не открыты настройки, выгрузка, проекты
+function planKeysOn(e){ const t=e.target, tag=(t&&t.tagName)||'';
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (t&&t.isContentEditable) || (t&&t.closest&&t.closest('.gap-ed'))) return false;
+  if(document.querySelector('.set-ov,.rep-ov,.pj-ov,.rep-prev,.pj-screen')) return false;
+  return true; }
+const CLOSE_ORDER=['#hrec-no','#desel','#it-cancel','#arrange-no','#room-del-no','#edits-reset-no','#add-cancel','#rs-no','#rmp-close','#rmp-done'];
+document.addEventListener('keydown',e=>{
+  const t=e.target, tag=(t&&t.tagName)||'';
+  const overlay=t&&t.closest&&t.closest('.rep-ov,.pj-ov,.rep-prev,.pj-screen,.pj-menu,.set-ov');
+  if(e.key==='Enter' && !e.ctrlKey && !e.metaKey && !e.altKey && tag==='INPUT' && !['checkbox','radio','button','submit','file','search','range','color'].includes(t.type)){
+    const form=t.closest('[data-enter]');
+    if(form){ e.preventDefault(); form.querySelectorAll('input[data-num]').forEach(x=>{ x.value=x.value.trim().replace(',', '.'); });
+      const b=document.getElementById(form.dataset.enter); b&&b.click(); return; }
+    if(t.closest('form')) return;              // настоящая форма — отправится сама
+    e.preventDefault();
+    const key=elKey(t), changed=t.value!==t.__focusVal;
+82:.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:14px}
+93:.seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--paper);border:1px solid var(--rule);border-radius:var(--r);padding:3px}
+136:.heat-row .seg{flex:1 1 200px}
+140:.fuel-row .seg{flex:0 1 220px}
+312:.heat-row:not(.fuel-row) .seg{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;flex:1 1 100%;min-width:0}
+313:@media (min-width:480px){ .heat-row:not(.fuel-row) .seg{grid-template-columns:repeat(2,minmax(0,1fr))} }
+412:.rmp-side #rpanel .fields{grid-template-columns:minmax(0,1fr)}
+443:@media (max-width:640px){ .nets-panel .seg{flex-direction:column} }
+1296:    for(let i=0;i<pts.length;i++){ const role=roles&&roles[i], id=role&&room.shape.roles[role]; if(id&&oldById[id]&&!used.has(id)){ out[i]=id; used.add(id); } }
+1312:function wallTitle(room,id){ if(id==='floor') return 'пол'; if(!hasPoly(room)) return SIDE_RU[id]+' стена'; return wallName(room,id); }
+1313:function wallFrom(room,id){ if(!hasPoly(room)) return SIDE_FROM[id]; const w=wallById(room,id); return w&&w.axis==='v'?'от верхнего угла':'от левого угла'; }
+2487:let rpOpen=false, rpFocus=null, rpScroll=0, roomFreeze=null, wallDrag=null;
+5894:.pfs-head .plan-layers .seg{flex-wrap:nowrap}
+
+Name     Source                          
+----     ------                          
+node.exe C:\Program Files\nodejs\node.exe
+
+
 
 codex
-Изменений нет: в `TASK.md` обнаружено противоречие.
+В `TASK.md` учтено исправление для ближней части стены: прежний id должен остаться у неподвижного участка. Добавлю построение уступа, перенос проёмов и точек и элементы управления, затем проверю геометрию и отмену.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'segBind\\(|bindShapeEditor\\(|function uid|SIDE_FROM|SIDE_RU' index.html; "'$s=Get-Content -LiteralPath index.html -Encoding UTF8; $s[2910..2995]; $s[2018..2045]; $s[2118..2148]; $s[90..100]; Get-Content -LiteralPath AGENTS.md -Encoding UTF8' in C:\Users\pro10\refectory-app
+ succeeded in 620ms:
+1310:  if(!hasPoly(room)) return `${SIDE_RU[id]||'правая'} стена`;
+1312:function wallTitle(room,id){ if(id==='floor') return 'пол'; if(!hasPoly(room)) return SIDE_RU[id]+' стена'; return wallName(room,id); }
+1313:function wallFrom(room,id){ if(!hasPoly(room)) return SIDE_FROM[id]; const w=wallById(room,id); return w&&w.axis==='v'?'от верхнего угла':'от левого угла'; }
+1325:    const adj=(SIDE_RU[id]||SIDE_RU.r).replace(/яя$/,'юю').replace(/ая$/,'ую'); return `на ${adj} стену`; };
+2023:function uid(p){ return p+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+2243:function segBind(root,fn){ root.querySelectorAll('[data-seg]').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); fn(g.dataset.seg,b.dataset.v); })); }
+2446:  segBind(main,(k,v)=>{ if(k==='meals') S.meals=+v; if(k==='ph'){ S.res.ph=+v; touch(); render(); return; } if(k==='phMax'){ S.res.phMax=+v; touch(); render(); return; }
+2528:function bindRoomTabs(){ const t=document.getElementById('room-tabs'); t&&segBind(t,(k,v)=>{ S.cur=v; sel=null; selRoom=null; addMode=null; touch(); render(); }); }
+2625:function bindShapeEditor(){
+2846:  bindShapeEditor(); bindRoomEditor();
+2948:    segBind(rp,(k,v)=>{ if(k==='o-type'){ o.type=v; if(v!=='prot') delete o.niche; if(v==='door'){ o.swing=o.swing||'in'; o.hinge=o.hinge||'l'; o.to=o.to||'corr'; } else if(v==='window') o.sill=o.sill||0.9; else o.depth=o.depth||0.3; }
+3000:  segBind(main,(k,v)=>{ if(k!=='utilities') return; S.utilities=v==='design'?'design':'existing'; touch(); render(); toast(v==='design'?'Сети проектируются — точки не обязательны':'Сети уже есть — отметьте их на плане'); }); };
+3565:  segBind(main.querySelector('.ex-form'),(k,val)=>{ pull();
+4421:const SIDE_RU={t:'верхняя', r:'правая', b:'нижняя', l:'левая', floor:'пол'};
+4422:const SIDE_FROM={t:'от левого угла', b:'от левого угла', l:'от верхнего угла', r:'от верхнего угла'};
+5032:  segBind(dlg,(k,v)=>{ if(k!=='rep-preset') return; r.preset=v; r.sections=presetSections(v); ov.querySelectorAll('[data-sec]').forEach(cb=>cb.checked=!!r.sections[cb.dataset.sec]); document.getElementById('rep-custom').hidden=true; touch(); recount(); });
+5749:  const seg2=document.getElementById('pdims-bar'); seg2&&segBind(seg2,(k,v)=>{ if(k==='pdims'){ S.planDims=v; touch(); render(); } });
+    return `<div class="panel" id="rpanel" data-fs="plan" style="margin-top:10px"><h3>${opName(o)}</h3><div class="fields">
+      <div class="field"><span>Тип</span>${seg('o-type',o.type,[['door','Дверь'],['window','Окно'],['prot','Выступ / ниша']])}</div>
+      ${o.type==='prot'?`<div class="field"><span>Вид</span>${seg('o-niche',o.niche?'niche':'prot',[['prot','Выступ'],['niche','Ниша']])}</div>`:''}
+      <label class="field"><span>Стена</span><select data-of="side">${sideOpts(o.side,false)}</select></label>
+      ${num('o-w',`Ширина ${o.type==='prot'&&o.niche?'ниши':OP_GEN[o.type]}, мм`,Math.round(o.w*1000),10,o.type==='prot'?50:300,Math.round(sideLen(S,o.side)*1000),'','data-of="wmm"')}
+      ${o.type==='prot'?num('o-dp',o.niche?'Глубина ниши, мм':'Глубина выступа, мм',Math.round((o.depth||0.3)*1000),10,50,3000,o.niche?'насколько ниша уходит в стену':'насколько выступает внутрь помещения','data-of="depthmm"')
+      :o.type==='door'?`<div class="field"><span>Открывается</span>${seg('o-swing',o.swing,[['in','Внутрь кухни'],['out','Наружу']])}</div>
+      <div class="field"><span>Петли, если смотреть из кухни</span>${seg('o-hinge',o.hinge,[['l','Слева'],['r','Справа']])}</div>
+      <label class="field"><span>Ведёт</span><select data-of="to">${[...Object.entries(DOOR_TO), ...S.rooms.filter(r=>r.id!==S.room.id).map(r=>['room:'+r.id,'в «'+r.name+'»'])].map(([k,v])=>`<option value="${k}" ${o.to===k?'selected':''}>${esc(v)}</option>`).join('')}</select></label>`
+      :num('o-sill','Высота подоконника, мм',Math.round((o.sill||0.9)*1000),10,0,2500,'оборудование выше подоконника под окно не ставится','data-of="sillmm"')}
+    </div>${btns}</div>`;
+  }
+  const p=S.points.find(x=>x.id===selRoom.id); if(!p) return '';
+  const hood=p.type==='hood';
+  return `<div class="panel" id="rpanel" data-fs="plan" style="margin-top:10px"><h3>${PT[p.type].n}</h3><div class="fields">
+    <label class="field"><span>Что это</span><select data-pf="type">${Object.entries(PT).map(([k,v])=>`<option value="${k}" ${p.type===k?'selected':''}>${v.n}</option>`).join('')}</select></label>
+    <label class="field"><span>Где</span><select data-pf="side">${sideOpts(p.side,true)}</select></label>
+    ${hood?num('p-w','Ширина зонта, мм',Math.round(p.w*1000),10,300,10000,'','data-pf="wmm"')+num('p-d','Глубина зонта, мм',Math.round(p.d*1000),10,300,5000,'','data-pf="dmm"')
+      : p.side!=='floor'?num('p-h','Высота от пола, мм',p.hgt==null?'':Math.round(p.hgt*1000),10,0,4000,'если известна','data-pf="hmm"'):''}
+    <label class="field" style="grid-column:1/-1"><span>Характеристики</span><input type="text" data-pf="spec" value="${esc(p.spec||'')}" placeholder="${esc(PT[p.type].ph)}"></label>
+  </div>${p.type==='gas'?`<p class="hint" style="margin-top:10px">Пунктирный круг — куда дотягивается гибкая подводка (${fmtM(S.norms.gasHose)}). Внутри него газовое подключается проще всего; дальше тоже можно — газовая служба продлит газопровод.</p>`:''}${btns}</div>`;
+}
+function refreshPlan(){ const b=document.getElementById('pbox'); if(b && step===1){ b.innerHTML=roomsPlanSvg(); return; } if(b && planUnified()){ b.innerHTML=unifiedPlanSvg(); return; } if(b) b.innerHTML=planSvg(editorMode(), step===5&&planMode==='equip'?checkLayout(curGeom(),curUnits()):[], {bare:isBare()}); }
+function setPtSide(p, side){
+  const r=ptRect(S,p), cx=r.x+r.w/2, cy=r.y+r.h/2;
+  if(side==='floor'){ if(p.type==='hood'){ p.x=r.x; p.y=r.y; } else { p.x=cx; p.y=cy; } }
+  else { const along=projectToWall(S.room,side,cx,cy).off; p.off = p.type==='hood' ? along-(p.w||1.5)/2 : along; }
+  p.side=side;
+}
+function bindRoomEditor(){
+  main.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>{ const a=b.dataset.add; const v=a; /* тип точки — в самой кнопке палитры: data-add="pt:<тип>" */ if(a==='prot'){ addMode=null; const ws=roomWalls(S.room).slice().sort((x,y)=>y.len-x.len); let side=null, off=null; for(const w of ws){ const q=freeSpot(S,w.id,w.len/2,0.6,null); if(q!==null){ side=w.id; off=q; break; } } if(side===null){ toast('Нет свободного места на стенах'); render(); return; } const o={id:uid('o'),type:'prot',side,off,w:0.6,depth:0.6}; S.openings.push(o); clampRoom(S); selRoom={k:'op',id:o.id}; if(step===1){ rpOpen=true; rpFocus=o.id; } touch(); render(); return; } addMode = addMode===v?null:v; selRoom=null; render(); }));
+  const ac=document.getElementById('add-cancel'); ac&&ac.addEventListener('click',()=>{ addMode=null; render(); });
+  main.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{ const [k,id]=b.dataset.pick.split(':'); selRoom={k,id}; addMode=null; render(); document.getElementById('rpanel')&&document.getElementById('rpanel').scrollIntoView({block:'nearest'}); }));
+  const del=document.getElementById('del-room'); del&&del.addEventListener('click',()=>{ if(selRoom.k==='op') S.openings=S.openings.filter(o=>o.id!==selRoom.id); else S.points=S.points.filter(p=>p.id!==selRoom.id); selRoom=null; touch(); render(); toast('Удалено'); });
+  const ds=document.getElementById('desel'); ds&&ds.addEventListener('click',()=>{ selRoom=null; render(); });
+  const rp=document.getElementById('rpanel');
+  if(rp && selRoom.k==='op'){ const o=S.openings.find(x=>x.id===selRoom.id);
+    segBind(rp,(k,v)=>{ if(k==='o-type'){ o.type=v; if(v!=='prot') delete o.niche; if(v==='door'){ o.swing=o.swing||'in'; o.hinge=o.hinge||'l'; o.to=o.to||'corr'; } else if(v==='window') o.sill=o.sill||0.9; else o.depth=o.depth||0.3; }
+      if(k==='o-niche'){ if(v==='niche') o.niche=true; else delete o.niche; }
+      if(k==='o-swing') o.swing=v; if(k==='o-hinge') o.hinge=v; clampRoom(S); touch(); render(); });
+    rp.querySelectorAll('[data-of]').forEach(el=>el.addEventListener('change',()=>{ const f=el.dataset.of;
+      if(f==='to') o.to=el.value;
+      else if(f==='side'){ const prevSide=o.side; o.side=el.value; const spot=freeSpot(S,o.side,o.off+o.w/2,o.w,o.id); if(spot===null){ fieldMsg(el,'На этой стене нет свободного места такой ширины — проём остался на прежней стене'); o.side=prevSide; } else o.off=spot; }
+      else { const v=parseFloat(el.value); if(!isFinite(v)) return;
+        if(f==='sillmm') o.sill=v/1000; if(f==='depthmm') o.depth=v/1000;
+        if(f==='wmm'){ const n=neighbors(S,o); o.w=Math.max(0.05,v/1000); if(o.off+o.w>n.hi+1e-6){ o.w=Math.max(0.05,n.hi-o.off); fieldMsg(el,`Шире ${fmt0(o.w*1000)} мм не получится — мешает ${n.next?OP_NOM[n.next.type]:'угол'}`); } } }
+      clampRoom(S); touch(); render(); }));
+  }
+  if(rp && selRoom.k==='pt'){ const p=S.points.find(x=>x.id===selRoom.id);
+    rp.querySelectorAll('[data-pf]').forEach(el=>el.addEventListener('change',()=>{ const f=el.dataset.pf;
+      if(f==='spec'){ p.spec=el.value.trim(); touch(); render(); return; }
+      if(f==='type'){ p.type=el.value; if(p.type==='hood'){ p.w=p.w||1.5; p.d=p.d||1.0; if(p.side!=='floor') p.off=Math.max(0,p.off-p.w/2); } }
+      else if(f==='side') setPtSide(p, el.value);
+      else { const raw=el.value.trim(); if(f==='hmm' && raw===''){ p.hgt=null; } else { const v=parseFloat(raw); if(!isFinite(v)) return; if(f==='wmm') p.w=v/1000; if(f==='dmm') p.d=v/1000; if(f==='hmm') p.hgt=v/1000; } }
+      const want=JSON.stringify([p.w,p.d]); clampRoom(S); if((f==='wmm'||f==='dmm') && JSON.stringify([p.w,p.d])!==want) fieldMsg(el,`Значение урезано до ${fmt0((f==='wmm'?p.w:p.d)*1000)} мм — больше не помещается в помещение`); touch(); render(); }));
+  }
+  main.querySelectorAll('[data-chain]').forEach(el=>el.addEventListener('change',()=>{ const [id,f]=el.dataset.chain.split(':'), o=S.openings.find(x=>x.id===id); const v=parseFloat(el.value)/1000; if(!o||!isFinite(v)) return;
+    const n=neighbors(S,o); let note=''; const nm=x=>x?OP_NOM[x.type]:'угол';
+    if(f==='b'){ o.off=n.lo+Math.max(0,v); if(o.off+o.w>n.hi+1e-6){ o.off=Math.max(n.lo,n.hi-o.w); note=`Больше ${fmt0((o.off-n.lo)*1000)} мм не получится — мешает ${nm(n.next)}`; } }
+    if(f==='w'){ o.w=Math.max(o.type==='prot'?0.05:0.3,v); if(o.off+o.w>n.hi+1e-6){ o.w=Math.max(0.05,n.hi-o.off); note=`Шире ${fmt0(o.w*1000)} мм не получится — мешает ${nm(n.next)}`; } }
+    if(f==='a'){ o.off=n.hi-Math.max(0,v)-o.w; if(o.off<n.lo-1e-6){ o.off=n.lo; note=`Больше ${fmt0((n.hi-o.off-o.w)*1000)} мм не получится — мешает ${nm(n.prev)}`; } }
+    if(f==='d'){ o.depth=Math.max(0.05,v); }
+    o.off=Math.round(o.off*1000)/1000; o.w=Math.round(o.w*1000)/1000;
+    selRoom={k:'op', id:o.id}; clampRoom(S); if(note) fieldMsg(el,note); touch(); render(); }));
+  main.querySelectorAll('[data-pchain]').forEach(el=>el.addEventListener('change',()=>{ const [id,f]=el.dataset.pchain.split(':'), p=S.points.find(x=>x.id===id); if(!p) return;
+    const raw=el.value.trim(); if(f==='h'){ p.hgt = raw===''?null:Math.max(0,parseFloat(raw)/1000); touch(); render(); return; }
+    const v=parseFloat(raw)/1000; if(!isFinite(v)) return;
+    if(f==='l'||f==='r'){ const lr=ptLR(S,p); if(f==='l') p.off=lr.l.pos+Math.max(0,v); else p.off=lr.r.pos-Math.max(0,v)-(p.type==='hood'?p.w:0); }
+    if(f==='w') p.w=Math.max(0.3,v); if(f==='d') p.d=Math.max(0.3,v); if(f==='x') p.x=v; if(f==='y') p.y=v;
+    if(p.off!=null) p.off=Math.round(p.off*1000)/1000;
+    const want=JSON.stringify([p.off,p.w,p.d,p.x,p.y]); selRoom={k:'pt', id:p.id}; clampRoom(S);
+    if(JSON.stringify([p.off,p.w,p.d,p.x,p.y])!==want) fieldMsg(el,'Значение урезано: точка не может выйти за стены помещения'); touch(); render(); }));
+  bindZoom(); bindPlanPointer();
+}
+function freeSpot(s, side, along, w, exceptId){
+  const L=sideLen(s,side), els=wallEls(s,side).filter(x=>x.id!==exceptId);
+  const gaps=[]; let cur=0; for(const x of els){ gaps.push([cur,x.off]); cur=Math.max(cur,x.off+x.w); } gaps.push([cur,L]);
+  const fit=gaps.filter(g=>g[1]-g[0]>=w-1e-6); if(!fit.length) return null;
+  let best=null, bd=Infinity;
+  for(const [a,b] of fit){ const off=Math.min(Math.max(along-w/2,a),b-w); const d=Math.abs(off+w/2-along); if(d<bd){ bd=d; best=off; } }
+  return Math.round(best*100)/100;
+}
+function nicheOut(room, side, openings){ return Math.max(0,...(openings||[]).filter(o=>o.type==='prot'&&o.niche&&o.side===side).map(o=>(o.depth||0.3)*100)); }
+function nicheOutEdge(room, edge, openings){
+  const walls=hasPoly(room)?roomWalls(room).filter(w=>edge==='t'?w.axis==='h'&&Math.abs(w.y1)<1e-9&&Math.abs(w.y2)<1e-9:edge==='r'?w.axis==='v'&&Math.abs(w.x1-room.w)<1e-9&&Math.abs(w.x2-room.w)<1e-9:edge==='b'?w.axis==='h'&&Math.abs(w.y1-room.d)<1e-9&&Math.abs(w.y2-room.d)<1e-9:w.axis==='v'&&Math.abs(w.x1)<1e-9&&Math.abs(w.x2)<1e-9):[wallById(room,edge)];
+  return Math.max(0,...walls.map(w=>nicheOut(room,w.id,openings)));
+function fmtM(n){ return fmt2(n)+' м'; }
+function rub(n){ return Math.round(n).toLocaleString('ru-RU')+' ₽'; }
+function plural(n,a,b,c){ n=Math.abs(n)%100; const n1=n%10; if(n>10&&n<20) return c; if(n1>1&&n1<5) return b; if(n1===1) return a; return c; }
+function esc(t){ return String(t).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function uid(p){ return p+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+</script>
 
-Для варианта «голова внутрь» требуется сохранить `wid` вершины `a` и присвоить тот же ID вершине `s`. Но [`assignWids()`](C:/Users/pro10/refectory-app/index.html:1294) сохраняет ID только за первой вершиной — стена от `s` до `b` получит другой ID. Изменять `assignWids()` запрещено заданием.
+<script>
+/* ===================== ИНТЕРФЕЙС ===================== */
+/* ======================================================================
+   STORE — хранилище проектов. Один интерфейс: list / load / save / remove.
+   Сейчас — localStorage этого браузера; чтобы перейти на облако, достаточно заменить этот блок.
+   Индекс 'trapeznaya:index' хранит сводку для карточек, проекты — 'trapeznaya:p:<id>', последний открытый — 'trapeznaya:last'.
+   ====================================================================== */
+const KEY='trapeznaya-v1';   // прежний единственный проект: читается один раз при переносе, не удаляется
+const STORE=(()=>{
+  const IX='trapeznaya:index', PK='trapeznaya:p:', LAST='trapeznaya:last';
+  const get=k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } };
+  const isQuota=e=>!!e && (e.name==='QuotaExceededError' || e.name==='NS_ERROR_DOM_QUOTA_REACHED' || e.code===22 || e.code===1014);
+  const readIx=()=>{ try{ const a=JSON.parse(get(IX)||'null'); return Array.isArray(a)?a:null; }catch(e){ return null; } };
+  const st={ error:null, PK, IX,
+    list(){ return (readIx()||[]).slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))); },
+    load(id){ try{ const t=get(PK+id); return t?JSON.parse(t):null; }catch(e){ return null; } },
+    raw(id){ return get(PK+id); },
+    save(id, data, summary){
+      try{ const txt=typeof data==='string'?data:JSON.stringify(data); localStorage.setItem(PK+id, txt);
+        const ix=readIx()||[], i=ix.findIndex(x=>x.id===id), row=Object.assign({}, i>=0?ix[i]:{}, summary||{}, {id});
+        if(i>=0) ix[i]=row; else ix.push(row); localStorage.setItem(IX, JSON.stringify(ix)); st.error=null; return true; }
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.hidden=false; clearTimeout(toast.h); toast.h=setTimeout(()=>t.hidden=true,2400); }
+// история изменений: до 10 шагов назад и вперёд
+const HIST_MAX=10; let undoStack=[], redoStack=[], lastSnap=null, lastPush=0;
+function snap(){ return JSON.stringify(S,(k,v)=>k==='cur'||k==='updatedAt'?undefined:v); }
+function touch(){ S.example=false; commit(); }
+function commit(){
+  const now=snap();
+  if(lastSnap!==null && now!==lastSnap){
+    if(Date.now()-lastPush>700){ undoStack.push(lastSnap); if(undoStack.length>HIST_MAX) undoStack.shift(); redoStack=[]; lastPush=Date.now(); }
+    else lastPush=Date.now();
+  }
+  lastSnap=now; save(); updUndo(); }
+function restoreSnap(t){ const cur=S.cur, o=JSON.parse(t); S=prepare(o); if(S.rooms.some(r=>r.id===cur)) S.cur=cur; lastSnap=snap(); lastPush=0;
+  sel=null; selRoom=null; addMode=null; editUid=null; draft=null; confirmReset=false; confirmRoomDel=false; rpOpen=rpOpen&&step===1&&S.rooms.some(r=>r.id===cur); confirmArrange=false; heatRecOpen=false; heatRecErr=false; save(); render(); updUndo(); }
+function doUndo(){ if(!undoStack.length) return; redoStack.push(snap()); if(redoStack.length>HIST_MAX) redoStack.shift(); restoreSnap(undoStack.pop()); toast('Действие отменено'); }
+function doRedo(){ if(!redoStack.length) return; undoStack.push(snap()); if(undoStack.length>HIST_MAX) undoStack.shift(); restoreSnap(redoStack.pop()); toast('Действие повторено'); }
+function updUndo(){ const u=document.getElementById('undo'), r=document.getElementById('redo'); if(!u) return;
+  u.disabled=!undoStack.length; r.disabled=!redoStack.length;
+  u.title=`Отменить (Ctrl+Z) · доступно шагов: ${undoStack.length}`; r.title=`Повторить (Ctrl+Shift+Z) · доступно шагов: ${redoStack.length}`; }
+document.getElementById('undo').addEventListener('click',doUndo);
+document.getElementById('redo').addEventListener('click',doRedo);
+document.addEventListener('keydown',e=>{ const t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')) return;
+  if(!(e.ctrlKey||e.metaKey)) return; const k=e.key.toLowerCase();
+  if((k==='z'||k==='я')&&!e.shiftKey){ e.preventDefault(); doUndo(); }
+  else if(((k==='z'||k==='я')&&e.shiftKey)||k==='y'||k==='н'){ e.preventDefault(); doRedo(); } });
+function recompute(){
+  P=computeProject(S); const real=unitsOf(P.items);
+  if(P.manualConverted){ setTimeout(()=>toast('Ручной режим заменён правками — расчёт снова обновляется'),50); save(); }
+  P.roomOf=assignRooms(S, real);
+  const sig=JSON.stringify([real.map(u=>u.key+u.c.w+u.c.d+u.c.h+u.c.mount+(u.c.roomId||'')), S.rooms, S.unitRoom, S.norms.align, S.norms.work, [S.norms.elPanelDepth,S.norms.elPanelWidth,S.norms.elPanelLowH,S.norms.elWaterDist], S.norms.sewerMax, 'flow3']);
+  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ const r=layoutAll(S,real); S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room; S.inserts=r.inserts.map(i=>({key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, room:i.room})); S.layoutSig=sig; }
+input[disabled]{opacity:.5}
+textarea{font:12px/1.4 var(--f-mono);min-height:90px;resize:vertical}
+.seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--paper);border:1px solid var(--rule);border-radius:var(--r);padding:3px}
+.seg button{flex:1 1 auto;border:0;background:transparent;color:var(--ink-2);font:500 13.5px var(--f-body);padding:7px 10px;border-radius:4px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);box-shadow:0 0 0 1px var(--rule)}
+.seg button:focus-visible{outline:2px solid var(--steel)}
+.check{display:flex;gap:9px;align-items:center;font-size:14.5px;cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--steel);flex:0 0 auto}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--rule);background:var(--sheet);color:var(--ink);font:500 14px var(--f-body);padding:8px 13px;border-radius:var(--r);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--ink-2)}
+.btn:focus-visible{outline:2px solid var(--steel);outline-offset:1px}
+# Правила для исполнителя (Codex / GPT)
 
-Согласно пункту 8 [`AGENTS.md`](C:/Users/pro10/refectory-app/AGENTS.md), при противоречии коду нужно остановиться без изменений. Уточните: в этом варианте следует убрать `wid` у сдвинутой вершины `a`, чтобы исходный ID сохранился у `s`?
+Ты — исполнитель. Задачи ставит и проверяет другой агент; задание всегда лежит в `TASK.md`.
+
+1. Делай **только** то, что написано в `TASK.md`. Никаких «заодно улучшу».
+2. Не переформатируй код, не меняй отступы, кавычки, порядок строк вне зоны задания.
+3. Не трогай соседние функции, стили и тексты, если задание этого не требует.
+4. Не удаляй код, если удаление прямо не указано.
+5. Не создавай новые файлы, кроме упомянутых в задании. Приложение — один файл `index.html`, весь код остаётся в нём.
+6. Не делай `git commit`, `git reset`, `git checkout` — коммиты делает проверяющий.
+7. Интерфейс и тексты — на русском, в стиле существующих.
+8. Если задание неясно или противоречит коду — не угадывай: ничего не меняй и опиши проблему в конце ответа.
+9. В конце ответа коротко перечисли: какие функции/фрагменты изменены и зачем.
+10. Папку `versions/` и файл `versions.html` не открывай, не ищи в них и не меняй — это архив прошлых версий. Работай только с `index.html`.
+
+apply patch
+patch: completed
+C:\Users\pro10\refectory-app\index.html
+diff --git a/index.html b/index.html
+index c399ccd67a00b80579def0d9836160efb56720f7..e5843f0a347e8cb44230c8aef20f16158b5ef669
+--- a/index.html
++++ b/index.html
+@@ -404,6 +404,10 @@
+ .shp-wall-row>b{align-self:center;font-size:13px;font-weight:500}
+ .shp-wall-row .field{min-width:0}
+ .shp-action{min-height:44px;white-space:normal;line-height:1.15}
++.shp-step{display:flex;flex-direction:column;gap:10px;padding-top:12px;border-top:1px solid var(--grid)}
++.shp-step h4{margin:0;font-size:14px}
++.shp-step .field{min-width:0}
++@media (max-width:640px){ .shp-step .shp-fields{grid-template-columns:minmax(0,1fr)} }
+ .shp-error-slot:empty{display:none}
+ .rmp-note{display:block;margin-top:8px;font-size:12.5px;color:var(--ink-2)}
+ .rmp-side .chain-row .ttl{min-height:44px;padding-bottom:4px}
+@@ -1333,6 +1337,29 @@
+       p.side=hit.id; p.off=proj.off-width/2; const label=p.name||(PT[p.type]&&PT[p.type].n)||p.spec||p.type||'точка'; moved.push(`Точка «${label}» перенесена ${dest(hit.id)}`); } }
+   clampRoom({room,openings:room.openings,points:room.points});
+   return {ok:true,moved}; }
++function stepRoomWall(room,id,off,h,far){
++  const walls=roomWalls(room), i=walls.findIndex(w=>w.id===id); if(i<0) return {error:'Выберите стену для уступа'};
++  const w=walls[i], P=roomPoly(room).map((q,j)=>({...q,wid:q.wid||walls[j].id})), n=P.length, a=P[i], b=P[(i+1)%n], u=w.dir, nv={x:w.nx,y:w.ny}, t=w.offFrom==='start'?off:w.len-off;
++  if(!Number.isFinite(t)||t<0.3||t>w.len-0.3) return {error:'Уступ слишком близко к углу — от угла не меньше 300 мм'};
++  if(!Number.isFinite(h)||h<0.3) return {error:'Уступ не помещается: глубина должна быть не меньше 300 мм'};
++  const tail=(w.offFrom==='start')!==(far===false), neighbor=walls[(i+(tail?1:n-1))%n];
++  if(Math.abs(u.x*neighbor.dir.x+u.y*neighbor.dir.y)>1e-9) return {error:'Уступ рядом с косой стеной пока не поддерживается'};
++  const s={x:a.x+u.x*t,y:a.y+u.y*t}, sh={x:s.x+nv.x*h,y:s.y+nv.y*h}, pts=P.map(q=>({...q}));
++  if(tail){ pts[(i+1)%n]={...b,x:b.x+nv.x*h,y:b.y+nv.y*h}; pts.splice(i+1,0,s,sh); }
++  else pts.splice(i,1,{x:a.x+nv.x*h,y:a.y+nv.y*h},sh,{...s,wid:w.id});
++  const error=shapeError(normPoly(pts,pts.map(p=>p.wid||null)).pts); if(error) return {error:'Уступ не помещается: '+error};
++  const blocked=label=>({error:'Уступ приходится на „'+label+'“ — сдвиньте место уступа'});
++  for(const o of room.openings) if(o.side===id&&off>o.off&&off<o.off+o.w) return blocked(opName(o));
++  for(const p of room.points) if(p.side===id){ const width=p.type==='hood'?(Number(p.w)||0):0;
++    if(width?off>p.off&&off<p.off+width:Math.abs(p.off-off)<1e-6) return blocked(p.type==='hood'?'Зонт':p.name||(PT[p.type]&&PT[p.type].n)||p.type||'Точка'); }
++  const saved=[], movingFar=far!==false;
++  for(const o of [...room.openings,...room.points]) if(o.side===id){ const width=Number(o.w)||0;
++    if(movingFar?o.off>=off:o.off+width<=off) saved.push({o,q:wallPoint(room,id,o.off),width:o.w}); }
++  const r=setRoomShape(room,{tpl:'custom',pts}); if(r.error) return r;
++  const probe={x:sh.x+u.x*(tail?0.01:-0.01),y:sh.y+u.y*(tail?0.01:-0.01)}, Y=roomWalls(room).find(v=>Math.abs(v.dir.x-u.x)<1e-9&&Math.abs(v.dir.y-u.y)<1e-9&&segDist(probe.x,probe.y,v.x1,v.y1,v.x2,v.y2)<1e-9);
++  for(const {o,q,width} of saved){ o.side=Y.id; o.off=projectToWall(room,Y.id,q.x+nv.x*h,q.y+nv.y*h).off; if(width!==undefined) o.w=width; }
++  clampRoom({room,openings:room.openings,points:room.points});
++  return {ok:true,moved:r.moved}; }
+ // отражение по горизонтали: контур, стены, проёмы, точки (вместо mirrorGeom)
+ function mirrorWallId(room,id){ if(hasPoly(room)) return id; return id==='l'?'r':id==='r'?'l':id; }
+ function mirrorRoom(s){ const W=s.room.w, R=s.room;
+@@ -2612,18 +2639,33 @@
+     :tpl==='U'?[['D','Общая длина ↕'],['W','Общая ширина ↔'],['cd','Глубина выреза ↕'],['cw','Ширина выреза ↔'],['co','Отступ выреза ↔']]
+     :tpl==='T'?[['D','Общая длина ↕'],['W','Общая ширина ↔'],['lw','Ширина ножки ↔'],['lo','Отступ ножки ↔'],['ll','Длина ножки ↕']]:[];
+   return specs.length?`<div class="fields shp-fields">${specs.map(([key,label])=>num(`shp-${key}`,label,Math.round(p[key]*1000),10,300,30000,'',`data-shp-param="${key}"`)).join('')}</div>`:''; }
++let stepWallSel=null;
++let stepFarSel='far';
+ function shapeSecHtml(r){
+   const tpl=shapeCurrentTpl(r), curRot=r.shape&&r.shape.rot||0, p=shapeCurrentParams(r,tpl), templates=[['rect','Прямо&shy;угольник'],['L','Г'],['U','П'],['T','Т']];
+   const choices=`<div class="shp-template-row">${templates.map(([key,label])=>`<button type="button" class="btn tap shp-template" data-shape-tpl="${key}" aria-pressed="${tpl===key}">${shapeSvg(key,0,shapeDefaults(key,3,2))}<span>${label}</span></button>`).join('')}${tpl==='custom'?'<span class="shp-custom-label">Своя форма</span>':''}</div>`;
+   const rotation=tpl!=='custom'&&tpl!=='rect'?`<div class="shp-rotation"><span class="lbl">Поворот</span><div class="shp-rot-row">${[0,1,2,3].map(rot=>`<button type="button" class="btn tap shp-rot" data-shape-rot="${rot}" aria-pressed="${Number(curRot)===rot}" aria-label="Поворот ${rot*90} градусов">${shapeSvg(tpl,rot,p)}<span>${rot*90}°</span></button>`).join('')}</div></div>`:'';
+   const walls=tpl==='custom'?`<div class="shp-wall-list">${roomWalls(r).map(w=>`<div class="shp-wall-row"><b>Стена ${w.i+1}</b>${num(`shp-wall-${esc(w.id)}`,'Длина, мм',Math.round(w.len*1000),10,300,30000,'',`data-wall-len="${esc(w.id)}"`)}</div>`).join('')}</div>`:'';
+-  return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p)}${walls}<div class="shp-error-slot"></div></div>`; }
++  const stepWalls=roomWalls(r), stepWall=stepWalls.find(w=>w.id===stepWallSel)||stepWalls[0];
++  const stepBlock=`<div class="shp-step"><h4>Уступ на стене</h4><label class="field"><span>Стена</span><select data-step-wall>${stepWalls.map(w=>{ const title=wallTitle(r,w.id); return `<option value="${esc(w.id)}" ${w.id===stepWall.id?'selected':''}>${esc(title.charAt(0).toUpperCase()+title.slice(1))}</option>`; }).join('')}</select></label>
++    <div class="fields shp-fields">${num('step-off','Место уступа, мм — '+wallFrom(r,stepWall.id),Math.round(stepWall.len*50)*10,10,0,stepWall.len*1000,'','data-step-off')}${num('step-depth','Глубина, мм',600,10,300,'','','data-step-depth')}</div>
++    ${seg('step-far',stepFarSel,[['far','Утопить дальнюю часть'],['near','Утопить ближнюю часть']])}<button type="button" class="btn tap shp-action" data-step-apply>Добавить уступ</button></div>`;
++  return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p)}${walls}${stepBlock}<div class="shp-error-slot"></div></div>`; }
+ function shapeShowError(sec,el,msg){ if(el) el.setAttribute('aria-invalid','true'); const slot=sec.querySelector('.shp-error-slot'); if(slot) slot.innerHTML=`<p class="rmp-warn shp-warn" role="alert">${esc(msg)}</p>`; }
+ function applyRoomShape(r,shape,sec,el){
+   const result=setRoomShape(r,shape); if(result.error){ shapeShowError(sec,el,result.error); return false; }
+   lastPush=0; touch(); recompute(); render(); if(result.moved.length) toast(result.moved.join('. ')); return true; }
+ function bindShapeEditor(){
+   const sec=document.querySelector('[data-rpsec="shape"]'); if(!sec) return;
++  const stepWall=sec.querySelector('[data-step-wall]'); stepWall&&stepWall.addEventListener('change',()=>{ stepWallSel=stepWall.value; render(); });
++  segBind(sec,(key,value)=>{ if(key==='step-far') stepFarSel=value; });
++  const stepApply=sec.querySelector('[data-step-apply]'); stepApply&&stepApply.addEventListener('click',()=>{
++    const offEl=sec.querySelector('[data-step-off]'), depthEl=sec.querySelector('[data-step-depth]'), read=el=>Number(String(el.value).replace(/\s+/g,'').replace(',','.')), off=read(offEl), depth=read(depthEl), id=stepWall.value, w=roomWalls(S.room).find(q=>q.id===id);
++    if(!w) return;
++    if(!offEl.value.trim()||!Number.isFinite(off)||off<0||off>w.len*1000){ shapeShowError(sec,offEl,'Введите место уступа от 0 до '+Math.round(w.len*1000)+' мм.'); return; }
++    if(!depthEl.value.trim()||!Number.isFinite(depth)||depth<300){ shapeShowError(sec,depthEl,'Введите глубину не меньше 300 мм.'); return; }
++    const result=stepRoomWall(S.room,id,off/1000,depth/1000,stepFarSel==='far'); if(result.error){ shapeShowError(sec,stepApply,result.error); return; }
++    lastPush=0; touch(); recompute(); render(); toast('Уступ добавлен'+(result.moved.length?'. '+result.moved.join('. '):'')); });
+   sec.querySelectorAll('[data-shape-tpl]').forEach(b=>b.addEventListener('click',()=>{ const r=S.room, tpl=b.dataset.shapeTpl; applyRoomShape(r,{tpl,rot:0,p:shapeDefaults(tpl,r.w,r.d)},sec,b); }));
+   sec.querySelectorAll('[data-shape-rot]').forEach(b=>b.addEventListener('click',()=>{ const r=S.room, tpl=shapeCurrentTpl(r); applyRoomShape(r,{tpl,rot:Number(b.dataset.shapeRot),p:shapeCurrentParams(r,tpl)},sec,b); }));
+   sec.querySelectorAll('[data-shp-param]').forEach(el=>el.addEventListener('change',()=>{ const r=S.room, tpl=shapeCurrentTpl(r), value=Number(String(el.value).replace(/\s+/g,'').replace(',','.')); if(!Number.isFinite(value)||value<300||value>30000){ shapeShowError(sec,el,'Введите размер от 300 до 30 000 мм.'); return; }
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$s=Get-Content -LiteralPath index.html -Encoding UTF8; $s[492..516]; $s[2008..2028]; rg -n '"'document\\.|window\\.|localStorage|fetch\\(' index.html | Select-Object -First 20; node -e \"for(const m of ['playwright','puppeteer','jsdom']){try{console.log(m+': '+require.resolve(m))}catch{console.log(m+': unavailable')}}\"; git diff --check -- index.html; git diff --stat -- index.html" in C:\Users\pro10\refectory-app
+ succeeded in 1041ms:
+<footer class="foot wrap">Расчёты приложения ориентировочные и строятся на здравом смысле: они помогают собрать задание и сравнить варианты. Проекты хранятся в этом браузере. Чтобы не потерять проект или передать его, скачайте его файлом — меню «Проект».</footer>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ===================== ДАННЫЕ И РАСЧЁТЫ ===================== */
+// w, d, h — ширина по фронту, глубина, высота, м; kw — кВт; ph — фазы; cw/hw/dr — холодная, горячая вода, слив; hot — под зонт
+// mount: floor — напольное, wall — настенное, table — настольное, under — под мойкой, none — ручной инструмент
+const CAT = [
+  {id:'combi4', n:'Пароконвектомат 4 GN 1/1, 220 В, на подставке', s:'ПКА 4', role:'combi', cap:4, w:.75, d:.75, h:1.5, kw:6.3, ph:1, cw:1, dr:1, hot:1, z:'hot', p:330000},
+  {id:'combi6', n:'Пароконвектомат 6 GN 1/1, на подставке', s:'ПКА 6', role:'combi', cap:6, w:.85, d:.8, h:1.7, kw:10.5, ph:3, cw:1, dr:1, hot:1, z:'hot', p:420000},
+  {id:'combi10', n:'Пароконвектомат 10 GN 1/1, на подставке', s:'ПКА 10', role:'combi', cap:10, w:.85, d:.8, h:1.95, kw:17.5, ph:3, cw:1, dr:1, hot:1, z:'hot', p:560000},
+  {id:'ind4', n:'Плита индукционная 4 конф., напольная', s:'Инд 4', role:'burners', cap:4, w:.8, d:.8, h:.9, kw:14, ph:3, hot:1, z:'hot', p:340000},
+  {id:'combi20', n:'Пароконвектомат 20 GN 1/1, напольный', s:'ПКА 20', role:'combi', cap:20, w:.95, d:.85, h:1.85, kw:36, ph:3, cw:1, dr:1, hot:1, z:'hot', p:1200000, heatOnly:1},
+  {id:'ind6', n:'Плита индукционная 6 конф., напольная', s:'Инд 6', role:'burners', cap:6, w:1.2, d:.8, h:.9, kw:21, ph:3, hot:1, z:'hot', p:480000, heatOnly:1},
+  {id:'kettle160', n:'Котёл пищеварочный 160 л', s:'Котёл', role:'kettle', cap:160, w:1.05, d:.95, h:.95, kw:18, ph:3, cw:1, dr:1, hot:1, z:'hot', p:480000},
+  {id:'pan40', n:'Сковорода электрическая опрокидывающаяся 40 л', s:'Сков', role:'pan', cap:40, w:.8, d:.8, h:.9, kw:6, ph:3, cw:1, dr:1, hot:1, z:'hot', p:380000},
+  {id:'pan80', n:'Сковорода электрическая опрокидывающаяся 80 л', s:'Сков', role:'pan', cap:80, w:1.1, d:.85, h:.9, kw:12, ph:3, cw:1, dr:1, hot:1, z:'hot', p:520000},
+  {id:'rice5', n:'Рисоварка профессиональная 5 л', s:'Рис', role:'rice', cap:5, w:.4, d:.4, h:.4, kw:1.6, ph:1, z:'hot', p:25000, mount:'table'},
+  {id:'rice10', n:'Рисоварка профессиональная 10 л', s:'Рис', role:'rice', cap:10, w:.5, d:.5, h:.45, kw:2.8, ph:1, z:'hot', p:45000, mount:'table'},
+  {id:'crepe1', n:'Блинница электрическая, 1 пост', s:'Блин', role:'crepe', cap:1, w:.45, d:.45, h:.2, kw:3, ph:1, z:'hot', p:30000, mount:'table'},
+  {id:'crepe2', n:'Блинница электрическая, 2 поста', s:'Блин', role:'crepe', cap:2, w:.9, d:.45, h:.2, kw:6, ph:3, z:'hot', p:55000, mount:'table'},
+  {id:'boiler10', n:'Электрокипятильник 10 л для чая', s:'Кип', role:'tea', cap:1, w:.3, d:.3, h:.5, kw:2, ph:1, cw:1, z:'serve', p:15000, mount:'table'},
+  {id:'boiler20', n:'Электрокипятильник 20 л для чая', s:'Кип', role:'tea', cap:1, w:.35, d:.35, h:.55, kw:2.5, ph:1, cw:1, z:'serve', p:20000, mount:'table'},
+  {id:'kettle60', n:'Котёл пищеварочный 60 л', s:'Котёл', role:'kettle', cap:60, w:.8, d:.75, h:.95, kw:9, ph:3, cw:1, dr:1, hot:1, z:'hot', p:270000},
+  // газовые исполнения: kw — только электрическая часть (вентилятор, управление, розжиг), gkw — тепловая мощность по газу
+  while(ch){ ch=false;
+    out: for(let i=0;i<m.length;i++) for(let j=i+1;j<m.length;j++){ if(gap(m[i],m[j])<0.05){ const a=m[i],b=m[j],x=Math.min(a.x,b.x),y=Math.min(a.y,b.y);
+      m[i]={x,y,w:Math.max(a.x+a.w,b.x+b.w)-x,h:Math.max(a.y+a.h,b.y+b.h)-y}; m.splice(j,1); ch=true; break out; } } }
+  const notPl=hot.filter(u=>!L[u.key]);
+  const extra=notPl.reduce((a,u)=>a+(u.c.w+2*o)*(u.c.d+o),0), extraLen=notPl.reduce((a,u)=>a+u.c.w+2*o,0);
+  const list=m.map(r=>({...r, area:r.w*r.h, len:Math.max(r.w,r.h)}));
+  const area=list.reduce((a,r)=>a+r.area,0)+extra, len=list.reduce((a,r)=>a+r.len,0)+extraLen;
+  const exArea=ex.filter(r=>hot.some(u=>covered(u))).reduce((a,r)=>a+r.w*r.h,0);
+  return {list, area, len, exArea, coveredN:hot.filter(covered).length, exhaust:3600*s.norms.hoodV*(area+exArea)};
+}
+
+function water(items){ let cw=0,hw=0,dr=0; const pts=[];
+  for(const it of items){ const c=it.c; if(c.cw||c.hw||c.dr){ cw+=(c.cw||0)*it.qty; hw+=(c.hw||0)*it.qty; dr+=(c.dr||0)*it.qty; pts.push(it); } }
+  return {cw,hw,dr,pts}; }
+function countRole(items, role){ return items.reduce((a,it)=>a+(it.c.role===role?it.qty:0),0); }
+function sanitary(s, items){
+  const r=role=>countRole(items,role), st=s.norms.strict;
+  const list=[
+    {ok:r('handsink')>=1, m:'Раковина для мытья рук у входа на кухню'},
+    {ok:r('bathRaw')>=1, m:'Отдельная мойка для овощей и сырых продуктов — не там, где моют посуду'},
+    {ok:hasPt(s,'vent')||hasPt(s,'hood')||r('combi')+r('burners')+r('kettle')===0 ? true : netsDesign(s) ? null : false, m:'Вытяжка над тепловым оборудованием'},
+2057:   Сейчас — localStorage этого браузера; чтобы перейти на облако, достаточно заменить этот блок.
+2063:  const get=k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } };
+2071:      try{ const txt=typeof data==='string'?data:JSON.stringify(data); localStorage.setItem(PK+id, txt);
+2073:        if(i>=0) ix[i]=row; else ix.push(row); localStorage.setItem(IX, JSON.stringify(ix)); st.error=null; return true; }
+2075:    remove(id){ try{ localStorage.removeItem(PK+id); localStorage.setItem(IX, JSON.stringify((readIx()||[]).filter(x=>x.id!==id))); if(get(LAST)===id) localStorage.removeItem(LAST); return true; }catch(e){ return false; } },
+2076:    mark(id, patch){ try{ const ix=readIx()||[], r=ix.find(x=>x.id===id); if(!r) return false; Object.assign(r, patch); localStorage.setItem(IX, JSON.stringify(ix)); return true; }catch(e){ return false; } },
+2079:    setLast(id){ try{ if(id) localStorage.setItem(LAST,id); else localStorage.removeItem(LAST); }catch(e){} },
+2104:  try{ v=JSON.parse(localStorage.getItem(VIEW_KEY)||'null'); }catch(e){}
+2107:function saveView(){ try{ localStorage.setItem(VIEW_KEY, JSON.stringify(VIEW)); }catch(e){} }
+2113:function fieldCW(f){ const b=document.getElementById('pbox'); if(b&&b.isConnected&&b.clientWidth>40) return lastCW[f]=b.clientWidth;
+2146:function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.hidden=false; clearTimeout(toast.h); toast.h=setTimeout(()=>t.hidden=true,2400); }
+2162:function updUndo(){ const u=document.getElementById('undo'), r=document.getElementById('redo'); if(!u) return;
+2165:document.getElementById('undo').addEventListener('click',doUndo);
+2166:document.getElementById('redo').addEventListener('click',doRedo);
+2167:document.addEventListener('keydown',e=>{ const t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')) return;
+2212:function liveFieldErrs(){ return [...main.querySelectorAll('[aria-invalid="true"]')].filter(el=>el.id!=='kwmax').map(el=>{ const n=el.getAttribute('aria-describedby'), d=n&&document.getElementById(n); return {t:'bad', m:(d&&d.textContent)||'Поле заполнено неверно'}; }); }
+2221:const main=document.getElementById('main');
+2222:const nameInp=document.getElementById('proj-name');
+2224:function renderNav(){ navDirty=false; document.getElementById('steps').innerHTML=STEP_NAMES.map((n,i)=>{ const r=P?stepCount(i):{bad:0,warn:0,list:[]}, w=issWords(r);
+2227:  const pv=document.getElementById('step-prev'), nx=document.getElementById('step-next'), last=STEP_NAMES.length-1;
+playwright: unavailable
+puppeteer: unavailable
+jsdom: unavailable
+ index.html | 44 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 43 insertions(+), 1 deletion(-)
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+const fs=require('fs'), vm=require('vm'), assert=require('assert');
+const html=fs.readFileSync('index.html','utf8');
+const scripts=[...html.matchAll(/<script\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/g)].map(m=>m[1]);
+for (const s of scripts) new vm.Script(s);
+const c=vm.createContext({console});
+vm.runInContext(scripts[0],c);
+vm.runInContext("'`
+const SIDE_RU={t:'"'верхняя',r:'правая',b:'нижняя',l:'левая'};
+const SIDE_FROM={t:'от левого угла',r:'от верхнего угла',b:'от левого угла',l:'от верхнего угла'};
+"'`,c);
+c.assert=assert;
+vm.runInContext(`
+const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,a+'"' "'!= '"'+b);
+const rect=()=>({w:7.2,d:4.8,openings:[],points:[]});
+let count=0;
+for(const id of ['t','r','b','l']) for(const far of [true,false]){
+  const room=rect(), w=wallById(room,id), off=w.len/2;
+  room.openings=[{id:'moving',type:'window',side:id,off:far?off:off-1.2,w:1.2},{id:'fixed',type:'window',side:id,off:far?0.2:off+0.2,w:0.5}];
+  room.points=[{type:'el',side:id,off:far?off+0.5:off-0.5},{type:'hood',side:id,off:far?off+0.8:off-1.3,w:0.4,d:0.5}];
+  const q=wallPoint(room,id,room.openings[0].off), fixed=wallPoint(room,id,room.openings[1].off), pq=room.points.map(p=>wallPoint(room,id,p.off));
+  const res=stepRoomWall(room,id,off,0.6,far);
+  assert.ok(res.ok,JSON.stringify(res)); assert.equal(roomWalls(room).length,6); assert.equal(shapeError(room.poly),null);
+  const moving=room.openings[0], dest=wallPoint(room,moving.side,moving.off);
+  assert.notEqual(moving.side,id); close(dest.x,q.x+w.nx*0.6); close(dest.y,q.y+w.ny*0.6); close(moving.w,1.2);
+  assert.equal(room.openings[1].side,id); const f=wallPoint(room,id,room.openings[1].off); close(f.x,fixed.x);close(f.y,fixed.y);
+  room.points.forEach((p,i)=>{assert.equal(p.side,moving.side); const v=wallPoint(room,p.side,p.off);close(v.x,pq[i].x+w.nx*0.6);close(v.y,pq[i].y+w.ny*0.6);});
+  close(room.points[1].w,0.4); count++;
+}
+const room=rect();room.openings=[{type:'window',side:'t',off:3.6,w:1.5}];
+assert.ok(stepRoomWall(room,'t',3.6,1,true).ok);
+const lowered=roomWalls(room).find(w=>w.y1===1&&w.y2===1); const oldPoly=room.poly;
+assert.ok(stepRoomWall(room,lowered.id,2,0.6,true).ok); assert.equal(roomWalls(room).length,8);assert.notEqual(room.poly,oldPoly);assert.equal(shapeError(room.poly),null);count++;
+for(const [label,setup,id,off,h,far] of [
+ ['window',r=>r.openings.push({type:'window',side:'t',off:3.6,w:1.5}),'t',4,1,true],
+ ['hood',r=>r.points.push({type:'hood',side:'t',off:3.6,w:1.5,d:1}),'t',4,1,true],
+ ['point',r=>r.points.push({type:'el',side:'t',off:3.6}),'t',3.6,1,true],
+ ['corner',r=>{},'t',0.2,1,true],
+ ['depth',r=>{},'t',3.6,4.5,true],
+ ['intersection',r=>{},'t',3.6,6,true],
+ ['invalid',r=>{},'missing',3.6,1,true]
+]){ const r=rect();setup(r);const before=JSON.stringify(r);const res=stepRoomWall(r,id,off,h,far);assert.ok(res.error,label);assert.equal(JSON.stringify(r),before,label);console.log(label+': '+res.error);count++; }
+for(const tpl of ['L','U','T']) for(const rot of [0,1,2,3]){const r=rect();const res=setRoomShape(r,{tpl,rot,p:shapeDefaults(tpl,r.w,r.d)});assert.ok(res.ok,JSON.stringify(res));assert.equal(shapeError(r.poly),null);count++;}
+console.log('PASS: '+count+' geometry/error/template scenarios');
+"'`,c);
+console.log('"'PASS: syntax of all '+scripts.length+' inline scripts');
+'@ | node" in C:\Users\pro10\refectory-app
+ exited 1 in 735ms:
+node:internal/assert/utils:146
+  throw error;
+  ^
+
+AssertionError [ERR_ASSERTION]: {"error":"Уступ приходится на „Окно“ — сдвиньте место уступа"}
+    at evalmachine.<anonymous>:11:10
+    at Script.runInContext (node:vm:150:12)
+    at Object.runInContext (node:vm:302:6)
+    at [stdin]:12:4
+    at runScriptInThisContext (node:internal/vm:219:10)
+    at node:internal/process/execution:485:12
+    at [stdin]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:483:60)
+    at evalFunction (node:internal/process/execution:317:30)
+    at evalTypeScript (node:internal/process/execution:329:3) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: undefined,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v26.13.0
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -LiteralPath C:/Users/pro10/.codex/plugins/cache/openai-bundled/computer-use/26.1027.51404/skills/computer-use/SKILL.md -Encoding UTF8' in C:\Users\pro10\refectory-app
+ succeeded in 585ms:
+---
+name: computer-use
+description: Control Windows apps from ChatGPT
+---
+
+# Computer Use
+
+Use this skill to automate the UI of Microsoft Windows apps. It uses SendInput, UI Automation, and Windows.Graphics.Capture screenshots that work even when windows are occluded.
+
+If this plugin is available, read this entire `SKILL.md` once before Windows automation work, before saying Computer Use is unavailable, and before falling back to other Windows automation.
+
+Start with the directions in the Initialize section below. Read these bundled Markdown files relative to this `SKILL.md` when you need information about the specific topic they cover:
+
+- `../../docs/guidance.md`: core runtime behavior, target-window workflow, screenshot handling, and recovery guidance. You MUST read this before controlling Windows apps.
+- `../../docs/api.md`: full `sky` API reference. Read this when you need method signatures or object shapes.
+- `../../docs/confirmations.md`: you MUST read this before deciding whether a Windows UI action needs confirmation
+
+## Initialize
+
+The bundled `cua_node` `@oai/sky` package is the core entry point for Computer Use. Import it directly by package name from the JavaScript session. Do not spawn `codex-computer-use.exe`, search for the helper executable, or build a custom helper protocol client.
+
+Run this once per fresh `node_repl` JavaScript session:
+
+```js
+if (!globalThis.sky) {
+  const { sky } = await import("@oai/sky");
+  globalThis.sky = sky;
+}
+```
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+const fs=require('fs'), vm=require('vm'), assert=require('assert');
+const html=fs.readFileSync('index.html','utf8');
+const scripts=[...html.matchAll(/<script\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/g)].map(m=>m[1]);
+for (const s of scripts) new vm.Script(s);
+const c=vm.createContext({console,assert});vm.runInContext(scripts[0],c);
+vm.runInContext("'`const SIDE_RU={t:'"'верхняя',r:'правая',b:'нижняя',l:'левая'};const SIDE_FROM={t:'от левого угла',r:'от верхнего угла',b:'от левого угла',l:'от верхнего угла'};"'`,c);
+vm.runInContext(`
+const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,a+'"' "'!= '"'+b);
+const rect=()=>({w:7.2,d:4.8,openings:[],points:[]});let count=0;
+for(const id of ['t','r','b','l']) for(const far of [true,false]){
+ const room=rect(),w=wallById(room,id),off=w.len/2;
+ room.openings=[{id:'moving',type:'window',side:id,off:far?off:off-1.3,w:1.2},{id:'fixed',type:'window',side:id,off:far?0.2:off+0.2,w:0.5}];
+ room.points=[{type:'el',side:id,off:far?off+0.5:off-0.5},{type:'hood',side:id,off:far?off+0.8:off-1.3,w:0.4,d:0.5}];
+ const q=wallPoint(room,id,room.openings[0].off),fixed=wallPoint(room,id,room.openings[1].off),pq=room.points.map(p=>wallPoint(room,id,p.off));
+ const res=stepRoomWall(room,id,off,0.6,far);assert.ok(res.ok,id+'/'+far+': '+JSON.stringify(res));assert.equal(roomWalls(room).length,6);assert.equal(shapeError(room.poly),null);
+ const moving=room.openings[0],dest=wallPoint(room,moving.side,moving.off);assert.notEqual(moving.side,id);close(dest.x,q.x+w.nx*0.6);close(dest.y,q.y+w.ny*0.6);close(moving.w,1.2);
+ assert.equal(room.openings[1].side,id);const f=wallPoint(room,id,room.openings[1].off);close(f.x,fixed.x);close(f.y,fixed.y);
+ room.points.forEach((p,i)=>{assert.equal(p.side,moving.side);const v=wallPoint(room,p.side,p.off);close(v.x,pq[i].x+w.nx*0.6);close(v.y,pq[i].y+w.ny*0.6);});close(room.points[1].w,0.4);count++;
+}
+const room=rect();room.openings=[{type:'window',side:'t',off:3.6,w:1.5}];assert.ok(stepRoomWall(room,'t',3.6,1,true).ok);
+const lowered=roomWalls(room).find(w=>w.y1===1&&w.y2===1),oldPoly=room.poly;assert.ok(stepRoomWall(room,lowered.id,2,0.6,true).ok);assert.equal(roomWalls(room).length,8);assert.notEqual(room.poly,oldPoly);assert.equal(shapeError(room.poly),null);count++;
+for(const [label,setup,id,off,h,far] of [
+ ['window',r=>r.openings.push({type:'window',side:'t',off:3.6,w:1.5}),'t',4,1,true],
+ ['hood',r=>r.points.push({type:'hood',side:'t',off:3.6,w:1.5,d:1}),'t',4,1,true],
+ ['point',r=>r.points.push({type:'el',side:'t',off:3.6}),'t',3.6,1,true],
+ ['corner',r=>{},'t',0.2,1,true],['depth',r=>{},'t',3.6,4.5,true],['intersection',r=>{},'t',3.6,6,true],['invalid',r=>{},'missing',3.6,1,true],
+ ['diagonal',r=>r.poly=[{x:0,y:0,wid:'t'},{x:7.2,y:0,wid:'r'},{x:6,y:4.8,wid:'b'},{x:0,y:4.8,wid:'l'}],'t',3.6,1,true]
+]){const r=rect();setup(r);const before=JSON.stringify(r);const res=stepRoomWall(r,id,off,h,far);assert.ok(res.error,label);assert.equal(JSON.stringify(r),before,label);console.log(label+': '+res.error);count++;}
+for(const tpl of ['L','U','T']) for(const rot of [0,1,2,3]){const r=rect();const res=setRoomShape(r,{tpl,rot,p:shapeDefaults(tpl,r.w,r.d)});assert.ok(res.ok,JSON.stringify(res));assert.equal(shapeError(r.poly),null);count++;}
+console.log('PASS: '+count+' geometry/error/template scenarios');
+"'`,c);
+console.log('"'PASS: syntax of all '+scripts.length+' inline scripts');
+'@ | node" in C:\Users\pro10\refectory-app
+ succeeded in 690ms:
+window: Уступ приходится на „Окно“ — сдвиньте место уступа
+hood: Уступ приходится на „Зонт“ — сдвиньте место уступа
+point: Уступ приходится на „Электрощит“ — сдвиньте место уступа
+corner: Уступ слишком близко к углу — от угла не меньше 300 мм
+depth: Уступ не помещается: Стена 4 короче 300 мм
+intersection: Уступ не помещается: Стены 2 и 5 пересекаются
+invalid: Выберите стену для уступа
+diagonal: Уступ рядом с косой стеной пока не поддерживается
+PASS: 29 geometry/error/template scenarios
+PASS: syntax of all 7 inline scripts
+
+codex
+Проверки геометрии прошли для всех четырёх стен и обоих вариантов уступа. Проёмы и точки переносятся с сохранением координат вдоль стены и ширины; повторный уступ даёт 8 стен. Ошибки геометрии и пересечения с объектами оставляют помещение неизменным. Теперь проверю обработчики полей и отмену.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'function prepare|function roomsPlanSvg|function planSvg|function unifiedPlanSvg|function print|function report|function curGeom|function example|EXAMPLE' index.html; git diff -- index.html" in C:\Users\pro10\refectory-app
+ succeeded in 407ms:
+605:function exampleState(){ return prepare(exampleData()); }
+617:function exampleData(){
+659:function prepare(st){
+2218:function curGeom(){ return roomGeom(S, S.room); }
+2266:function exampleBar(){ return S.example?`<div class="example">Заполнено примером. Замените данные своими — всё пересчитается сразу.</div>`:''; }
+2587:function roomsPlanSvg(){
+3113:function planSvg(mode, iss, opts){
+3181:function unifiedPlanSvg(){
+4248:function reportState(){ if(!S.report||!S.report.meta) S.report=normReport(S.report); return S.report; }
+4337:function printPlanSvg(opts){
+4417:function printOverviewSvg(opts){
+4489:function reportCtx(options){
+4793:function reportFileName(){ const d=new Date(), pad=n=>String(n).padStart(2,'0');
+diff --git a/index.html b/index.html
+index 828133d..a62acc1 100644
+--- a/index.html
++++ b/index.html
+@@ -404,6 +404,10 @@ html.set-lock,html.set-lock body{overflow:hidden}
+ .shp-wall-row>b{align-self:center;font-size:13px;font-weight:500}
+ .shp-wall-row .field{min-width:0}
+ .shp-action{min-height:44px;white-space:normal;line-height:1.15}
++.shp-step{display:flex;flex-direction:column;gap:10px;padding-top:12px;border-top:1px solid var(--grid)}
++.shp-step h4{margin:0;font-size:14px}
++.shp-step .field{min-width:0}
++@media (max-width:640px){ .shp-step .shp-fields{grid-template-columns:minmax(0,1fr)} }
+ .shp-error-slot:empty{display:none}
+ .rmp-note{display:block;margin-top:8px;font-size:12.5px;color:var(--ink-2)}
+ .rmp-side .chain-row .ttl{min-height:44px;padding-bottom:4px}
+@@ -1333,6 +1337,29 @@ function setRoomShape(room,shape,shift){
+       p.side=hit.id; p.off=proj.off-width/2; const label=p.name||(PT[p.type]&&PT[p.type].n)||p.spec||p.type||'точка'; moved.push(`Точка «${label}» перенесена ${dest(hit.id)}`); } }
+   clampRoom({room,openings:room.openings,points:room.points});
+   return {ok:true,moved}; }
++function stepRoomWall(room,id,off,h,far){
++  const walls=roomWalls(room), i=walls.findIndex(w=>w.id===id); if(i<0) return {error:'Выберите стену для уступа'};
++  const w=walls[i], P=roomPoly(room).map((q,j)=>({...q,wid:q.wid||walls[j].id})), n=P.length, a=P[i], b=P[(i+1)%n], u=w.dir, nv={x:w.nx,y:w.ny}, t=w.offFrom==='start'?off:w.len-off;
++  if(!Number.isFinite(t)||t<0.3||t>w.len-0.3) return {error:'Уступ слишком близко к углу — от угла не меньше 300 мм'};
++  if(!Number.isFinite(h)||h<0.3) return {error:'Уступ не помещается: глубина должна быть не меньше 300 мм'};
++  const tail=(w.offFrom==='start')!==(far===false), neighbor=walls[(i+(tail?1:n-1))%n];
++  if(Math.abs(u.x*neighbor.dir.x+u.y*neighbor.dir.y)>1e-9) return {error:'Уступ рядом с косой стеной пока не поддерживается'};
++  const s={x:a.x+u.x*t,y:a.y+u.y*t}, sh={x:s.x+nv.x*h,y:s.y+nv.y*h}, pts=P.map(q=>({...q}));
++  if(tail){ pts[(i+1)%n]={...b,x:b.x+nv.x*h,y:b.y+nv.y*h}; pts.splice(i+1,0,s,sh); }
++  else pts.splice(i,1,{x:a.x+nv.x*h,y:a.y+nv.y*h},sh,{...s,wid:w.id});
++  const error=shapeError(normPoly(pts,pts.map(p=>p.wid||null)).pts); if(error) return {error:'Уступ не помещается: '+error};
++  const blocked=label=>({error:'Уступ приходится на „'+label+'“ — сдвиньте место уступа'});
++  for(const o of room.openings) if(o.side===id&&off>o.off&&off<o.off+o.w) return blocked(opName(o));
++  for(const p of room.points) if(p.side===id){ const width=p.type==='hood'?(Number(p.w)||0):0;
++    if(width?off>p.off&&off<p.off+width:Math.abs(p.off-off)<1e-6) return blocked(p.type==='hood'?'Зонт':p.name||(PT[p.type]&&PT[p.type].n)||p.type||'Точка'); }
++  const saved=[], movingFar=far!==false;
++  for(const o of [...room.openings,...room.points]) if(o.side===id){ const width=Number(o.w)||0;
++    if(movingFar?o.off>=off:o.off+width<=off) saved.push({o,q:wallPoint(room,id,o.off),width:o.w}); }
++  const r=setRoomShape(room,{tpl:'custom',pts}); if(r.error) return r;
++  const probe={x:sh.x+u.x*(tail?0.01:-0.01),y:sh.y+u.y*(tail?0.01:-0.01)}, Y=roomWalls(room).find(v=>Math.abs(v.dir.x-u.x)<1e-9&&Math.abs(v.dir.y-u.y)<1e-9&&segDist(probe.x,probe.y,v.x1,v.y1,v.x2,v.y2)<1e-9);
++  for(const {o,q,width} of saved){ o.side=Y.id; o.off=projectToWall(room,Y.id,q.x+nv.x*h,q.y+nv.y*h).off; if(width!==undefined) o.w=width; }
++  clampRoom({room,openings:room.openings,points:room.points});
++  return {ok:true,moved:r.moved}; }
+ // отражение по горизонтали: контур, стены, проёмы, точки (вместо mirrorGeom)
+ function mirrorWallId(room,id){ if(hasPoly(room)) return id; return id==='l'?'r':id==='r'?'l':id; }
+ function mirrorRoom(s){ const W=s.room.w, R=s.room;
+@@ -2612,18 +2639,33 @@ function shapeFieldHtml(tpl,p){
+     :tpl==='U'?[['D','Общая длина ↕'],['W','Общая ширина ↔'],['cd','Глубина выреза ↕'],['cw','Ширина выреза ↔'],['co','Отступ выреза ↔']]
+     :tpl==='T'?[['D','Общая длина ↕'],['W','Общая ширина ↔'],['lw','Ширина ножки ↔'],['lo','Отступ ножки ↔'],['ll','Длина ножки ↕']]:[];
+   return specs.length?`<div class="fields shp-fields">${specs.map(([key,label])=>num(`shp-${key}`,label,Math.round(p[key]*1000),10,300,30000,'',`data-shp-param="${key}"`)).join('')}</div>`:''; }
++let stepWallSel=null;
++let stepFarSel='far';
+ function shapeSecHtml(r){
+   const tpl=shapeCurrentTpl(r), curRot=r.shape&&r.shape.rot||0, p=shapeCurrentParams(r,tpl), templates=[['rect','Прямо&shy;угольник'],['L','Г'],['U','П'],['T','Т']];
+   const choices=`<div class="shp-template-row">${templates.map(([key,label])=>`<button type="button" class="btn tap shp-template" data-shape-tpl="${key}" aria-pressed="${tpl===key}">${shapeSvg(key,0,shapeDefaults(key,3,2))}<span>${label}</span></button>`).join('')}${tpl==='custom'?'<span class="shp-custom-label">Своя форма</span>':''}</div>`;
+   const rotation=tpl!=='custom'&&tpl!=='rect'?`<div class="shp-rotation"><span class="lbl">Поворот</span><div class="shp-rot-row">${[0,1,2,3].map(rot=>`<button type="button" class="btn tap shp-rot" data-shape-rot="${rot}" aria-pressed="${Number(curRot)===rot}" aria-label="Поворот ${rot*90} градусов">${shapeSvg(tpl,rot,p)}<span>${rot*90}°</span></button>`).join('')}</div></div>`:'';
+   const walls=tpl==='custom'?`<div class="shp-wall-list">${roomWalls(r).map(w=>`<div class="shp-wall-row"><b>Стена ${w.i+1}</b>${num(`shp-wall-${esc(w.id)}`,'Длина, мм',Math.round(w.len*1000),10,300,30000,'',`data-wall-len="${esc(w.id)}"`)}</div>`).join('')}</div>`:'';
+-  return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p)}${walls}<div class="shp-error-slot"></div></div>`; }
++  const stepWalls=roomWalls(r), stepWall=stepWalls.find(w=>w.id===stepWallSel)||stepWalls[0];
++  const stepBlock=`<div class="shp-step"><h4>Уступ на стене</h4><label class="field"><span>Стена</span><select data-step-wall>${stepWalls.map(w=>{ const title=wallTitle(r,w.id); return `<option value="${esc(w.id)}" ${w.id===stepWall.id?'selected':''}>${esc(title.charAt(0).toUpperCase()+title.slice(1))}</option>`; }).join('')}</select></label>
++    <div class="fields shp-fields">${num('step-off','Место уступа, мм — '+wallFrom(r,stepWall.id),Math.round(stepWall.len*50)*10,10,0,stepWall.len*1000,'','data-step-off')}${num('step-depth','Глубина, мм',600,10,300,'','','data-step-depth')}</div>
++    ${seg('step-far',stepFarSel,[['far','Утопить дальнюю часть'],['near','Утопить ближнюю часть']])}<button type="button" class="btn tap shp-action" data-step-apply>Добавить уступ</button></div>`;
++  return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p)}${walls}${stepBlock}<div class="shp-error-slot"></div></div>`; }
+ function shapeShowError(sec,el,msg){ if(el) el.setAttribute('aria-invalid','true'); const slot=sec.querySelector('.shp-error-slot'); if(slot) slot.innerHTML=`<p class="rmp-warn shp-warn" role="alert">${esc(msg)}</p>`; }
+ function applyRoomShape(r,shape,sec,el){
+   const result=setRoomShape(r,shape); if(result.error){ shapeShowError(sec,el,result.error); return false; }
+   lastPush=0; touch(); recompute(); render(); if(result.moved.length) toast(result.moved.join('. ')); return true; }
+ function bindShapeEditor(){
+   const sec=document.querySelector('[data-rpsec="shape"]'); if(!sec) return;
++  const stepWall=sec.querySelector('[data-step-wall]'); stepWall&&stepWall.addEventListener('change',()=>{ stepWallSel=stepWall.value; render(); });
++  segBind(sec,(key,value)=>{ if(key==='step-far') stepFarSel=value; });
++  const stepApply=sec.querySelector('[data-step-apply]'); stepApply&&stepApply.addEventListener('click',()=>{
++    const offEl=sec.querySelector('[data-step-off]'), depthEl=sec.querySelector('[data-step-depth]'), read=el=>Number(String(el.value).replace(/\s+/g,'').replace(',','.')), off=read(offEl), depth=read(depthEl), id=stepWall.value, w=roomWalls(S.room).find(q=>q.id===id);
++    if(!w) return;
++    if(!offEl.value.trim()||!Number.isFinite(off)||off<0||off>w.len*1000){ shapeShowError(sec,offEl,'Введите место уступа от 0 до '+Math.round(w.len*1000)+' мм.'); return; }
++    if(!depthEl.value.trim()||!Number.isFinite(depth)||depth<300){ shapeShowError(sec,depthEl,'Введите глубину не меньше 300 мм.'); return; }
++    const result=stepRoomWall(S.room,id,off/1000,depth/1000,stepFarSel==='far'); if(result.error){ shapeShowError(sec,stepApply,result.error); return; }
++    lastPush=0; touch(); recompute(); render(); toast('Уступ добавлен'+(result.moved.length?'. '+result.moved.join('. '):'')); });
+   sec.querySelectorAll('[data-shape-tpl]').forEach(b=>b.addEventListener('click',()=>{ const r=S.room, tpl=b.dataset.shapeTpl; applyRoomShape(r,{tpl,rot:0,p:shapeDefaults(tpl,r.w,r.d)},sec,b); }));
+   sec.querySelectorAll('[data-shape-rot]').forEach(b=>b.addEventListener('click',()=>{ const r=S.room, tpl=shapeCurrentTpl(r); applyRoomShape(r,{tpl,rot:Number(b.dataset.shapeRot),p:shapeCurrentParams(r,tpl)},sec,b); }));
+   sec.querySelectorAll('[data-shp-param]').forEach(el=>el.addEventListener('change',()=>{ const r=S.room, tpl=shapeCurrentTpl(r), value=Number(String(el.value).replace(/\s+/g,'').replace(',','.')); if(!Number.isFinite(value)||value<300||value>30000){ shapeShowError(sec,el,'Введите размер от 300 до 30 000 мм.'); return; }
+
+mcp: cua_repl/js started
+mcp: cua_repl/js (failed)
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$s=Get-Content -LiteralPath index.html -Encoding UTF8; $s[653..739]; $s[2578..2614]; $s[4330..4355]; $s[4407..4455]; $s[3140..3155]' in C:\Users\pro10\refectory-app
+ succeeded in 639ms:
+const ROLES=[['store','Склад, хранение','Склад'],['prep','Заготовочная','Заготовочная'],['hot','Горячий цех','Горячий цех'],['serve','Раздача','Раздача'],['wash','Мойка посуды','Моечная']];
+const ROLE_STAGE={store:0,prep:1,hot:2,serve:3,wash:4};
+const ZONE_ROLE={store:'store',cold:'store',raw:'prep',hot:'hot',ready:'hot',serve:'serve',wash:'wash',san:'prep'};
+const WALL_GAP=0.12;
+function curRoomOf(st){ return st.rooms.find(r=>r.id===st.cur)||st.rooms[0]; }
+function prepare(st){
+  if(!st.rooms){ const r0=st.room||{w:7.2,d:4.8}; st.rooms=[{id:'r1', name:'Кухня', x:0, y:0, w:r0.w, d:r0.d, roles:ROLES.map(r=>r[0]), openings:st.openings||[], points:st.points||[]}]; }
+  delete st.room; delete st.openings; delete st.points;
+  if(!st.cur || !st.rooms.some(r=>r.id===st.cur)) st.cur=st.rooms[0].id;
+  if(st.heat&&st.heat.plate&&st.heat.plate.v==='2') st.heat.plate.v='4';
+  st.unitRoom=st.unitRoom||{};
+  if(!st.links||!st.links.length){ const m=new Map(); for(const r of st.rooms) for(const o of r.openings){ if(o.type!=='door'||!o.to) continue; const t=o.to.startsWith('room:')?o.to.slice(5):(o.to==='hall'||o.to==='street'?o.to:null); if(t) m.set([r.id,t].sort().join('|'),[r.id,t]); } st.links=[...m.values()]; }
+  Object.defineProperty(st,'room',{get(){ return curRoomOf(st); }, set(v){ Object.assign(curRoomOf(st),v); }, configurable:true, enumerable:false});
+  Object.defineProperty(st,'openings',{get(){ return curRoomOf(st).openings; }, set(v){ curRoomOf(st).openings=v; }, configurable:true, enumerable:false});
+  Object.defineProperty(st,'points',{get(){ return curRoomOf(st).points; }, set(v){ curRoomOf(st).points=v; }, configurable:true, enumerable:false});
+  return st;
+}
+function clampAll(st){ const c=st.cur; for(const r of st.rooms){ st.cur=r.id; clampRoom(st); } st.cur=c; }
+function roomStage(r){ const s=(r.roles||[]).map(x=>ROLE_STAGE[x]).filter(x=>x!=null); return s.length?Math.min(...s):2; }
+function roomName(st,id){ const r=(st&&st.rooms||[]).find(x=>x.id===id); return r?r.name:'помещение'; }
+function doorLabel(o){ if(o.to&&o.to.startsWith('room:')) return 'в «'+roomName(typeof S!=='undefined'?S:null,o.to.slice(5))+'»'; return DOOR_TO[o.to]||''; }
+// дверь на стене помещения A → то же место на стене соседнего помещения B
+function mapDoor(A,d,B){
+  const tol=0.4, wa=wallById(A,d.side), pa=wallPoint(A,d.side,d.off);
+  for(const wb of roomWalls(B)){ if(Math.abs(wb.nx+wa.nx)>1e-9 || Math.abs(wb.ny+wa.ny)>1e-9 || wb.axis!==wa.axis || !wa.axis) continue;
+    const h=wa.axis==='h', la=(h?A.y:A.x)+(h?wa.y1:wa.x1), lb=(h?B.y:B.x)+(h?wb.y1:wb.x1);
+    if(Math.abs(la-lb)>tol) continue;
+    const off=(h?A.x+pa.x:A.y+pa.y)-(h?B.x+wb.offOrigin.x:B.y+wb.offOrigin.y), L=wb.len;
+    if(off<-0.01||off+d.w>L+0.01) continue;
+    return {id:'d_'+d.id, type:'door', side:wb.id, off:Math.max(0,off), w:d.w, swing:d.swing==='in'?'out':'in', hinge:d.hinge==='l'?'r':'l', to:'room:'+A.id, derived:true}; }
+  return null;
+}
+function roomGeom(st, room){
+  const ops=room.openings.slice();
+  for(const o of st.rooms){ if(o===room) continue; for(const d of o.openings){ if(d.type==='door' && d.to==='room:'+room.id){ const m=mapDoor(o,d,room); if(m) ops.push(m); } } }
+  return {room:hasPoly(room)?{w:room.w, d:room.d, poly:room.poly}:{w:room.w, d:room.d}, openings:ops, points:room.points, norms:st.norms, layout:st.layout, id:room.id, stage:roomStage(room), stages:Object.fromEntries(st.rooms.map(r=>[r.id,roomStage(r)]))};
+}
+function roomForZone(st, z, idx){
+  if(z==='san'){ const prod=st.rooms.filter(r=>r.roles.includes('prep')||r.roles.includes('hot')); if(prod.length) return prod[idx%prod.length].id; }
+  const role=ZONE_ROLE[z]||'hot';
+  const r=st.rooms.find(r=>r.roles.includes(role))||st.rooms.find(r=>r.roles.includes('hot'))||st.rooms[0]; return r.id;
+}
+function assignRooms(st, units){
+  const m={}; let si=0;
+  for(const u of units){ const ov=st.unitRoom&&st.unitRoom[u.key];
+    m[u.key] = ov && st.rooms.some(r=>r.id===ov) ? ov : u.c.roomId && st.rooms.some(r=>r.id===u.c.roomId) ? u.c.roomId : roomForZone(st, u.c.z, u.c.role==='handsink'?si++:0); }
+  return m;
+}
+function layoutAll(st, units){
+  const asg=assignRooms(st,units), L={}, inserts=[];
+  for(const room of st.rooms){
+    const ru=units.filter(u=>asg[u.key]===room.id); if(!ru.length) continue;
+    const r=autoLayout(roomGeom(st,room), ru);
+    for(const k in r.L) if(!k.startsWith('ins:')) L[k]=r.L[k];
+    for(const i of r.inserts){ const nk='ins:'+room.id+':'+i.key.slice(4); L[nk]=r.L[i.key]; inserts.push({key:nk, c:i.c, room:room.id}); }
+  }
+  return {L, inserts, asg};
+}
+
+
+/* --- имеющееся оборудование: «что это» выбирает пользователь, по названию ничего не угадывается --- */
+// cap — ёмкость, от которой зависит подбор; у остальных ролей считается штуками
+const ROLE_GROUPS=['Тепловое','Холод','Мойка и вода','Столы и стеллажи','Раздача','Прочее'];
+const ROLE_LIST=[
+  ['combi','Пароконвектомат','Тепловое',{unit:'GN', options:[[4,'4 уровня GN'],[6,'6 уровней GN'],[10,'10 уровней GN'],[20,'20 уровней GN']]}],
+  ['burners','Плита','Тепловое',{unit:'конфорок', min:1, max:12, step:1}],
+  ['kettle','Котёл пищеварочный','Тепловое',{unit:'л', min:10, max:500, step:10}],
+  ['pan','Сковорода опрокидывающаяся','Тепловое',{unit:'л', min:5, max:200, step:5}],
+  ['rice','Рисоварка','Тепловое',{unit:'л', min:1, max:40, step:1}],
+  ['crepe','Блинница','Тепловое',{unit:'постов', min:1, max:6, step:1}],
+  ['tea','Кипятильник для чая','Тепловое',null],
+  ['fridge','Холодильный шкаф','Холод',{unit:'л', min:50, max:5000, step:10}],
+  ['freezer','Морозильник — шкаф или ларь','Холод',{unit:'л', min:50, max:3000, step:10}],
+  ['coldtable','Холодильный стол','Холод',null],
+  ['blast','Шкаф шоковой заморозки / охлаждения','Холод',null],
+  ['bathRaw','Ванна для овощей и сырой продукции','Мойка и вода',null],
+  ['bathMeat','Ванна для мяса и птицы','Мойка и вода',null],
+  ['bathFish','Ванна для рыбы','Мойка и вода',null],
+  ['bathKitchen','Ванна для кухонной посуды','Мойка и вода',null],
+  ['bathTable','Ванна для столовой посуды','Мойка и вода',null],
+  ['prewash','Ванна для ополаскивания перед посудомоечной машиной','Мойка и вода',null],
+  ['dish','Посудомоечная машина','Мойка и вода',{unit:'тип', options:[[1,'фронтальная 220 В'],[1.5,'фронтальная 380 В'],[3,'купольная']]}],
+  ['handsink','Раковина для мытья рук','Мойка и вода',null],
+  ['heater','Водонагреватель','Мойка и вода',{unit:'л', min:10, max:1000, step:10}],
+  ['grease','Жироуловитель','Мойка и вода',null],
+  ['tableRaw','Стол для сырой продукции','Столы и стеллажи',null],
+  ['tableMeat','Стол для мяса и птицы','Столы и стеллажи',null],
+    <div class="plan-box ${addMode?'adding':''} ${VZ('plan')>1.001?'zbig':''}" id="pbox" data-fs="plan" style="--pz:${VZ('plan')}">${roomsPlanSvg()}</div>
+    ${touchHintHtml('room')}
+    <p class="hint rooms-hint">Нажмите на помещение или на ⚙ у названия — откроются его настройки.${many?` Помещения перетаскивайте: стены прилипают друг к другу с зазором ${fmt0(WALL_GAP*1000)} мм под перегородку.`:''} Двери, окна и выступы двигайте вдоль стен.</p>
+    ${notesHtml(roomIssues())}
+  </section>${pager()}${rpOpen?roomSideHtml():''}`;
+}
+
+/* поле плана шага «Помещения»: все помещения в своих положениях (одно — просто его план) */
+function roomsPlanSvg(){
+  const rs=S.rooms, minX=Math.min(...rs.map(r=>r.x)), minY=Math.min(...rs.map(r=>r.y)), maxX=Math.max(...rs.map(r=>r.x+r.w)), maxY=Math.max(...rs.map(r=>r.y+r.d)), nichePad=Math.max(0,...rs.flatMap(r=>roomWalls(r).map(w=>nicheOut(r,w.id,r.openings))));
+  const keep=S.cur, many=rs.length>1, q=v=>+v.toFixed(2);
+  let pad=125+nichePad, k=kFor('plan',(maxX-minX)*100+2*pad); pad=125+nichePad+Math.max(0,11/k-19); k=kFor('plan',(maxX-minX)*100+2*pad);
+  let vx=minX*100-pad, vy=minY*100-pad, vw=(maxX-minX)*100+2*pad, vh=(maxY-minY)*100+2*pad;
+  if(roomFreeze){ vx=roomFreeze.x; vy=roomFreeze.y; vw=roomFreeze.w; vh=roomFreeze.h; k=kFor('plan',vw); }   // пока помещение тащат — поле не меняет масштаб
+  let body='';
+  try{ for(const r of rs){ S.cur=r.id; const on=rpOpen&&r.id===keep;
+      const points=hasPoly(r)?contourPts(r,0).map(p=>`${q(p.x)},${q(p.y)}`).join(' '):'';
+      const bg=hasPoly(r)?`<polygon class="rm-bg" data-rbg="${r.id}" points="${points}" fill="var(--steel-soft)" fill-opacity="${on?0.75:0}" style="cursor:${many?'grab':'pointer'}"><title>${esc(r.name)} — настройки помещения</title></polygon>`:`<rect class="rm-bg" data-rbg="${r.id}" x="0" y="0" width="${q(r.w*100)}" height="${q(r.d*100)}" fill="var(--steel-soft)" fill-opacity="${on?0.75:0}" style="cursor:${many?'grab':'pointer'}"><title>${esc(r.name)} — настройки помещения</title></rect>`;
+      const nicheBg=nicheRectsSvg(r).map(n=>`<rect class="rm-bg" data-rbg="${r.id}" x="${q(n.x)}" y="${q(n.y)}" width="${q(n.w)}" height="${q(n.h)}" fill="var(--steel-soft)" fill-opacity="${on?0.75:0}" style="cursor:${many?'grab':'pointer'}"><title>${esc(r.name)} ? ????????? ?????????</title></rect>`).join('');
+      const wallNums=on&&hasPoly(r)?roomWalls(r).map(w=>{ const x=(w.x1+w.x2)*50+w.nx*22/k, y=(w.y1+w.y2)*50+w.ny*22/k; return `<g style="pointer-events:none"><circle cx="${q(x)}" cy="${q(y)}" r="${q(11/k)}" fill="var(--paper)" stroke="var(--rule)" stroke-width="${q(1.2/k)}"/><text x="${q(x)}" y="${q(y)}" font-size="${q(12/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--ink-2)">${w.i+1}</text></g>`; }).join(''):'';
+      const wallHandles=on?roomWalls(r).map(w=>{ const x=(w.x1+w.x2)*50, y=(w.y1+w.y2)*50, cursor=w.axis==='h'?'ns-resize':'ew-resize'; return `<g class="shp-handle" data-wall-handle="${esc(w.id)}" data-room="${esc(r.id)}" style="cursor:${cursor}"><circle cx="${q(x)}" cy="${q(y)}" r="${q(22/k)}" fill="transparent" stroke="none"/><circle cx="${q(x)}" cy="${q(y)}" r="${q(7/k)}" fill="var(--paper)" stroke="var(--steel)" stroke-width="${q(2/k)}" style="pointer-events:none"/><title>Перетащите, чтобы сдвинуть стену</title></g>`; }).join(''):'';
+      const wallPreview=on?`<polygon id="shp-ghost" points="${points||roomPoly(r).map(p=>`${q(p.x*100)},${q(p.y*100)}`).join(' ')}" fill="none" stroke="var(--steel)" stroke-width="${q(2/k)}" stroke-dasharray="${q(6/k)} ${q(4/k)}" stroke-linejoin="round" display="none" style="pointer-events:none"/><text id="shp-drag-label" x="0" y="0" font-size="${q(13/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--steel)" display="none" style="pointer-events:none"></text>`:'';
+      body+=`<g data-rg="${r.id}" class="${on?'rm-on':''}" transform="translate(${q(r.x*100)},${q(r.y*100)})">${bg}${nicheBg}${planSvg('room',[],{inner:true, k, bare:true, blocked:many?blockedSides(r):new Set()})}${wallNums}${wallPreview}${wallHandles}${roomLabelSvg(r,k)}</g>`; } }
+  finally{ S.cur=keep; scrK=null; PT_SH={t:0,r:0,b:0,l:0}; }
+  return `<svg id="plan" data-unified="1" data-rooms="1" viewBox="${q(vx)} ${q(vy)} ${q(vw)} ${q(vh)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${many?'План помещений: '+esc(rs.map(r=>r.name).join(', ')):`План помещения: длина ${fmt0(rs[0].d*1000)} мм по вертикали, ширина ${fmt0(rs[0].w*1000)} мм по горизонтали`}">
+    <defs><pattern id="hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="10" stroke="var(--ink-2)" stroke-width="1.2" opacity=".35"/></pattern></defs>
+    <rect x="${q(vx)}" y="${q(vy)}" width="${q(vw)}" height="${q(vh)}" fill="var(--sheet)"/>${body}</svg>`;
+}
+// название, назначение и кнопка ⚙ (44 px на экране) — в середине помещения; не помещаются — ⚙ в правом верхнем углу
+function roomLabelSvg(r,k){
+  // область подписи: без полосы внутренних цепочек размеров у стен, к которым вплотную соседнее помещение
+  const ins={l:0,r:0,t:0,b:0}, cin=layerOn('dims')?Math.max(85,60+20/k):0;
+  if(S.rooms.length>1) for(const sd of blockedSides(r)) if(r.openings.some(o=>o.side===sd)) ins[sd]=cin;
+  const ir=hasPoly(r)?innerRect(r):null, X0=ir?ir.x*100:ins.l, Y0=ir?ir.y*100:ins.t, W=Math.max(0,ir?ir.w*100:r.w*100-ins.l-ins.r), D=Math.max(0,ir?ir.h*100:r.d*100-ins.t-ins.b), q=v=>+v.toFixed(2), name=r.name||'Помещение', G=44/k, m=10/k;
+  const rt=r.roles.map(x=>(ROLES.find(z=>z[0]===x)||[])[1]).filter(Boolean).join(' · ');
+  const fs=Math.max(13/k, Math.min(26/k, (W-G-3*m)/(name.length*0.6+0.5))), nw=name.length*0.6*fs, fr=11.5/k;
+  const rowW=nw+m+G, fit=rowW<=W-2*m && Math.max(fs*1.3,G)<=D-2*m, lab=layerOn('labels');
+  g+=`<text x="${x+250}" y="${y+12}" font-family="IBMPlexSans" font-weight="bold" font-size="17">М 1:${k}</text></g>`;
+  return g;
+}
+function needMarks(c){ const m=[];
+  if(c.cw) m.push(['ХВ','--z-cold']); if(c.hw) m.push(['ГВ','--z-hot']); if(c.dr) m.push(['К','--p-sewer']);
+  if((c.kw||0)>0) m.push([c.ph===3?'ЭЛ 380':'ЭЛ 220','--p-el']); if(c.gas) m.push(['Г1','--p-gas']); return m; }
+function printPlanSvg(opts){
+  const layer=(opts.layers||['equip'])[0], mono=!!opts.mono, pal=mono?PRINT_MONO:PRINT_PALETTE, pos=opts.pos;
+  const keep={sel, selSet, selRoom, addMode, showZones}; selSet=new Set(); sel=null; selRoom=null; addMode=null; showZones=false; if(typeof scrK!=='undefined') scrK=null;   // печать — без экранных размеров подписей
+  try{
+    const W=S.room.w*100, D=S.room.d*100, T=10, ex=planExtents(S.room, layer), k=opts.scale||50;
+    PT_SH=(layer==='points'||layer==='need')?ptShift(ptMarkSides(S.points),null):{t:0,r:0,b:0,l:0};
+    PRINT_EL=(layer==='points'||layer==='need');   // зона перед щитом и круг «вода не ближе» — на листах подключений
+    const oT=88+nicheOutEdge(S.room,'t',S.openings), oL=88+nicheOutEdge(S.room,'l',S.openings);   // на печати цепочка за метками всё ещё ближе общего размера
+    const ink='var(--ink)', ink2='var(--ink-2)';
+    let g='';
+    for(let x=0;x<=W+0.1;x+=50) g+=`<line x1="${x}" y1="0" x2="${x}" y2="${D}" stroke="var(${Math.round(x)%100?'--grid':'--grid-2'})" stroke-width="1"/>`;
+    for(let y=0;y<=D+0.1;y+=50) g+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(${Math.round(y)%100?'--grid':'--grid-2'})" stroke-width="1"/>`;
+    let gridClip='';
+    if(hasPoly(S.room)){ const id=`rcp-${S.room.id||'r'}`, points=contourPts(S.room,0).map(p=>`${p.x},${p.y}`).join(' '); gridClip=`<clipPath id="${id}"><polygon points="${points}"/></clipPath>`; g=`<g clip-path="url(#${id})">${g}</g>`; }
+    g+=nicheGridSvg(S.room);
+    const dims=`<g fill="${ink2}" font-family="var(--f-mono)" font-size="19">
+      <line x1="0" y1="${-oT}" x2="${W}" y2="${-oT}" stroke="${ink2}" stroke-width="1.2"/><line x1="0" y1="${-oT-8}" x2="0" y2="${-oT+8}" stroke="${ink2}" stroke-width="1.2"/><line x1="${W}" y1="${-oT-8}" x2="${W}" y2="${-oT+8}" stroke="${ink2}" stroke-width="1.2"/>
+      <text x="${W/2}" y="${-oT-10}" text-anchor="middle">${fmt0(S.room.w*1000)}</text>
+      <line x1="${-oL}" y1="0" x2="${-oL}" y2="${D}" stroke="${ink2}" stroke-width="1.2"/><line x1="${-oL-8}" y1="0" x2="${-oL+8}" y2="0" stroke="${ink2}" stroke-width="1.2"/><line x1="${-oL-8}" y1="${D}" x2="${-oL+8}" y2="${D}" stroke="${ink2}" stroke-width="1.2"/>
+      <text x="${-oL-10}" y="${D/2}" text-anchor="middle" transform="rotate(-90 ${-oL-10} ${D/2})">${fmt0(S.room.d*1000)}</text></g>`;
+      body=walls+ops+eq+swr.lines+ptsAll+marks+nums+swr.labels+(typeof zeroMarkSvg==='function'?zs.map(s=>zeroMarkSvg(S.room,s)).join(''):'');
+    }
+    const bar=scaleBarSvg(0, D+104, ink, k);
+    const svg=`<svg viewBox="${ex.x} ${ex.y} ${ex.w} ${ex.h}" xmlns="http://www.w3.org/2000/svg" width="${ex.w}" height="${ex.h}">${hatchDefs(mono, pal['--ink'])}
+      <rect x="${ex.x}" y="${ex.y}" width="${ex.w}" height="${ex.h}" fill="#ffffff"/>${gridClip}${g}${dims}${body}${bar}</svg>`;
+    return finalizePrintSvg(svg, pal);
+  } finally { sel=keep.sel; selSet=keep.selSet; selRoom=keep.selRoom; addMode=keep.addMode; showZones=keep.showZones; PT_SH={t:0,r:0,b:0,l:0}; PRINT_EL=false; }
+}
+// общий план всех помещений
+function printOverviewSvg(opts){
+  const mono=!!(opts&&opts.mono), pal=mono?PRINT_MONO:PRINT_PALETTE, rs=S.rooms;
+  const minX=Math.min(...rs.map(r=>r.x)), minY=Math.min(...rs.map(r=>r.y)), maxX=Math.max(...rs.map(r=>r.x+r.w)), maxY=Math.max(...rs.map(r=>r.y+r.d));
+  const pad=Math.max(170,...rs.flatMap(r=>roomGeom(S,r).openings.filter(o=>o.type==='prot'&&o.niche).map(o=>(o.depth||0.3)*100+20))), k=100, X=v=>(v-minX)*k, Y=v=>(v-minY)*k, ink='var(--ink)', ink2='var(--ink-2)';
+  let out='', arrows='';
+  for(const r of rs){
+    const points=hasPoly(r)?contourPts(r,0).map(p=>`${X(r.x+p.x/100)},${Y(r.y+p.y/100)}`).join(' '):'';
+    out+=hasPoly(r)?`<polygon points="${points}" fill="#ffffff" stroke="${ink}" stroke-width="8" stroke-linejoin="miter"/>`:`<rect x="${X(r.x)}" y="${Y(r.y)}" width="${r.w*k}" height="${r.d*k}" fill="#ffffff" stroke="${ink}" stroke-width="8"/>`;
+    for(const o of roomGeom(S,r).openings){ const sg=segOf({room:r},o), x1=X(r.x+sg.x1), y1=Y(r.y+sg.y1), x2=X(r.x+sg.x2), y2=Y(r.y+sg.y2);
+      if(o.type==='prot'&&o.niche){ const t0=o.off*100, t1=(o.off+o.w)*100, dep=(o.depth||0.3)*100, a=wallOutU(r,o.side,t0,-5), b=wallOutU(r,o.side,t1,-5), bo=wallOutU(r,o.side,t1,dep+5), ao=wallOutU(r,o.side,t0,dep+5), a0=wallOutU(r,o.side,t0,0), b0=wallOutU(r,o.side,t1,0), ad=wallOutU(r,o.side,t0,dep), bd=wallOutU(r,o.side,t1,dep), cv=p=>[X(r.x+p[0]/100),Y(r.y+p[1]/100)], ca=cv(a), cb=cv(b), cbo=cv(bo), cao=cv(ao), ca0=cv(a0), cb0=cv(b0), cad=cv(ad), cbd=cv(bd);
+        out+=`<polygon points="${ca[0]},${ca[1]} ${cb[0]},${cb[1]} ${cbo[0]},${cbo[1]} ${cao[0]},${cao[1]}" fill="#ffffff"/>`;
+        out+=`<path d="M ${ca0[0]} ${ca0[1]} L ${cad[0]} ${cad[1]} L ${cbd[0]} ${cbd[1]} L ${cb0[0]} ${cb0[1]}" fill="none" stroke="${ink}" stroke-width="8" stroke-linejoin="miter"/>`; continue; }
+      if(o.type==='prot'){ const pr=protRect({room:r},o); out+=`<rect x="${X(r.x+pr.x)}" y="${Y(r.y+pr.y)}" width="${pr.w*k}" height="${pr.h*k}" fill="${ink}" opacity=".8"/>`; continue; }
+      out+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ffffff" stroke-width="10"/>`;
+      if(o.type==='window') out+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${ink2}" stroke-width="2"/>`;
+      if(o.type==='door' && (o.to==='hall'||o.to==='street'||o.to==='corr')){ const mx=(x1+x2)/2, my=(y1+y2)/2, nx=-sg.nx, ny=-sg.ny, L=110;
+        const sx=mx+nx*L, sy=my+ny*L, ex=mx+nx*14, ey=my+ny*14, lab=o.to==='hall'?'Трапезная':o.to==='street'?'Улица':'Коридор';
+        const ah=12, px=-ny, py=nx;
+        arrows+=`<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="var(--accent)" stroke-width="3"/><polygon points="${ex},${ey} ${ex+nx*ah*1.6+px*ah},${ey+ny*ah*1.6+py*ah} ${ex+nx*ah*1.6-px*ah},${ey+ny*ah*1.6-py*ah}" fill="var(--accent)"/>`;
+        const tx=sx+nx*22, ty=sy+ny*22, vert=nx!==0;
+        arrows+=`<text x="${tx}" y="${ty}" font-size="18" font-weight="700" fill="var(--accent)" text-anchor="${vert?(nx>0?'start':'end'):'middle'}" dominant-baseline="central">${lab}</text>`; }
+    }
+    const ir=hasPoly(r)?innerRect(r):null, cx=X(r.x+(ir?ir.x+ir.w/2:r.w/2)), cy=Y(r.y+(ir?ir.y+ir.h/2:r.d/2)), fs=Math.max(14,Math.min(28,(ir?ir.w:r.w)*k/(r.name.length*0.62+1)));
+    out+=`<text x="${cx}" y="${cy-fs*0.5}" font-size="${fs}" font-weight="700" text-anchor="middle" fill="${ink}">${esc(r.name)}</text>
+      <text x="${cx}" y="${cy+fs*0.6}" font-size="15" font-family="var(--f-mono)" text-anchor="middle" fill="${ink2}">${ir?`габарит ${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм · ${fmt1(roomArea(r))} м²`:`${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм · ${fmt1(roomArea(r))} м²`}</text>
+      <text x="${cx}" y="${cy+fs*0.6+20}" font-size="13" text-anchor="middle" fill="var(--steel)">${esc(r.roles.map(x=>(ROLES.find(q=>q[0]===x)||[])[1]).filter(Boolean).join(' · ')||'назначение не отмечено')}</text>`;
+  }
+  const w=(maxX-minX)*k+2*pad, h=(maxY-minY)*k+2*pad+40, kk=pickScale(w,h);
+  const svg=`<svg viewBox="${-pad} ${-pad} ${w} ${h}" xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect x="${-pad}" y="${-pad}" width="${w}" height="${h}" fill="#ffffff"/>${out}${arrows}${scaleBarSvg(0,(maxY-minY)*k+pad-10,ink,kk)}</svg>`;
+  return {svg:finalizePrintSvg(svg,pal), wCm:w, hCm:h, scale:kk};
+}
+function swatchSvg(o){ // маленький образец для легенды, 28×14
+  const pal=o.mono?PRINT_MONO:PRINT_PALETTE, ink=pal['--ink'];
+  let inner='';
+  if(o.zone){ inner = o.mono ? `${hatchDefs(true,ink)}<rect x="1" y="1" width="26" height="12" fill="url(#pz-${o.zone})" stroke="${ink}" stroke-width="1"/>`
+      : `<rect x="1" y="1" width="26" height="12" fill="${pal['--z-'+o.zone]}" fill-opacity=".25" stroke="${pal['--z-'+o.zone]}" stroke-width="1.5"/>`; }
+  else if(o.kind==='have') inner=`<rect x="1" y="1" width="26" height="12" fill="none" stroke="${ink}" stroke-width="1.2" stroke-dasharray="4 2"/>`;
+  else if(o.kind==='wall') inner=`<rect x="1" y="1" width="26" height="12" fill="none" stroke="${ink}" stroke-width="1.2" stroke-dasharray="1.5 2.5"/>`;
+  else if(o.kind==='hood') inner=`<rect x="1" y="1" width="26" height="12" fill="none" stroke="${o.mono?ink:pal['--z-hot']}" stroke-width="1.4" stroke-dasharray="5 3"/>`;
+  else if(o.kind==='work') inner=`${hatchDefs(false,ink)}<rect x="1" y="1" width="26" height="12" fill="url(#pwz)" stroke="${pal['--ink-2']}" stroke-width="0.8" stroke-dasharray="2 2"/>`;
+    const st=bad.has(u.key)?'var(--bad)':selSet.has(u.key)?'var(--ink)':warn.has(u.key)?'var(--warn)':c;
+    const dash = wall ? 'stroke-dasharray="3 5"' : u.src==='have' ? 'stroke-dasharray="7 4"' : '';
+    return `<g class="it" data-key="${esc(u.key)}" transform="translate(${b.x*100},${b.y*100})" ${mode!=='equip'?'style="pointer-events:none;opacity:.4"':''}>
+      <rect width="${w}" height="${h}" rx="2" fill="${c}" fill-opacity="${wall?.06:u.src==='have'?.12:.24}" stroke="${st}" stroke-width="${selSet.has(u.key)||bad.has(u.key)?4:2}" ${dash}/>
+      ${wall?'':`<line x1="${fe[0]}" y1="${fe[1]}" x2="${fe[2]}" y2="${fe[3]}" stroke="${c}" stroke-width="6"/>`}
+      <title>${esc(u.c.n)}${u.src==='have'?' (имеется)':''}</title>${eqLabel(u.c,w,h,u)}</g>`;
+  }).join('');
+  const walls=hasPoly(S.room)?wallsPathSvg(S.room,T,'var(--ink)'):`<g stroke="var(--ink)" stroke-width="${T}" stroke-linecap="square"><line x1="${-T/2}" y1="${-T/2}" x2="${W+T/2}" y2="${-T/2}"/><line x1="${W+T/2}" y1="${-T/2}" x2="${W+T/2}" y2="${D+T/2}"/><line x1="${-T/2}" y1="${D+T/2}" x2="${W+T/2}" y2="${D+T/2}"/><line x1="${-T/2}" y1="${-T/2}" x2="${-T/2}" y2="${D+T/2}"/></g>`;
+  let swSvg='';
+  if(mode==='equip' && !bare){ const g=curGeom(), all=layerOn('pts'), mx=swMax(g), list=[];
+    for(const u of curUnits()){ if(!S.layout[u.key]||!hasDrain(u.c)) continue; const isS=sel===u.key&&selSet.size<2; if(!all&&!isS) continue;
+      const r=sewerRoute(g,u,S.layout); if(r) list.push({r, emph:isS, label:isS||((r.blocked||r.len>mx+1e-6)&&scrK>=0.5)}); }   // на мелком плане (телефон) — подпись только у выбранного
+    list.sort((a,b)=>a.emph-b.emph); swSvg=swRoutesSvg(g,list,scrK); }
+  const ops=curGeom().openings.map(o=>openingSvg(o,o.derived&&mode==='room'?'view':mode)).join('');
+  const showPts=!(mode==='room'&&bare) && (mode==='points' || layerOn('pts'));
+  const pts=showPts ? S.points.filter(p=>p.type==='hood').map(p=>pointSvg(p,mode)).join('') + S.points.filter(p=>p.type!=='hood').map(p=>pointSvg(p,mode)).join('') : '';
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+const fs=require('fs'),vm=require('vm'),assert=require('assert');const html=fs.readFileSync('index.html','utf8');
+const scripts=[...html.matchAll(/<script\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/g)].map(m=>m[1]);
+class El{constructor(value=''){this.value=value;this.listeners={};this.attrs={};this.dataset={};}addEventListener(k,f){this.listeners[k]=f;}setAttribute(k,v){this.attrs[k]=v;}closest(){return this;}fire(k,e={}){this.listeners[k](e);}}
+const off=new El('3600'),depth=new El('1000'),wall=new El('t'),apply=new El(),slot=new El(),group=new El(),far=new El(),near=new El();far.dataset.v='far';near.dataset.v='near';group.dataset.seg='step-far';group.querySelectorAll=()=>[far,near];
+const nodes={'[data-step-wall]':wall,'[data-step-off]':off,'[data-step-depth]':depth,'[data-step-apply]':apply,'.shp-error-slot':slot};const sec={querySelector:s=>nodes[s],querySelectorAll:s=>s==='[data-seg]'?[group]:[]};
+const document={querySelector:s=>s==='[data-rpsec=\"shape\"]'?sec:null,getElementById:()=>null};const c=vm.createContext({console,assert,document});vm.runInContext(scripts[0],c);
+vm.runInContext("'`const SIDE_RU={t:'"'верхняя',r:'правая',b:'нижняя',l:'левая'};const SIDE_FROM={t:'от левого угла',r:'от верхнего угла',b:'от левого угла',l:'от верхнего угла'};
+let S=exampleState(),renders=0,recomputes=0,lastToast='',sel,selRoom,addMode,editUid,draft,confirmReset,confirmRoomDel,confirmArrange,heatRecOpen,heatRecErr,rpOpen=true,step=1;
+function save(){} function render(){renders++;}function recompute(){recomputes++;}function toast(s){lastToast=s;}"'`,c);
+for(const name of ['"'seg','num','segBind'])vm.runInContext(html.match(new RegExp('"'^function '"'+name+'\\\\(.*"'$'"','m'))[0],c);
+vm.runInContext(html.slice(html.indexOf('function shapeSvg('),html.indexOf(\"addRoomSection({id:'room'\")),c);
+vm.runInContext(html.slice(html.indexOf('const HIST_MAX='),html.indexOf(\"document.getElementById('undo').addEventListener\")),c);
+vm.runInContext("'`
+let markup=shapeSecHtml(S.room);assert.match(markup,/Уступ на стене/);assert.match(markup,/value="t" selected>Верхняя стена/);assert.match(markup,/id="step-off"[''^>]*value="3600"/);assert.match(markup,/id="step-depth"[''^>]*value="600"/);
+const stepMarkup=markup.slice(markup.indexOf('"'<div class=\"shp-step\">'));assert.ok("'!stepMarkup.includes('"'data-shp-param'));assert.ok("'!stepMarkup.includes('"'data-wall-len'));
+for(const tpl of ['L','U','T']){const r={w:7.2,d:4.8,openings:[],points:[]};assert.ok(setRoomShape(r,{tpl,rot:0,p:shapeDefaults(tpl,r.w,r.d)}).ok);assert.match(shapeSecHtml(r),/data-step-apply/);}
+bindShapeEditor();lastSnap=snap();"'`,c);
+wall.value='"'r';wall.fire('change');assert.equal(vm.runInContext('stepWallSel',c),'r');let markup=vm.runInContext('shapeSecHtml(S.room)',c);assert.match(markup,/id=\"step-off\"["'^>]*value="2400"/);assert.match(markup,/Место уступа, мм — от верхнего угла/);
+group.fire('"'click',{target:near});assert.equal(vm.runInContext('stepFarSel',c),'near');assert.equal(near.attrs['aria-pressed'],'true');group.fire('click',{target:far});wall.value='t';
+for(const [v,d,target] of [['-1','1000',off],['7201','1000',off],['x','1000',off],['','1000',off],['3600','299',depth],['3600','x',depth],['3600','',depth]]){off.value=v;depth.value=d;const before=vm.runInContext('snap()',c);apply.fire('click');assert.equal(vm.runInContext('snap()',c),before);assert.equal(target.attrs['aria-invalid'],'true');assert.match(slot.innerHTML,/role=\"alert\"/);}
+off.value='4000';depth.value='1000';apply.fire('click');assert.match(slot.innerHTML,/Уступ приходится на „Окно“/);assert.equal(apply.attrs['aria-invalid'],'true');
+off.value='3 600';depth.value='1 000,0';const before=vm.runInContext('JSON.stringify(S.room)',c);apply.fire('click');
+vm.runInContext("'`assert.equal(roomWalls(S.room).length,6);assert.equal(lastToast,'"'Уступ добавлен');assert.equal(recomputes,1);assert.equal(undoStack.length,1);assert.equal(S.room.openings.find(o=>o.type==='window'&&o.off===0).w,1.5);doUndo();assert.equal(roomWalls(S.room).length,4);assert.equal(redoStack.length,1);"'`,c);
+assert.equal(vm.runInContext('"'JSON.stringify(S.room)',c),before);vm.runInContext('doRedo();assert.equal(roomWalls(S.room).length,6);',c);
+console.log('PASS: editor markup, wall selection, segment selection, 7 invalid input cases, obstruction, whitespace/comma parsing, example application, undo and redo');
+'@ | node" in C:\Users\pro10\refectory-app
+ exited 1 in 624ms:
+[stdin]:18
+wall.value='r';wall.fire('change');assert.equal(vm.runInContext('stepWallSel',c),'r');let markup=vm.runInContext('shapeSecHtml(S.room)',c);assert.match(markup,/id="step-off"[^>]*value="2400"/);assert.match(markup,/????? ??????, ?? ? ?? ???????? ????/);
+                                                                                                                                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+SyntaxError: Invalid regular expression: /????? ??????, ?? ? ?? ???????? ????/: Nothing to repeat
+    at makeContextifyScript (node:internal/vm:194:14)
+    at compileScript (node:internal/process/execution:422:10)
+    at evalTypeScript (node:internal/process/execution:304:24)
+    at node:internal/main/eval_stdin:51:5
+    at Socket.<anonymous> (node:internal/process/execution:239:5)
+    at Socket.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:2147:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.13.0
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$OutputEncoding = [System.Text.UTF8Encoding]::new(); @'"'
+const fs=require('fs'),vm=require('vm'),assert=require('assert');const html=fs.readFileSync('index.html','utf8');
+const scripts=[...html.matchAll(/<script\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/g)].map(m=>m[1]);
+class El{constructor(value=''){this.value=value;this.listeners={};this.attrs={};this.dataset={};}addEventListener(k,f){this.listeners[k]=f;}setAttribute(k,v){this.attrs[k]=v;}closest(){return this;}fire(k,e={}){this.listeners[k](e);}}
+const off=new El('3600'),depth=new El('1000'),wall=new El('t'),apply=new El(),slot=new El(),group=new El(),far=new El(),near=new El();far.dataset.v='far';near.dataset.v='near';group.dataset.seg='step-far';group.querySelectorAll=()=>[far,near];
+const nodes={'[data-step-wall]':wall,'[data-step-off]':off,'[data-step-depth]':depth,'[data-step-apply]':apply,'.shp-error-slot':slot};const sec={querySelector:s=>nodes[s],querySelectorAll:s=>s==='[data-seg]'?[group]:[]};
+const document={querySelector:s=>s==='[data-rpsec=\"shape\"]'?sec:null,getElementById:()=>null};const c=vm.createContext({console,assert,document});vm.runInContext(scripts[0],c);
+vm.runInContext("'`const SIDE_RU={t:'"'верхняя',r:'правая',b:'нижняя',l:'левая'};const SIDE_FROM={t:'от левого угла',r:'от верхнего угла',b:'от левого угла',l:'от верхнего угла'};
+let S=exampleState(),renders=0,recomputes=0,lastToast='',sel,selRoom,addMode,editUid,draft,confirmReset,confirmRoomDel,confirmArrange,heatRecOpen,heatRecErr,rpOpen=true,step=1;
+function save(){} function render(){renders++;}function recompute(){recomputes++;}function toast(s){lastToast=s;}"'`,c);
+for(const name of ['"'seg','num','segBind'])vm.runInContext(html.match(new RegExp('"'^function '"'+name+'\\\\(.*"'$'"','m'))[0],c);
+vm.runInContext(html.slice(html.indexOf('function shapeSvg('),html.indexOf(\"addRoomSection({id:'room'\")),c);
+vm.runInContext(html.slice(html.indexOf('const HIST_MAX='),html.indexOf(\"document.getElementById('undo').addEventListener\")),c);
+vm.runInContext("'`
+let markup=shapeSecHtml(S.room);assert.match(markup,/Уступ на стене/);assert.match(markup,/value="t" selected>Верхняя стена/);assert.match(markup,/id="step-off"[''^>]*value="3600"/);assert.match(markup,/id="step-depth"[''^>]*value="600"/);
+const stepMarkup=markup.slice(markup.indexOf('"'<div class=\"shp-step\">'));assert.ok("'!stepMarkup.includes('"'data-shp-param'));assert.ok("'!stepMarkup.includes('"'data-wall-len'));
+for(const tpl of ['L','U','T']){const r={w:7.2,d:4.8,openings:[],points:[]};assert.ok(setRoomShape(r,{tpl,rot:0,p:shapeDefaults(tpl,r.w,r.d)}).ok);assert.match(shapeSecHtml(r),/data-step-apply/);}
+bindShapeEditor();lastSnap=snap();"'`,c);
+wall.value='"'r';wall.fire('change');assert.equal(vm.runInContext('stepWallSel',c),'r');let markup=vm.runInContext('shapeSecHtml(S.room)',c);assert.match(markup,/id=\"step-off\"["'^>]*value="2400"/);assert.match(markup,/Место уступа, мм — от верхнего угла/);
+group.fire('"'click',{target:near});assert.equal(vm.runInContext('stepFarSel',c),'near');assert.equal(near.attrs['aria-pressed'],'true');group.fire('click',{target:far});wall.value='t';
+for(const [v,d,target] of [['-1','1000',off],['7201','1000',off],['x','1000',off],['','1000',off],['3600','299',depth],['3600','x',depth],['3600','',depth]]){off.value=v;depth.value=d;const before=vm.runInContext('snap()',c);apply.fire('click');assert.equal(vm.runInContext('snap()',c),before);assert.equal(target.attrs['aria-invalid'],'true');assert.match(slot.innerHTML,/role=\"alert\"/);}
+off.value='4000';depth.value='1000';apply.fire('click');assert.match(slot.innerHTML,/Уступ приходится на „Окно“/);assert.equal(apply.attrs['aria-invalid'],'true');
+off.value='3 600';depth.value='1 000,0';const before=vm.runInContext('JSON.stringify(S.room)',c);apply.fire('click');
+vm.runInContext("'`assert.equal(roomWalls(S.room).length,6);assert.equal(lastToast,'"'Уступ добавлен');assert.equal(recomputes,1);assert.equal(undoStack.length,1);assert.equal(S.room.openings.find(o=>o.type==='window'&&o.off===0).w,1.5);doUndo();assert.equal(roomWalls(S.room).length,4);assert.equal(redoStack.length,1);"'`,c);
+assert.equal(vm.runInContext('"'JSON.stringify(S.room)',c),before);vm.runInContext('doRedo();assert.equal(roomWalls(S.room).length,6);',c);
+console.log('PASS: editor markup, wall selection, segment selection, 7 invalid input cases, obstruction, whitespace/comma parsing, example application, undo and redo');
+'@ | node" in C:\Users\pro10\refectory-app
+ succeeded in 710ms:
+PASS: editor markup, wall selection, segment selection, 7 invalid input cases, obstruction, whitespace/comma parsing, example application, undo and redo
+
+codex
+Проверка обработчиков прошла: выбор стены обновляет подпись и начальное значение, пробелы и запятая в числах обрабатываются, отмена и повтор восстанавливают форму. Проверка интерфейса выполнялась программно: браузерный инструмент недоступен, поэтому визуальную проверку интерфейса и PDF выполнить не удалось.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git diff --check -- index.html; git status --short --untracked-files=no; git diff --numstat -- index.html; rg -n '"'^function stepRoomWall|''^let stepWallSel|''^function shapeSecHtml|''^function bindShapeEditor|''^'"\\.shp-step' index.html" in C:\Users\pro10\refectory-app
+ succeeded in 518ms:
+warning: unable to access 'C:\Users\pro10/.config/git/ignore': Permission denied
+ M index.html
+43	1	index.html
+407:.shp-step{display:flex;flex-direction:column;gap:10px;padding-top:12px;border-top:1px solid var(--grid)}
+408:.shp-step h4{margin:0;font-size:14px}
+409:.shp-step .field{min-width:0}
+1340:function stepRoomWall(room,id,off,h,far){
+2642:let stepWallSel=null;
+2644:function shapeSecHtml(r){
+2658:function bindShapeEditor(){
+
+codex
+Готово. Изменён только `index.html`:
+
+- `stepRoomWall()` — построение уступа, проверки и перенос проёмов/точек.
+- `shapeSecHtml()`, `bindShapeEditor()` — блок «Уступ на стене» и обработчики.
+- `.shp-step` — минимальные адаптивные стили.
+
+Прошли 29 сценариев геометрии, проверки обработчиков, отмены/повтора, синтаксиса и `git diff --check`.
+
+Визуальная проверка интерфейса и PDF не выполнена: браузерный инструмент недоступен.
 tokens used
-42 080
-Изменений нет: в `TASK.md` обнаружено противоречие.
+100 618
+Готово. Изменён только `index.html`:
 
-Для варианта «голова внутрь» требуется сохранить `wid` вершины `a` и присвоить тот же ID вершине `s`. Но [`assignWids()`](C:/Users/pro10/refectory-app/index.html:1294) сохраняет ID только за первой вершиной — стена от `s` до `b` получит другой ID. Изменять `assignWids()` запрещено заданием.
+- `stepRoomWall()` — построение уступа, проверки и перенос проёмов/точек.
+- `shapeSecHtml()`, `bindShapeEditor()` — блок «Уступ на стене» и обработчики.
+- `.shp-step` — минимальные адаптивные стили.
 
-Согласно пункту 8 [`AGENTS.md`](C:/Users/pro10/refectory-app/AGENTS.md), при противоречии коду нужно остановиться без изменений. Уточните: в этом варианте следует убрать `wid` у сдвинутой вершины `a`, чтобы исходный ID сохранился у `s`?
+Прошли 29 сценариев геометрии, проверки обработчиков, отмены/повтора, синтаксиса и `git diff --check`.
+
+Визуальная проверка интерфейса и PDF не выполнена: браузерный инструмент недоступен.

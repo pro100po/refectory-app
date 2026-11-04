@@ -442,6 +442,11 @@ html.set-lock,html.set-lock body{overflow:hidden}
 .nets-panel .seg button{min-height:44px;white-space:normal;line-height:1.25}
 @media (max-width:640px){ .nets-panel .seg{flex-direction:column} }
 .nets-panel .notes{margin-top:10px}
+.nets-inline{display:flex;align-items:center;gap:8px}
+.nets-inline .seg button{min-height:44px;white-space:nowrap}
+.pt-pal-row{margin-bottom:10px}
+@media (min-width:900px){ .nets-panel{display:none} .points-tools>.plan-bar>.lay-menu{margin-left:auto} .points-tools>.plan-bar>.zbar{margin-left:0} }
+@media (max-width:899px){ .nets-inline,.nets-inline-info{display:none} .points-tools{display:flex;flex-direction:column} .points-tools>.pt-pal-row{order:-1} }
 /* резерв и полоса «Убрать в резерв» */
 .tray .chip{min-height:44px;padding:8px 14px;touch-action:auto;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .tray .chip.rsv-src{opacity:.5}
@@ -2845,7 +2850,7 @@ function resChips(){
   return `<div class="res">${['cw','hw','sewer','vent','gas','el','sock'].map(t=>{ const on=hasPt(S,t)||(t==='vent'&&hasPt(S,'hood')); return `<span class="${on?'on':''}"><i class="pt-dot" style="background:var(${PT[t].col})">${PT[t].l}</i>${PT[t].n}: ${on?'отмечено':'нет'}</span>`; }).join('')}</div>`;
 }
 function stepPoints(){
-  return `${stepHead('Точки подключения', `Отметьте то, что уже есть в помещении: воду, канализацию, газ, вентиляцию, электрощит и электроподключения. Точки на стенах привязываются расстояниями от углов и друг от друга — эти размеры показаны на оранжевой размерной линии. В характеристиках записывается, что это за точка.`)}${exampleBar()}
+  return `${stepHead('Точки подключения', `Отметьте, что уже есть: вода, канализация, газ, вентиляция, электрощит. Точки привязываются размерами от углов.`)}${exampleBar()}
   <section class="panel nets-panel" aria-label="Инженерные сети">${seg('utilities',S.utilities==='design'?'design':'existing',[['existing','Сети уже есть — отмечу их на плане'],['design','Сетей пока нет — проектируем']])}
     <p class="hint" style="margin-top:8px">${netsDesign(S)?'Приложение расставит оборудование по технологии и покажет, куда вывести воду, канализацию, электрику и вентиляцию. Уже известные точки (например, стояк канализации) можно отметить — они будут учтены.':'Отметьте вводы воды, канализацию, вентиляцию и электрощит — расстановка подстроится под них.'}</p>
     ${netsDesign(S)?notesHtml([{t:'info', m:NETS_INFO}]):''}</section>
@@ -2858,7 +2863,7 @@ function isBare(){ return step===1||step===2; }
 function roomEditor(){
   const tools=`<div class="pt-pal" role="group" aria-label="Добавить точку подключения">${PT_PAL.map(([k,nm,sh])=>`<button class="btn pt-pb" type="button" data-add="pt:${k}" aria-pressed="${addMode==='pt:'+k}" title="${nm}" aria-label="Добавить точку: ${nm}"><i class="pt-dot" style="background:var(${PT[k].col})" aria-hidden="true">${PT[k].l}</i><span class="pt-pn" aria-hidden="true">${sh}</span></button>`).join('')}<button class="btn pt-hood" type="button" data-add="pt:hood" aria-pressed="${addMode==='pt:hood'}" title="Существующий вытяжной зонт" aria-label="Добавить существующий вытяжной зонт">+ Зонт</button></div>`;
   const hint = !addMode ? '' : `<div class="example" data-fs="plan" style="margin-bottom:10px">Коснитесь плана у стены, где находится «${PT[addMode.slice(3)].n.toLowerCase()}». Если точка в полу или на потолке — коснитесь внутри помещения. <button class="btn small" type="button" id="add-cancel">Отмена</button></div>`;
-  return `<div class="plan-bar"><div class="plan-bar-actions">${tools}</div>${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div>${hint}
+  return `${step===2?`<div class="points-tools"><div class="plan-bar"><div class="nets-inline" title="${netsDesign(S)?'Приложение расставит оборудование по технологии и покажет, куда вывести воду, канализацию, электрику и вентиляцию. Уже известные точки (например, стояк канализации) можно отметить — они будут учтены.':'Отметьте вводы воды, канализацию, вентиляцию и электрощит — расстановка подстроится под них.'}"><span class="lbl">Сети:</span>${seg('utilities',S.utilities==='design'?'design':'existing',[['existing','Уже есть'],['design','Проектируем']])}</div>${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div><div class="pt-pal-row">${tools}</div>${netsDesign(S)?`<div class="nets-inline-info">${notesHtml([{t:'info', m:NETS_INFO}])}</div>`:''}</div>`:`<div class="plan-bar"><div class="plan-bar-actions">${tools}</div>${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div>`}${hint}
     <div class="plan-box ${addMode?'adding':''} ${VZ('plan')>1.001?'zbig':''}" id="pbox" data-fs="plan" style="--pz:${VZ('plan')}">${planSvg('points',[],{bare:isBare()})}</div>
     ${typeof touchHintHtml==='function'?touchHintHtml('points'):''}${roomPanel()}
     <div class="panel" style="margin-top:12px"><h3>Точки и привязки</h3>${S.points.length?pointRows():'<p class="hint">Точек пока нет. Выберите тип в списке, нажмите «+ Точка» и коснитесь плана у нужной стены.</p>'}</div>`;
@@ -5926,12 +5931,12 @@ function updateBars(f){
 let layMenuOpen=false;
 function layersBarHtml(mode){
   const b=(k,l)=>`<button class="btn lay" type="button" data-layer="${k}" aria-pressed="${k==='zones'?!!showZones:layerOn(k)}">${l}</button>`;
-  return `${mode==='equip'?`<div class="lay-menu${layMenuOpen?' open':''}" data-fs="plan"><button type="button" class="btn lay-tgl" aria-expanded="${layMenuOpen}" aria-controls="lay-pop">Слои ▾</button><div class="plan-layers lay-pop" id="lay-pop" role="group" aria-label="Слои плана">`:'<div class="plan-layers" data-fs="plan" role="group" aria-label="Слои плана">'}<span class="lbl">Слои</span>
+  return `${(mode==='equip'||mode==='points')?`<div class="lay-menu${layMenuOpen?' open':''}" data-fs="plan"><button type="button" class="btn lay-tgl" aria-expanded="${layMenuOpen}" aria-controls="lay-pop">Слои ▾</button><div class="plan-layers lay-pop" id="lay-pop" role="group" aria-label="Слои плана">`:'<div class="plan-layers" data-fs="plan" role="group" aria-label="Слои плана">'}<span class="lbl">Слои</span>
     ${mode==='equip'?`<span class="dims-seg" id="pdims-bar"><span class="lbl">Размеры</span>${seg('pdims',S.planDims||'all',[['off','Выкл'],['sel','У выбранного'],['all','Все']])}</span>`:b('dims','Размеры')}
     ${mode==='equip'?b('zones','Рабочие зоны'):''}
     ${mode==='equip'?`<button class="btn lay" type="button" data-layer="need" aria-pressed="${needOn()}">Куда вывести сети</button>`:''}
     ${mode!=='points'?b('pts','Подключения'):''}
-    ${b('labels','Подписи')}</div>${mode==='equip'?'</div>':''}`;
+    ${b('labels','Подписи')}</div>${(mode==='equip'||mode==='points')?'</div>':''}`;
 }
 function touchHintHtml(mode){
   if(!isTouch()) return '';

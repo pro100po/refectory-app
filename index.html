@@ -1598,7 +1598,31 @@ function unitsOf(items){
     for(let i=0;i<it.qty;i++) u.push({key:(it.src==='have'?'h:':'b:')+it.c.id+':'+i, c:it.c, src:it.src}); }
   return u;
 }
-function bbox(c,pos){ const r=pos.rot%180===0; return {x:pos.x, y:pos.y, w:r?c.w:c.d, h:r?c.d:c.w}; }
+function posAng(pos){ return Number(pos&&pos.ang)||0; }
+function baseSize(c,pos){ const r=pos.rot%180===0; return {w:r?c.w:c.d, h:r?c.d:c.w}; }
+function bbox(c,pos){ if(posAng(pos)!==0){ const b=baseSize(c,pos), a=posAng(pos)*Math.PI/180, co=Math.cos(a), si=Math.sin(a); return {x:pos.x, y:pos.y, w:Math.abs(b.w*co)+Math.abs(b.h*si), h:Math.abs(b.w*si)+Math.abs(b.h*co)}; } const r=pos.rot%180===0; return {x:pos.x, y:pos.y, w:r?c.w:c.d, h:r?c.d:c.w}; }
+function unitPoly(c,pos){ const b=bbox(c,pos); if(!posAng(pos)) return [{x:b.x,y:b.y},{x:b.x+b.w,y:b.y},{x:b.x+b.w,y:b.y+b.h},{x:b.x,y:b.y+b.h}];
+  const bs=baseSize(c,pos), cx=b.x+b.w/2, cy=b.y+b.h/2, a=posAng(pos)*Math.PI/180, co=Math.cos(a), si=Math.sin(a);
+  return [[-bs.w/2,-bs.h/2],[bs.w/2,-bs.h/2],[bs.w/2,bs.h/2],[-bs.w/2,bs.h/2]].map(([x,y])=>({x:cx+x*co-y*si,y:cy+x*si+y*co})); }
+function unskewPos(c,pos){ const b=bbox(c,pos), cx=b.x+b.w/2, cy=b.y+b.h/2; delete pos.ang; delete pos.sw; const nb=bbox(c,pos); pos.x=cx-nb.w/2; pos.y=cy-nb.h/2; }
+function skewPlace(room,u,pos,wallId){ const w=wallById(room,wallId);
+  if(!w || w.axis!==null) return {error:'Выберите косую стену'};
+  if(u.parts) return {error:'Составную линию нельзя поставить к косой стене'};
+  if(w.len<u.c.w) return {error:'Аппарат шире этой стены'};
+  const backs=[{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}], o={x:-w.nx,y:-w.ny}; let ri=0;
+  for(let i=1;i<backs.length;i++) if(backs[i].x*o.x+backs[i].y*o.y>backs[ri].x*o.x+backs[ri].y*o.y) ri=i;
+  const back=backs[ri], b=bbox(u.c,pos), t=Math.max(u.c.w/2,Math.min(w.len-u.c.w/2,(b.x+b.w/2-w.x1)*w.dir.x+(b.y+b.h/2-w.y1)*w.dir.y));
+  const cx=w.x1+w.dir.x*t+w.nx*u.c.d/2, cy=w.y1+w.dir.y*t+w.ny*u.c.d/2;
+  pos.rot=ri*90; pos.ang=+(Math.atan2(back.x*o.y-back.y*o.x,back.x*o.x+back.y*o.y)*180/Math.PI).toFixed(2); pos.sw=w.id;
+  const nb=bbox(u.c,pos); pos.x=+(cx-nb.w/2).toFixed(3); pos.y=+(cy-nb.h/2).toFixed(3); return {ok:true}; }
+function skewNearest(room,pos,c){ const b=bbox(c,pos); let best=null, dist=Infinity;
+  for(const w of roomWalls(room)){ if(w.axis!==null) continue; const d=segDist(b.x+b.w/2,b.y+b.h/2,w.x1,w.y1,w.x2,w.y2); if(d<dist){ best=w; dist=d; } } return best; }
+function unitInRoom(room,c,pos){ const tol=0.004;
+  if(!unitPoly(c,pos).every(p=>pointInRoom(room,p.x,p.y,tol))) return false;
+  const b=bbox(c,pos), bs=baseSize(c,pos), cx=b.x+b.w/2, cy=b.y+b.h/2, a=posAng(pos)*Math.PI/180, co=Math.cos(a), si=Math.sin(a);
+  const local=(x,y)=>({x:(x-cx)*co+(y-cy)*si,y:-(x-cx)*si+(y-cy)*co}), inner={x:-bs.w/2+tol,y:-bs.h/2+tol,w:bs.w-2*tol,h:bs.h-2*tol};
+  for(const w of roomWalls(room)){ const p=local(w.x1,w.y1), q=local(w.x2,w.y2); if(segHitsRect(p.x,p.y,q.x,q.y,inner)) return false; } return true; }
+function skewTransform(c,pos,dx=0,dy=0){ const b=bbox(c,pos), bs=baseSize(c,pos); return `translate(${(b.x+b.w/2-bs.w/2+dx)*100},${(b.y+b.h/2-bs.h/2+dy)*100}) rotate(${posAng(pos)}, ${bs.w*50}, ${bs.h*50})`; }
 function frontZone(b,rot,depth){
   if(rot===0) return {x:b.x,y:b.y+b.h,w:b.w,h:depth};
   if(rot===180) return {x:b.x,y:b.y-depth,w:b.w,h:depth};
@@ -1722,7 +1746,7 @@ function insertUnits(list){ return (list||[]).map(i=>({key:i.key, c:insC(i.w,i.d
 function cwEdges(g,o){ return perimeterSpan(g.room,o.side,o.off,o.w); }
 function mirrorGeom(s){ return mirrorRoom(s); }
 function mirRect(W,r){ return {x:W-r.x-r.w, y:r.y, w:r.w, h:r.h}; }
-function mirPos(W,c,pos){ const b=bbox(c,pos); return {x:+(W-b.x-b.w).toFixed(3), y:pos.y, rot:pos.rot===90?270:pos.rot===270?90:pos.rot}; }
+function mirPos(W,c,pos){ const b=bbox(c,pos); return {x:+(W-b.x-b.w).toFixed(3), y:pos.y, rot:pos.rot===90?270:pos.rot===270?90:pos.rot, ...(posAng(pos)?{ang:-posAng(pos), ...(pos.sw?{sw:pos.sw}:{})}:{})}; }
 const NOF={x:0,y:0,w:0,h:0};
 
 function geomHelpers(g, occ){
@@ -1967,7 +1991,7 @@ function checkUnit(s, units, L, key){
   const fl=pl.filter(p=>p.u.c.mount==='floor'), wl=pl.filter(p=>p.u.c.mount==='wall');
   const nm=u=>shortName(u.c), sn=u=>u.c.lb2||u.c.s||shortName(u.c), me=p=>!one||p.u.key===key;
   const doors=s.openings.filter(o=>o.type==='door'), wins=s.openings.filter(o=>o.type==='window'), prots=s.openings.filter(isProt);
-  for(const p of pl) if(me(p) && !rectInRoom(s.room,p.b)) iss.push({t:'bad', key:p.u.key, lbl:'Выходит за стену', m:`«${nm(p.u)}» выходит за стены помещения.`});
+  for(const p of pl) if(me(p) && !(posAng(L[p.u.key])?unitInRoom(s.room,p.u.c,L[p.u.key]):rectInRoom(s.room,p.b))) iss.push({t:'bad', key:p.u.key, lbl:'Выходит за стену', m:`«${nm(p.u)}» выходит за стены помещения.`});
   for(const p of fl){ if(!me(p)) continue;
     for(const o of prots) if(ov(p.b,protRect(s,o))) iss.push({t:'bad', key:p.u.key, lbl:'Упирается в выступ', m:`«${nm(p.u)}» упирается в выступ стены.`});
     for(const o of doors) if(ov(p.b,doorBlock(s,o))) iss.push({t:'bad', key:p.u.key, lbl:'Загораживает дверь', m:`«${nm(p.u)}» загораживает дверь ${doorLabel(o)}.`});
@@ -3258,12 +3282,12 @@ function planSvg(mode, iss, opts){
   if(gridClip && hasPoly(S.room) && roomWalls(S.room).some(w=>!w.axis)) hoodsSvg=`<g clip-path="url(#rc-${S.room.id||'r'})">${hoodsSvg}</g>`;
   let zonesSvg='';
   const eq=(bare?[]:curUnits()).filter(u=>S.layout[u.key]).sort((a,b)=>(a.c.mount==='wall')-(b.c.mount==='wall')).map(u=>{
-    const pos=S.layout[u.key], b=bbox(u.c,pos), w=b.w*100, h=b.h*100, c=`var(--z-${u.c.z})`, wall=u.c.mount==='wall';
-    if(mode==='equip' && !wall && (showZones||(selSet.size<2&&sel===u.key))){ const f=frontZone(b,pos.rot,workDepth(S,u.c)); zonesSvg+=`<rect x="${f.x*100}" y="${f.y*100}" width="${f.w*100}" height="${f.h*100}" fill="url(#hatch)" stroke="${c}" stroke-width="1" stroke-dasharray="3 4"/>`; }
+    const pos=S.layout[u.key], b=bbox(u.c,pos), bs=posAng(pos)?baseSize(u.c,pos):b, w=bs.w*100, h=bs.h*100, c=`var(--z-${u.c.z})`, wall=u.c.mount==='wall';
+    if(mode==='equip' && !wall && (showZones||(selSet.size<2&&sel===u.key))){ const f=frontZone(posAng(pos)?{x:0,y:0,w:bs.w,h:bs.h}:b,pos.rot,workDepth(S,u.c)); zonesSvg+=(posAng(pos)?`<g transform="${skewTransform(u.c,pos)}">`:'')+`<rect x="${f.x*100}" y="${f.y*100}" width="${f.w*100}" height="${f.h*100}" fill="url(#hatch)" stroke="${c}" stroke-width="1" stroke-dasharray="3 4"/>`+(posAng(pos)?'</g>':''); }
     const fe=pos.rot===0?[0,h,w,h]:pos.rot===180?[0,0,w,0]:pos.rot===90?[0,0,0,h]:[w,0,w,h];
     const st=bad.has(u.key)?'var(--bad)':selSet.has(u.key)?'var(--ink)':warn.has(u.key)?'var(--warn)':c;
     const dash = wall ? 'stroke-dasharray="3 5"' : u.src==='have' ? 'stroke-dasharray="7 4"' : '';
-    return `<g class="it" data-key="${esc(u.key)}" transform="translate(${b.x*100},${b.y*100})" ${mode!=='equip'?'style="pointer-events:none;opacity:.4"':''}>
+    return `<g class="it" data-key="${esc(u.key)}" transform="${posAng(pos)?skewTransform(u.c,pos):`translate(${b.x*100},${b.y*100})`}" ${mode!=='equip'?'style="pointer-events:none;opacity:.4"':''}>
       <rect width="${w}" height="${h}" rx="2" fill="${c}" fill-opacity="${wall?.06:u.src==='have'?.12:.24}" stroke="${st}" stroke-width="${selSet.has(u.key)||bad.has(u.key)?4:2}" ${dash}/>
       ${wall?'':`<line x1="${fe[0]}" y1="${fe[1]}" x2="${fe[2]}" y2="${fe[3]}" stroke="${c}" stroke-width="6"/>`}
       <title>${esc(u.c.n)}${u.src==='have'?' (имеется)':''}</title>${eqLabel(u.c,w,h,u)}</g>`;
@@ -3575,7 +3599,7 @@ function startEquipDrag(e,g){
       const thr=+S.norms.snap||0, free=ev.pointerType==='mouse' && ev.shiftKey;   // Shift мышью — без прилипания; на сенсорных — всегда
       if(thr>0 && !free){ const r=snapPos(geomOf(T),u,lx,ly,G0.w,G0.h,thr,excl); lx=r.x; ly=r.y; guides=r.guides; } }   // группа прилипает своим габаритом
     const E=els();
-    M.forEach((m,i)=>{ m.p.x=r3m(lx+(m.x0-G0.x)); m.p.y=r3m(ly+(m.y0-G0.y)); const gg=E[i]; gg&&gg.setAttribute('transform',`translate(${+((m.p.x+dx0)*100).toFixed(2)},${+((m.p.y+dy0)*100).toFixed(2)})`); });
+    M.forEach((m,i)=>{ m.p.x=r3m(lx+(m.x0-G0.x)); m.p.y=r3m(ly+(m.y0-G0.y)); const gg=E[i]; gg&&gg.setAttribute('transform',posAng(m.p)?skewTransform(m.u.c,m.p,dx0,dy0):`translate(${+((m.p.x+dx0)*100).toFixed(2)},${+((m.p.y+dy0)*100).toFixed(2)})`); });
     if(!ov) return;
     const R=T||src, off=uni?{x:R.x,y:R.y}:{x:0,y:0}; ov.setAttribute('transform', uni?`translate(${+(off.x*100).toFixed(2)},${+(off.y*100).toFixed(2)})`:'');
     // над полосой «Убрать в резерв»: полоса подсвечена, аппараты полупрозрачные, подпись «в резерв»
@@ -3606,8 +3630,8 @@ function startEquipDrag(e,g){
     if(moved && !T){ back(); toast('Ставить можно только внутри помещения'); render(); return; }   // вне помещений — вернуть на место
     if(!moved || !grp) selOne(key);   // клик — выбрать один; Shift+клик — так же
     if(moved && T && T.id!==src.id){   // в другое помещение: позиция уже в его координатах и в его стенах
-      for(const m of M){ moveToRoom(m.k,T.id); S.layoutRoom[m.k]=T.id; } S.cur=T.id; toast(`Перенесено в «${T.name}»`); }
-    else for(const m of M) S.layoutRoom[m.k]=S.room.id;
+      for(const m of M){ if(posAng(m.p)) unskewPos(m.u.c,m.p); moveToRoom(m.k,T.id); S.layoutRoom[m.k]=T.id; } S.cur=T.id; toast(`Перенесено в «${T.name}»`); }
+    else for(const m of M){ if(moved && m.p.sw) skewPlace(S.room,m.u,m.p,m.p.sw); S.layoutRoom[m.k]=S.room.id; }
     if(moved) S.layoutManual=true; touch(); render(); };
   window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); window.addEventListener('pointercancel',up);
 }
@@ -3859,15 +3883,15 @@ function groupUnits(keys){ return keys.map(k=>({k, u:P.units.find(x=>x.key===k),
 // сдвиг группы: ограничен для всей группы целиком, чтобы габарит не выходил за стены
 function groupShift(dx,dy,keys){ const M=groupUnits(keys); if(!M.length) return; const G=groupBox(M.map(m=>bbox(m.u.c,m.p))), W=S.room.w, D=S.room.d;
   dx=Math.min(Math.max(dx,-G.x),Math.max(0,W-(G.x+G.w))); dy=Math.min(Math.max(dy,-G.y),Math.max(0,D-(G.y+G.h)));
-  for(const m of M){ m.p.x=r3m(m.p.x+dx); m.p.y=r3m(m.p.y+dy); } }
+  for(const m of M){ m.p.x=r3m(m.p.x+dx); m.p.y=r3m(m.p.y+dy); if(m.p.sw) skewPlace(S.room,m.u,m.p,m.p.sw); } }
 // поворот группы на 90° вокруг центра габарита (dir 1 — по часовой, как «Повернуть ↻»; −1 — обратно); не помещается — false
-function groupRotate(keys,dir){ const M=groupUnits(keys); if(!M.length) return true; const W=S.room.w, D=S.room.d, G=groupBox(M.map(m=>bbox(m.u.c,m.p))), cx=G.x+G.w/2, cy=G.y+G.h/2;
-  const nx=M.map(m=>{ const b=bbox(m.u.c,m.p), x=b.x+b.w/2-cx, y=b.y+b.h/2-cy, rot=(m.p.rot+(dir>0?90:270))%360, nb=bbox(m.u.c,{x:0,y:0,rot});
+function groupRotate(keys,dir){ const M=groupUnits(keys); if(!M.length) return true; for(const m of M) if(posAng(m.p)){ m.rp={...m.p}; unskewPos(m.u.c,m.rp); } const W=S.room.w, D=S.room.d, G=groupBox(M.map(m=>bbox(m.u.c,m.rp||m.p))), cx=G.x+G.w/2, cy=G.y+G.h/2;
+  const nx=M.map(m=>{ const b=bbox(m.u.c,m.rp||m.p), x=b.x+b.w/2-cx, y=b.y+b.h/2-cy, rot=(m.p.rot+(dir>0?90:270))%360, nb=bbox(m.u.c,{x:0,y:0,rot});
     const ux=dir>0?cx-y:cx+y, uy=dir>0?cy+x:cy-x; return {m, rot, x:ux-nb.w/2, y:uy-nb.h/2}; });
   const NG=groupBox(nx.map(n=>bbox(n.m.u.c,{x:n.x,y:n.y,rot:n.rot})));
   if(NG.w>W+1e-6 || NG.h>D+1e-6) return false;
   const sx=NG.x<0?-NG.x:NG.x+NG.w>W?W-(NG.x+NG.w):0, sy=NG.y<0?-NG.y:NG.y+NG.h>D?D-(NG.y+NG.h):0;
-  for(const n of nx){ n.m.p.rot=n.rot; n.m.p.x=r3m(n.x+sx); n.m.p.y=r3m(n.y+sy); }
+  for(const n of nx){ if(n.m.rp){ delete n.m.p.ang; delete n.m.p.sw; } n.m.p.rot=n.rot; n.m.p.x=r3m(n.x+sx); n.m.p.y=r3m(n.y+sy); }
   return true; }
 // действия с группой — одно действие в истории отмены, расстановка становится ручной
 function groupAct(a,keys){
@@ -3922,7 +3946,7 @@ function stepPlan(){
   ${UNI?`<p class="hint uni-hint">${isTouch()?(planEdit?'Ведите аппарат в другое помещение — он перейдёт туда.':'В режиме «✎ Править» аппарат можно перевести в другое помещение — ведите его туда.'):'Перетащите аппарат в другое помещение — он перейдёт туда. Нажмите на название помещения или дважды по пустому месту в нём — помещение крупно; «Вписать» — весь план.'}</p>`:''}
   ${su&&isTouch()&&!planEdit&&typeof planSheetHtml==='function'?planSheetHtml(su):''}
   ${su&&!(isTouch()&&!planEdit)?`<div class="sel-bar" data-fs="plan"><span class="nm">${esc(su.c.n)}</span>
-    <button class="btn small" type="button" data-act="rot" title="Повернуть на 90° (R; Shift+R — обратно). ${KH}">Повернуть ↻</button>
+    <button class="btn small" type="button" data-act="rot" title="Повернуть на 90° (R; Shift+R — обратно). ${KH}">Повернуть ↻</button>${!su.parts&&roomWalls(S.room).some(w=>w.axis===null)?`<button class="btn small" type="button" data-act="${S.layout[su.key].sw?'unskew':'skew'}">${S.layout[su.key].sw?'Снять с косой стены':'К косой стене'}</button>`:''}
     ${su.c.mount==='floor'?`<button class="btn small" type="button" data-act="align">Выровнять линию</button>`:''}
     <button class="btn small" type="button" data-act="l" aria-label="Сдвинуть влево">←</button><button class="btn small" type="button" data-act="u" aria-label="Сдвинуть вверх">↑</button><button class="btn small" type="button" data-act="d" aria-label="Сдвинуть вниз">↓</button><button class="btn small" type="button" data-act="r" aria-label="Сдвинуть вправо">→</button>
     <button class="btn small" type="button" data-act="off" title="Убрать в резерв (Del). ${KH}">В резерв</button>
@@ -3979,10 +4003,12 @@ bind[5]=()=>{
 function planAct(a){ const keys=selKeys(); if(keys.length>1) return groupAct(a,keys); if(a==='desel'){ sel=null; render(); return; }
   const p=S.layout[sel], u=P.units.find(x=>x.key===sel); if(!p||!u) return;
   if(a==='align'){ alignRun(sel); return; }
-  if(a==='rot'||a==='rotb'){ const ob=bbox(u.c,p), cx=ob.x+ob.w/2, cy=ob.y+ob.h/2; p.rot=(p.rot+(a==='rot'?90:270))%360; const nb=bbox(u.c,p); p.x=+(cx-nb.w/2).toFixed(2); p.y=+(cy-nb.h/2).toFixed(2); clampPos(u,p); }
+  if(a==='rot'||a==='rotb'){ if(posAng(p)) unskewPos(u.c,p); const ob=bbox(u.c,p), cx=ob.x+ob.w/2, cy=ob.y+ob.h/2; p.rot=(p.rot+(a==='rot'?90:270))%360; const nb=bbox(u.c,p); p.x=+(cx-nb.w/2).toFixed(2); p.y=+(cy-nb.h/2).toFixed(2); clampPos(u,p); }
+  else if(a==='skew'){ const w=skewNearest(S.room,p,u.c), r=w?skewPlace(S.room,u,p,w.id):{error:'В помещении нет косых стен'}; if(r.error){ toast(r.error); return; } }
+  else if(a==='unskew'){ unskewPos(u.c,p); clampPos(u,p); }
   else if(a==='off'){ toReserve(u); sel=null; }
   else if(a==='del'){ deleteUnit(u); sel=null; S.layoutManual=true; touch(); render(); return; }
-  else { const st=0.05; if(a==='l') p.x-=st; if(a==='r') p.x+=st; if(a==='u') p.y-=st; if(a==='d') p.y+=st; p.x=+p.x.toFixed(2); p.y=+p.y.toFixed(2); clampPos(u,p); }
+  else { const st=0.05; if(a==='l') p.x-=st; if(a==='r') p.x+=st; if(a==='u') p.y-=st; if(a==='d') p.y+=st; p.x=+p.x.toFixed(2); p.y=+p.y.toFixed(2); if(p.sw && ['l','r','u','d'].includes(a)) skewPlace(S.room,u,p,p.sw); else clampPos(u,p); }
   S.layoutManual=true; touch(); render(); }
 // в резерв: позиция с плана убирается, вставка помечается снятой; вызывающий сам делает touch() и render()
 function toReserve(u,quiet){ delete S.layout[u.key]; (S.inserts||[]).forEach(i=>{ if(i.key===u.key) i.off=true; }); if(!quiet) toast(`«${shortName(u.c)}» — в резерве`); }
@@ -4497,13 +4523,13 @@ function printPlanSvg(opts){
     else if(layer==='equip'){
       const H=hoods(curGeom(),curUnits());
       let zones='', eq='', nums='';
-      for(const u of units){ const p=S.layout[u.key], b=bbox(u.c,p), w=b.w*100, h=b.h*100, wall=u.c.mount==='wall', zc=`var(--z-${u.c.z})`;
-        if(!wall && !u.c.insert){ const f=frontZone(b,p.rot,workDepth(S,u.c)); zones+=`<rect x="${f.x*100}" y="${f.y*100}" width="${f.w*100}" height="${f.h*100}" fill="url(#pwz)" stroke="${ink2}" stroke-width="0.8" stroke-dasharray="3 4"/>`; }
+      for(const u of units){ const p=S.layout[u.key], b=bbox(u.c,p), bs=posAng(p)?baseSize(u.c,p):b, w=bs.w*100, h=bs.h*100, wall=u.c.mount==='wall', zc=`var(--z-${u.c.z})`;
+        if(!wall && !u.c.insert){ const f=frontZone(posAng(p)?{x:0,y:0,w:bs.w,h:bs.h}:b,p.rot,workDepth(S,u.c)); zones+=(posAng(p)?`<g transform="${skewTransform(u.c,p)}">`:'')+`<rect x="${f.x*100}" y="${f.y*100}" width="${f.w*100}" height="${f.h*100}" fill="url(#pwz)" stroke="${ink2}" stroke-width="0.8" stroke-dasharray="3 4"/>`+(posAng(p)?'</g>':''); }
         const fe=p.rot===0?[0,h,w,h]:p.rot===180?[0,0,w,0]:p.rot===90?[0,0,0,h]:[w,0,w,h];
         const fill = mono ? `url(#pz-${u.c.z})` : zc, fop = mono ? 1 : (wall?.06:u.src==='have'?.12:.22);
         const dash = wall ? 'stroke-dasharray="3 5"' : u.src==='have' ? 'stroke-dasharray="7 4"' : '';
-        eq+=`<g transform="translate(${b.x*100},${b.y*100})"><rect width="${w}" height="${h}" fill="#ffffff"/><rect width="${w}" height="${h}" fill="${fill}" fill-opacity="${fop}" stroke="${mono?ink:zc}" stroke-width="2" ${dash}/>${wall?'':`<line x1="${fe[0]}" y1="${fe[1]}" x2="${fe[2]}" y2="${fe[3]}" stroke="${mono?ink:zc}" stroke-width="6"/>`}</g>`;
-        const pp=pos&&pos.unit(u); if(pp) nums+=numCircle(b.x*100+w/2, b.y*100+h/2, pp.no); }
+        eq+=`<g transform="${posAng(p)?skewTransform(u.c,p):`translate(${b.x*100},${b.y*100})`}"><rect width="${w}" height="${h}" fill="#ffffff"/><rect width="${w}" height="${h}" fill="${fill}" fill-opacity="${fop}" stroke="${mono?ink:zc}" stroke-width="2" ${dash}/>${wall?'':`<line x1="${fe[0]}" y1="${fe[1]}" x2="${fe[2]}" y2="${fe[3]}" stroke="${mono?ink:zc}" stroke-width="6"/>`}</g>`;
+        const pp=pos&&pos.unit(u); if(pp) nums+=numCircle(b.x*100+(posAng(p)?b.w*100:w)/2, b.y*100+(posAng(p)?b.h*100:h)/2, pp.no); }
       let hs=H.list.map(r=>`<rect x="${r.x*100}" y="${r.y*100}" width="${r.w*100}" height="${r.h*100}" fill="none" stroke="${mono?ink:'var(--z-hot)'}" stroke-width="2.5" stroke-dasharray="10 7"/>`).join('');
       if(gridClip && hasPoly(S.room) && roomWalls(S.room).some(w=>!w.axis)) hs=`<g clip-path="url(#rcp-${S.room.id||'r'})">${hs}</g>`;
       body=zones+eq+hs+walls+ops+hoodsOnly+nums+(typeof equipDimsSvg==='function'?equipDimsSvg(S.room, curUnits(), {print:true}):'');
@@ -6181,7 +6207,7 @@ function planSheetHtml(u){
       <dt>Помещение</dt><dd>${esc(S.room.name)}</dd>
       ${bindTxt?`<dt>Привязка</dt><dd>${bindTxt}</dd>`:''}
     </dl>
-    <div class="btns"><button class="btn" type="button" data-act="rot">Повернуть ↻</button><button class="btn" type="button" data-act="off">В резерв</button><button class="btn primary" type="button" data-sheet="edit">Править положение</button></div>
+    <div class="btns"><button class="btn" type="button" data-act="rot">Повернуть ↻</button>${!u.parts&&roomWalls(S.room).some(w=>w.axis===null)?`<button class="btn" type="button" data-act="${S.layout[u.key].sw?'unskew':'skew'}">${S.layout[u.key].sw?'Снять с косой стены':'К косой стене'}</button>`:''}<button class="btn" type="button" data-act="off">В резерв</button><button class="btn primary" type="button" data-sheet="edit">Править положение</button></div>
   </div>`;
 }
 

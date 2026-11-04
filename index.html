@@ -1775,6 +1775,7 @@ function fillGaps(s, all, L, ins, cnt){
       for(let k=0;k<n;k++){ const a0=a+k*pl, c=insC(pl,dep,z), bd=wallBand(R,side,a0,pl,dep);
         const pos={x:bd.x, y:bd.y, rot};
         pos.x=+pos.x.toFixed(3); pos.y=+pos.y.toFixed(3);
+        if(!rectInRoom(R,bbox(c,pos))) continue;
         const key='ins:'+(cnt.n++); L[key]=pos; ins.push({key,c}); }
     }
   }
@@ -1843,7 +1844,7 @@ function flowInGeom(g, units, cnt, opt){
       if(t0+c.w>len) continue;
       const pos=wallPlace(g.room,side,t0,c,0); if(pos===null) continue;
       const b=bbox(c,pos);
-      if(!bands.some(x=>ov(b,x)) && !wpl.some(q=>ov(b,q)) && !elBad(g,b,c)){ out.L[u.key]=pos; wpl.push(b); break; } } }
+      if(rectInRoom(g.room,b) && !bands.some(x=>ov(b,x)) && !wpl.some(q=>ov(b,q)) && !elBad(g,b,c)){ out.L[u.key]=pos; wpl.push(b); break; } } }
   return out;
 }
 function flowLayout(s, units, dir, opt){

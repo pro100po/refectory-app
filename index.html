@@ -1354,10 +1354,12 @@ function setRoomShape(room,shape,shift){
     const adj=(SIDE_RU[id]||SIDE_RU.r).replace(/яя$/,'юю').replace(/ая$/,'ую'); return `на ${adj} стену`; };
   for(const o of room.openings){ if(newIds.has(o.side)){ const before=oldWalls.find(w=>w.id===o.side), after=newById[o.side];
       if(before&&after&&before.axis===after.axis&&Math.abs(before.nx-after.nx)<1e-9&&Math.abs(before.ny-after.ny)<1e-9){ const q=wallPoint(old,o.side,Number(o.off)||0); o.off=projectToWall(room,o.side,q.x-shiftX,q.y-shiftY).off; }
+      else if(before&&after&&(before.axis===null||after.axis===null)&&(Math.abs(before.nx-after.nx)>=1e-9||Math.abs(before.ny-after.ny)>=1e-9)){ const width=Number(o.w)||0, q=wallPoint(old,o.side,(Number(o.off)||0)+width/2); o.off=projectToWall(room,o.side,q.x-shiftX,q.y-shiftY).off-width/2; }
     } else { const width=Number(o.w)||0, q=wallPoint(old,o.side,(Number(o.off)||0)+width/2), hit=nearestWall(room,q.x,q.y), proj=projectToWall(room,hit.id,q.x,q.y);
       o.side=hit.id; o.off=proj.off-width/2; moved.push(`${opName(o)||'Проём'} ${o.type==='prot'&&!o.niche?'перенесён':'перенесена'} ${dest(hit.id)}`); } }
   for(const p of room.points) if(p.side!=='floor'){ if(newIds.has(p.side)){ const before=oldWalls.find(w=>w.id===p.side), after=newById[p.side];
       if(before&&after&&before.axis===after.axis&&Math.abs(before.nx-after.nx)<1e-9&&Math.abs(before.ny-after.ny)<1e-9){ const q=wallPoint(old,p.side,Number(p.off)||0); p.off=projectToWall(room,p.side,q.x-shiftX,q.y-shiftY).off; }
+      else if(before&&after&&(before.axis===null||after.axis===null)&&(Math.abs(before.nx-after.nx)>=1e-9||Math.abs(before.ny-after.ny)>=1e-9)){ const width=p.type==='hood'?(Number(p.w)||0):0, q=wallPoint(old,p.side,(Number(p.off)||0)+width/2); p.off=projectToWall(room,p.side,q.x-shiftX,q.y-shiftY).off-width/2; }
     } else { const width=p.type==='hood'?(Number(p.w)||0):0, q=wallPoint(old,p.side,(Number(p.off)||0)+width/2), hit=nearestWall(room,q.x,q.y), proj=projectToWall(room,hit.id,q.x,q.y);
       p.side=hit.id; p.off=proj.off-width/2; const label=p.name||(PT[p.type]&&PT[p.type].n)||p.spec||p.type||'точка'; moved.push(`Точка «${label}» перенесена ${dest(hit.id)}`); } }
   clampRoom({room,openings:room.openings,points:room.points});
@@ -1383,6 +1385,17 @@ function stepRoomWall(room,id,off,h,far){
   const r=setRoomShape(room,{tpl:'custom',pts}); if(r.error) return r;
   const probe={x:sh.x+u.x*(tail?0.01:-0.01),y:sh.y+u.y*(tail?0.01:-0.01)}, Y=roomWalls(room).find(v=>Math.abs(v.dir.x-u.x)<1e-9&&Math.abs(v.dir.y-u.y)<1e-9&&segDist(probe.x,probe.y,v.x1,v.y1,v.x2,v.y2)<1e-9);
   for(const {o,q,width} of saved){ o.side=Y.id; o.off=projectToWall(room,Y.id,q.x+nv.x*h,q.y+nv.y*h).off; if(width!==undefined) o.w=width; }
+  clampRoom({room,openings:room.openings,points:room.points});
+  return {ok:true,moved:r.moved}; }
+function tiltRoomWall(room,id,end,shift,longer){
+  const walls=roomWalls(room), i=walls.findIndex(w=>w.id===id); if(i<0) return {error:'Выберите стену для наклона'};
+  if(!Number.isFinite(shift)||shift<0.01) return {error:'Сдвиг угла — не меньше 10 мм'};
+  const P=roomPoly(room).map((q,j)=>({...q,wid:q.wid||walls[j].id})), n=P.length, start=end==='start', j=start?i:(i+1)%n, M=walls[(i+(start?n-1:1))%n];
+  if(!longer&&shift>M.len-0.3) return {error:'Соседняя стена станет короче 300 мм'};
+  const u={x:M.dir.x*(start?-1:1),y:M.dir.y*(start?-1:1)}, delta=longer?-shift:shift, pts=P.map(q=>({...q}));
+  pts[j]={...pts[j],x:pts[j].x+u.x*delta,y:pts[j].y+u.y*delta};
+  const error=shapeError(normPoly(pts,pts.map(p=>p.wid||null)).pts); if(error) return {error:'Наклон не получается: '+error};
+  const r=setRoomShape(room,{tpl:'custom',pts}); if(r.error) return r;
   clampRoom({room,openings:room.openings,points:room.points});
   return {ok:true,moved:r.moved}; }
 // отражение по горизонтали: контур, стены, проёмы, точки (вместо mirrorGeom)
@@ -2680,6 +2693,9 @@ function shapeFieldHtml(tpl,p,r){
   return specs.length?`<div class="fields shp-fields">${specs.map(([key,label])=>num(`shp-${key}`,label,Math.round(p[key]*1000),10,300,30000,'',`data-shp-param="${key}"`)).join('')}</div>`:''; }
 let stepWallSel=null;
 let stepFarSel='far';
+let tiltWallSel=null;
+let tiltEndSel='end';
+let tiltDirSel='short';
 function shapeSecHtml(r){
   const tpl=shapeCurrentTpl(r), curRot=r.shape&&r.shape.rot||0, p=shapeCurrentParams(r,tpl), templates=[['rect','Прямо&shy;угольник'],['L','Г'],['U','П'],['T','Т'],['trap','Трапе&shy;ция']];
   const choices=`<div class="shp-template-row">${templates.map(([key,label])=>`<button type="button" class="btn tap shp-template" data-shape-tpl="${key}" aria-pressed="${tpl===key}">${shapeSvg(key,0,shapeDefaults(key,3,2))}<span>${label}</span></button>`).join('')}${tpl==='custom'?'<span class="shp-custom-label">Своя форма</span>':''}</div>`;
@@ -2689,7 +2705,12 @@ function shapeSecHtml(r){
   const stepBlock=`<div class="shp-step"><h4>Уступ на стене</h4><label class="field"><span>Стена</span><select data-step-wall>${stepWalls.map(w=>{ const title=wallTitle(r,w.id); return `<option value="${esc(w.id)}" ${w.id===stepWall.id?'selected':''}>${esc(title.charAt(0).toUpperCase()+title.slice(1))}</option>`; }).join('')}</select></label>
     <div class="fields shp-fields">${num('step-off','Место уступа, мм — '+wallFrom(r,stepWall.id),Math.round(stepWall.len*50)*10,10,0,stepWall.len*1000,'','data-step-off')}${num('step-depth','Глубина, мм',600,10,300,'','','data-step-depth')}</div>
     ${seg('step-far',stepFarSel,[['far','Утопить дальнюю часть'],['near','Утопить ближнюю часть']])}<button type="button" class="btn tap shp-action" data-step-apply>Добавить уступ</button></div>`;
-  return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p,r)}${walls}${stepBlock}<div class="shp-error-slot"></div></div>`; }
+  const tiltWall=stepWalls.find(w=>w.id===tiltWallSel)||stepWalls[0], tiltIndex=stepWalls.indexOf(tiltWall), tiltTitle=w=>{ const title=wallTitle(r,w.id); return esc(title.charAt(0).toUpperCase()+title.slice(1)); };
+  const tiltBlock=`<div class="shp-step"><h4>Наклон стены</h4><label class="field"><span>Стена</span><select data-tilt-wall>${stepWalls.map(w=>`<option value="${esc(w.id)}" ${w.id===tiltWall.id?'selected':''}>${tiltTitle(w)}</option>`).join('')}</select></label>
+    <div class="field"><span class="lbl">Угол вдоль стены</span>${seg('tilt-end',tiltEndSel,[['start',tiltTitle(stepWalls[(tiltIndex+stepWalls.length-1)%stepWalls.length])],['end',tiltTitle(stepWalls[(tiltIndex+1)%stepWalls.length])]])}</div>
+    <div class="fields shp-fields">${num('tilt-shift','Сдвиг угла, мм',500,10,10,30000,'','data-tilt-shift')}</div>
+    ${seg('tilt-dir',tiltDirSel,[['short','Соседняя стена короче'],['long','Соседняя стена длиннее']])}<button type="button" class="btn tap shp-action" data-tilt-apply>Наклонить стену</button></div>`;
+  return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p,r)}${walls}${stepBlock}${tiltBlock}<div class="shp-error-slot"></div></div>`; }
 function shapeShowError(sec,el,msg){ if(el) el.setAttribute('aria-invalid','true'); const slot=sec.querySelector('.shp-error-slot'); if(slot) slot.innerHTML=`<p class="rmp-warn shp-warn" role="alert">${esc(msg)}</p>`; }
 function applyRoomShape(r,shape,sec,el){
   const result=setRoomShape(r,shape); if(result.error){ shapeShowError(sec,el,result.error); return false; }
@@ -2697,7 +2718,10 @@ function applyRoomShape(r,shape,sec,el){
 function bindShapeEditor(){
   const sec=document.querySelector('[data-rpsec="shape"]'); if(!sec) return;
   const stepWall=sec.querySelector('[data-step-wall]'); stepWall&&stepWall.addEventListener('change',()=>{ stepWallSel=stepWall.value; render(); });
+  const tiltWall=sec.querySelector('[data-tilt-wall]'); tiltWall&&tiltWall.addEventListener('change',()=>{ tiltWallSel=tiltWall.value; render(); });
   segBind(sec,(key,value)=>{ if(key==='step-far') stepFarSel=value;
+    if(key==='tilt-end') tiltEndSel=value;
+    if(key==='tilt-dir') tiltDirSel=value;
     if(key!=='trap-kind'&&key!=='trap-side') return;
     const r=S.room; if(shapeCurrentTpl(r)!=='trap') return;
     const p=shapeCurrentParams(r,'trap'), rot=r.shape&&r.shape.rot||0;
@@ -2715,6 +2739,11 @@ function bindShapeEditor(){
     if(!depthEl.value.trim()||!Number.isFinite(depth)||depth<300){ shapeShowError(sec,depthEl,'Введите глубину не меньше 300 мм.'); return; }
     const result=stepRoomWall(S.room,id,off/1000,depth/1000,stepFarSel==='far'); if(result.error){ shapeShowError(sec,stepApply,result.error); return; }
     lastPush=0; touch(); recompute(); render(); toast('Уступ добавлен'+(result.moved.length?'. '+result.moved.join('. '):'')); });
+  const tiltApply=sec.querySelector('[data-tilt-apply]'); tiltApply&&tiltApply.addEventListener('click',()=>{
+    const el=sec.querySelector('[data-tilt-shift]'), read=el=>Number(String(el.value).replace(/\s+/g,'').replace(',','.')), shift=read(el), id=tiltWall.value;
+    if(!el.value.trim()||!Number.isFinite(shift)||shift<10){ shapeShowError(sec,el,'Введите сдвиг угла не меньше 10 мм.'); return; }
+    const result=tiltRoomWall(S.room,id,tiltEndSel,shift/1000,tiltDirSel==='long'); if(result.error){ shapeShowError(sec,tiltApply,result.error); return; }
+    lastPush=0; touch(); recompute(); render(); toast('Стена наклонена'+(result.moved.length?'. '+result.moved.join('. '):'')); });
   sec.querySelectorAll('[data-shape-tpl]').forEach(b=>b.addEventListener('click',()=>{ const r=S.room, tpl=b.dataset.shapeTpl; applyRoomShape(r,{tpl,rot:0,p:shapeDefaults(tpl,r.w,r.d)},sec,b); }));
   sec.querySelectorAll('[data-shape-rot]').forEach(b=>b.addEventListener('click',()=>{ const r=S.room, tpl=shapeCurrentTpl(r); applyRoomShape(r,{tpl,rot:Number(b.dataset.shapeRot),p:shapeCurrentParams(r,tpl)},sec,b); }));
   sec.querySelectorAll('[data-shp-param]').forEach(el=>el.addEventListener('change',()=>{ const r=S.room, tpl=shapeCurrentTpl(r), value=Number(String(el.value).replace(/\s+/g,'').replace(',','.')); if(!Number.isFinite(value)||value<300||value>30000){ shapeShowError(sec,el,'Введите размер от 300 до 30 000 мм.'); return; }

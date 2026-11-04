@@ -1104,7 +1104,7 @@ function wallById(room,id){ const ws=roomWalls(room); return ws.byId[id]||ws[1];
 const W_OF=(room,w)=>typeof w==='string'?wallById(room,w):w;
 function wallLen(room,id){ return wallById(room,id).len; }
 function perimLen(room){ if(!room.poly) return 2*(room.w+room.d); const ws=roomWalls(room); return ws[ws.length-1].tEnd; }
-function wallRot(w){ return w.ny>0?0 : w.nx<0?90 : w.ny<0?180 : w.nx>0?270 : null; }   // поворот аппарата, стоящего спиной к стене
+function wallRot(w){ if(!w.axis) return null; return w.ny>0?0 : w.nx<0?90 : w.ny<0?180 : w.nx>0?270 : null; }   // поворот аппарата, стоящего спиной к стене
 // глубина помещения от стены внутрь (по габариту): для горизонтальной — d, для вертикальной — w
 function wallInward(room,id,off,len){ const w=wallById(room,id), fallback=w.axis==='h'?room.d:w.axis==='v'?room.w:Math.min(room.w,room.d);
   if(!hasPoly(room)||off===undefined||!w.axis) return fallback;
@@ -1211,7 +1211,7 @@ function wallLineU(room,id){ const w=W_OF(room,id); return w.axis==='h'?w.y1*100
 // площадь контура
 function roomArea(room){ if(!hasPoly(room)) return room.w*room.d; const P=room.poly; let a=0; for(let i=0,j=P.length-1;i<P.length;j=i++) a+=(P[j].x+P[i].x)*(P[j].y-P[i].y); return Math.abs(a)/2; }
 // контур помещения в см плана, сдвинутый наружу на off см
-function contourPts(room,off){ const P=roomPoly(room), ws=roomWalls(room), n=P.length; return P.map((p,i)=>{ const prev=ws[(i+n-1)%n], cur=ws[i]; return {x:p.x*100-(prev.nx+cur.nx)*off,y:p.y*100-(prev.ny+cur.ny)*off}; }); }
+function contourPts(room,off){ const P=roomPoly(room), ws=roomWalls(room), n=P.length; return P.map((p,i)=>{ const prev=ws[(i+n-1)%n], cur=ws[i], dot=prev.nx*cur.nx+prev.ny*cur.ny; return {x:p.x*100-(prev.nx+cur.nx)*off/(1+dot),y:p.y*100-(prev.ny+cur.ny)*off/(1+dot)}; }); }
 function innerRect(room){ if(!hasPoly(room)) return {x:0,y:0,w:room.w,h:room.d};
   const P=roomPoly(room), xs=[...new Set(P.map(p=>p.x))].sort((a,b)=>a-b), ys=[...new Set(P.map(p=>p.y))].sort((a,b)=>a-b), nx=xs.length-1, ny=ys.length-1;
   const inside=Array.from({length:ny},(_,j)=>Array.from({length:nx},(_,i)=>pointInRoom(room,(xs[i]+xs[i+1])/2,(ys[j]+ys[j+1])/2)));
@@ -1593,7 +1593,7 @@ function placeRun(s, units, start, order){
   const slot = (pm,c,bo)=>{
     const [sd,st,len]=sideAt(pm), t0=pm-st;
     if(t0+c.w>len+1e-6) return {next: st+len};
-    return {pos:wallPlace(s.room,sd,t0,c,bo)};
+    const pos=wallPlace(s.room,sd,t0,c,bo); return pos===null?{next: st+len}:{pos};
   };
   // тепловое оборудование ставится одной линией, чтобы закрыть его одним зонтом
   const hotParts=fl.filter(u=>u.c.hot);
@@ -1710,7 +1710,8 @@ function putUnit(g, u, pos, b, out){
 function placeAt(g, u, p, occ, out){
   const H=geomHelpers(g,occ), pm=((p%H.P)+H.P)%H.P, [sd,st,len]=H.sideAt(pm), t0=pm-st, c=u.c;
   if(t0+c.w>len+1e-6) return null;
-  const pos=H.posAt(sd,t0,c,0), b=bbox(c,pos), f=frontZone(b,pos.rot,workDepth(g,c));
+  const pos=H.posAt(sd,t0,c,0); if(pos===null) return null;
+  const b=bbox(c,pos), f=frontZone(b,pos.rot,workDepth(g,c));
   if(!H.free(b,f,c,u,pos)) return null;
   occ.push({b,f,hot:1,cold:false}); putUnit(g,u,pos,b,out); return {side:sd, end:p+c.w};
 }
@@ -1719,13 +1720,15 @@ function packForward(g, seq, startP, occ, out, reserve, runInit){
   let p=startP, run=runInit?{...runInit}:{side:null, front:0, z:null};
   const closeCorner=(sd,len,t0)=>{
     const rem=len-t0; if(run.side!==sd || rem<0.3) return 0;
-    const dep=Math.max(0.5,run.front), c=insC(rem,dep,run.z), pos=posAt(sd,t0,c,0), b=bbox(c,pos);
+    const dep=Math.max(0.5,run.front), c=insC(rem,dep,run.z), pos=posAt(sd,t0,c,0); if(pos===null) return 0;
+    const b=bbox(c,pos);
     if(!free(b,NOF,c)) return 0;
     const key='ins:'+(out.n++); out.L[key]=pos; out.ins.push({key,c}); occ.push({b,f:NOF}); return dep; };
   const rest=seq.slice(); let trav=0;
   const zi=u=>{ const i=ZFLOW.indexOf(u.c.z); return i<0?(u.c.z==='serve'?6:7):i; };
   while(rest.length && trav<P+1){
     const pm=((p%P)+P)%P, [sd,st,len]=sideAt(pm), t0=pm-st;
+    if(posAt(sd,t0,rest[0].c,0)===null){ const jump=(len-t0)+0.0005; p+=jump; trav+=jump; run={side:null,front:0,z:null}; continue; }
     let pick=-1, pos, b, f;
     for(let k=0;k<Math.min(4,rest.length);k++){
       const u=rest[k]; if(k>0 && zi(u)!==zi(rest[0])) break;
@@ -1838,7 +1841,8 @@ function flowInGeom(g, units, cnt, opt){
   for(const u of units.filter(u=>u.c.mount==='wall')){ const c=u.c;
     for(let p=0;p<P;p+=0.05){ const pa=perimeterAt(g.room,p), side=pa.id, st=pa.st, len=pa.len, t0=p-st;
       if(t0+c.w>len) continue;
-      const pos=wallPlace(g.room,side,t0,c,0), b=bbox(c,pos);
+      const pos=wallPlace(g.room,side,t0,c,0); if(pos===null) continue;
+      const b=bbox(c,pos);
       if(!bands.some(x=>ov(b,x)) && !wpl.some(q=>ov(b,q)) && !elBad(g,b,c)){ out.L[u.key]=pos; wpl.push(b); break; } } }
   return out;
 }
@@ -2758,7 +2762,7 @@ function wallDragFinish(cancel){
   if(cancel||!st.moved){ wallDragReset(st); return; }
   if(st.error){ wallDragReset(st); toast(st.error); return; }
   const xs=st.pts.map(p=>p.x), ys=st.pts.map(p=>p.y), dx=Math.min(...xs), dy=Math.min(...ys), pts=st.pts.map(p=>({...p,x:p.x-dx,y:p.y-dy}));
-  const shape=pts.length===4?{tpl:'rect',rot:0,p:{W:Math.max(...pts.map(p=>p.x)),D:Math.max(...pts.map(p=>p.y))}}:{tpl:'custom',pts};
+  const shape=pts.length===4&&pts.every((p,i)=>{ const q=pts[(i+1)%pts.length]; return Math.abs(p.x-q.x)<1e-9||Math.abs(p.y-q.y)<1e-9; })?{tpl:'rect',rot:0,p:{W:Math.max(...pts.map(p=>p.x)),D:Math.max(...pts.map(p=>p.y))}}:{tpl:'custom',pts};
   const result=setRoomShape(st.room,shape,{x:dx,y:dy});
   if(result.error){ wallDragReset(st); toast(result.error); return; }
   st.room.x+=dx; st.room.y+=dy;
@@ -5703,15 +5707,32 @@ function islandSvg(room,isl,col,fs,c){ const b=isl.x.b, W=room.w*100, D=room.d*1
   const vw=wallById(room,v.s), vy1=vw.ny>0?vw.y1*100:(b.y+b.h)*100, vy2=vw.ny>0?b.y*100:vw.y1*100;
   o+=`<line x1="${cx}" y1="${vy1}" x2="${cx}" y2="${vy2}" stroke="${c}" stroke-width="1.1" stroke-dasharray="5 3"/><line x1="${cx-6}" y1="${vy1}" x2="${cx+6}" y2="${vy1}" stroke="${c}"/><line x1="${cx-6}" y1="${vy2}" x2="${cx+6}" y2="${vy2}" stroke="${c}"/>`+dimText(cx-5, (vy1+vy2)/2, fmt0(v.d*1000), fs, {col:c, rot:true});
   return o; }
+function frontRayDist(room,b,rot){
+  const dx=rot===90?-1:rot===270?1:0, dy=rot===0?1:rot===180?-1:0;
+  const x=rot===90?b.x:rot===270?b.x+b.w:b.x+b.w/2, y=rot===0?b.y+b.h:rot===180?b.y:b.y+b.h/2;
+  let dist=Infinity;
+  for(const w of roomWalls(room)){
+    const vx=w.x2-w.x1, vy=w.y2-w.y1, qx=w.x1-x, qy=w.y1-y, den=dx*vy-dy*vx;
+    if(Math.abs(den)<1e-12){
+      if(Math.abs(qx*dy-qy*dx)>1e-9) continue;
+      const a=qx*dx+qy*dy, z=(w.x2-x)*dx+(w.y2-y)*dy;
+      if(Math.max(a,z)>=0) dist=Math.min(dist,Math.max(0,Math.min(a,z)));
+      continue;
+    }
+    const t=(qx*vy-qy*vx)/den, u=(qx*dy-qy*dx)/den;
+    if(t>=0&&u>=-1e-9&&u<=1+1e-9) dist=Math.min(dist,t);
+  }
+  return dist===Infinity?0:dist;
+}
 // привязки выбранного аппарата — акцентом; проход перед фронтом — красным, если меньше нормы
 function frontGap(u, room){
   const p=S.layout[u.key], b=bbox(u.c,p), fw=wallForRot(room,(p.rot+180)%360,b); let dist, hit=null;   // стена перед фронтом
   const others=curUnitsOf(room).filter(o=>o.key!==u.key&&S.layout[o.key]&&o.c.mount==='floor').map(o=>({o, b:bbox(o.c,S.layout[o.key]), rot:S.layout[o.key].rot}));
   const ovl=(a1,a2,b1,b2)=>Math.min(a2,b2)-Math.max(a1,b1)>0.01;
-  if(p.rot===0){ dist=backDist(room,fw,b); for(const x of others) if(ovl(b.x,b.x+b.w,x.b.x,x.b.x+x.b.w) && x.b.y>=b.y+b.h-0.005 && x.b.y-(b.y+b.h)<dist){ dist=x.b.y-(b.y+b.h); hit=x; } }
-  else if(p.rot===180){ dist=backDist(room,fw,b); for(const x of others) if(ovl(b.x,b.x+b.w,x.b.x,x.b.x+x.b.w) && x.b.y+x.b.h<=b.y+0.005 && b.y-(x.b.y+x.b.h)<dist){ dist=b.y-(x.b.y+x.b.h); hit=x; } }
-  else if(p.rot===90){ dist=backDist(room,fw,b); for(const x of others) if(ovl(b.y,b.y+b.h,x.b.y,x.b.y+x.b.h) && x.b.x+x.b.w<=b.x+0.005 && b.x-(x.b.x+x.b.w)<dist){ dist=b.x-(x.b.x+x.b.w); hit=x; } }
-  else { dist=backDist(room,fw,b); for(const x of others) if(ovl(b.y,b.y+b.h,x.b.y,x.b.y+x.b.h) && x.b.x>=b.x+b.w-0.005 && x.b.x-(b.x+b.w)<dist){ dist=x.b.x-(b.x+b.w); hit=x; } }
+  if(p.rot===0){ dist=fw?backDist(room,fw,b):frontRayDist(room,b,p.rot); for(const x of others) if(ovl(b.x,b.x+b.w,x.b.x,x.b.x+x.b.w) && x.b.y>=b.y+b.h-0.005 && x.b.y-(b.y+b.h)<dist){ dist=x.b.y-(b.y+b.h); hit=x; } }
+  else if(p.rot===180){ dist=fw?backDist(room,fw,b):frontRayDist(room,b,p.rot); for(const x of others) if(ovl(b.x,b.x+b.w,x.b.x,x.b.x+x.b.w) && x.b.y+x.b.h<=b.y+0.005 && b.y-(x.b.y+x.b.h)<dist){ dist=b.y-(x.b.y+x.b.h); hit=x; } }
+  else if(p.rot===90){ dist=fw?backDist(room,fw,b):frontRayDist(room,b,p.rot); for(const x of others) if(ovl(b.y,b.y+b.h,x.b.y,x.b.y+x.b.h) && x.b.x+x.b.w<=b.x+0.005 && b.x-(x.b.x+x.b.w)<dist){ dist=b.x-(x.b.x+x.b.w); hit=x; } }
+  else { dist=fw?backDist(room,fw,b):frontRayDist(room,b,p.rot); for(const x of others) if(ovl(b.y,b.y+b.h,x.b.y,x.b.y+x.b.h) && x.b.x>=b.x+b.w-0.005 && x.b.x-(b.x+b.w)<dist){ dist=x.b.x-(b.x+b.w); hit=x; } }
   const facing=hit && Math.abs(hit.rot-p.rot)===180, norm=facing?S.norms.passage:workDepth(S,u.c);
   return {dist:Math.max(0,dist), norm, facing, hit, b, rot:p.rot};
 }

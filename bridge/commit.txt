@@ -1,0 +1,4 @@
+Пункт аудита 44: счётчик «ед. купить» на панели закупки учитывает столы-вставки — совпадает со сметой и спецификацией PDF
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DPNhGCVz76SekXXG1rvjcd

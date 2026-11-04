@@ -1604,6 +1604,28 @@ function bbox(c,pos){ if(posAng(pos)!==0){ const b=baseSize(c,pos), a=posAng(pos
 function unitPoly(c,pos){ const b=bbox(c,pos); if(!posAng(pos)) return [{x:b.x,y:b.y},{x:b.x+b.w,y:b.y},{x:b.x+b.w,y:b.y+b.h},{x:b.x,y:b.y+b.h}];
   const bs=baseSize(c,pos), cx=b.x+b.w/2, cy=b.y+b.h/2, a=posAng(pos)*Math.PI/180, co=Math.cos(a), si=Math.sin(a);
   return [[-bs.w/2,-bs.h/2],[bs.w/2,-bs.h/2],[bs.w/2,bs.h/2],[-bs.w/2,bs.h/2]].map(([x,y])=>({x:cx+x*co-y*si,y:cy+x*si+y*co})); }
+function rectPoly(r){ return [{x:r.x,y:r.y},{x:r.x+r.w,y:r.y},{x:r.x+r.w,y:r.y+r.h},{x:r.x,y:r.y+r.h}]; }
+function frontPoly(c,pos,depth){ if(!posAng(pos)) return rectPoly(frontZone(bbox(c,pos),pos.rot,depth));
+  const b=bbox(c,pos), bs=baseSize(c,pos), cx=b.x+b.w/2, cy=b.y+b.h/2, a=posAng(pos)*Math.PI/180, co=Math.cos(a), si=Math.sin(a);
+  return rectPoly(frontZone({x:-bs.w/2,y:-bs.h/2,w:bs.w,h:bs.h},pos.rot,depth)).map(p=>({x:cx+p.x*co-p.y*si,y:cy+p.x*si+p.y*co})); }
+function frontDir(pos){ const dx=pos.rot===90?-1:pos.rot===270?1:0, dy=pos.rot===0?1:pos.rot===180?-1:0, a=posAng(pos)*Math.PI/180, co=Math.cos(a), si=Math.sin(a); return {x:dx*co-dy*si,y:dx*si+dy*co}; }
+function polyHit(A,B,e=0.004){
+  for(const P of [A,B]) for(let i=0;i<P.length;i++){ const p=P[i], q=P[(i+1)%P.length], len=Math.hypot(q.x-p.x,q.y-p.y); if(!len) continue;
+    const nx=-(q.y-p.y)/len, ny=(q.x-p.x)/len, a=A.map(v=>v.x*nx+v.y*ny), b=B.map(v=>v.x*nx+v.y*ny);
+    if(Math.min(Math.max(...a),Math.max(...b))-Math.max(Math.min(...a),Math.min(...b))<=e) return false;
+  } return true; }
+function polyGap(A,B){ if(polyHit(A,B,0)) return 0; let d=Infinity;
+  for(const [P,Q] of [[A,B],[B,A]]) for(const p of P) for(let i=0;i<Q.length;i++){ const a=Q[i], b=Q[(i+1)%Q.length]; d=Math.min(d,a.x===b.x&&a.y===b.y?Math.hypot(p.x-a.x,p.y-a.y):segDist(p.x,p.y,a.x,a.y,b.x,b.y)); }
+  return d; }
+function polyInRoom(room,poly,tol=0.004){ if(!poly.every(p=>pointInRoom(room,p.x,p.y,tol))) return false;
+  const area=poly.reduce((s,p,i)=>{ const q=poly[(i+1)%poly.length]; return s+p.x*q.y-p.y*q.x; },0), sign=area<0?-1:1;
+  for(const w of roomWalls(room)){ let lo=0, hi=1;
+    for(let i=0;i<poly.length;i++){ const p=poly[i], q=poly[(i+1)%poly.length], len=Math.hypot(q.x-p.x,q.y-p.y); if(!len) continue;
+      const nx=sign*(p.y-q.y)/len, ny=sign*(q.x-p.x)/len, a=(w.x1-p.x)*nx+(w.y1-p.y)*ny-tol, d=(w.x2-w.x1)*nx+(w.y2-w.y1)*ny;
+      if(Math.abs(d)<1e-12){ if(a<=0){ hi=lo; break; } } else if(d>0) lo=Math.max(lo,-a/d); else hi=Math.min(hi,-a/d);
+      if(hi<=lo) break;
+    } if(hi-lo>1e-9) return false;
+  } return true; }
 function unskewPos(c,pos){ const b=bbox(c,pos), cx=b.x+b.w/2, cy=b.y+b.h/2; delete pos.ang; delete pos.sw; const nb=bbox(c,pos); pos.x=cx-nb.w/2; pos.y=cy-nb.h/2; }
 function skewPlace(room,u,pos,wallId){ const w=wallById(room,wallId);
   if(!w || w.axis!==null) return {error:'Выберите косую стену'};
@@ -1987,43 +2009,48 @@ function autoLayout(s, units){
 function checkUnit(s, units, L, key){
   L = L||s.layout; const one=key!=null;
   const W=s.room.w, D=s.room.d, iss=[];
-  const pl=units.filter(u=>L[u.key]).map(u=>{ const b=bbox(u.c,L[u.key]); return {u,b,rot:L[u.key].rot, f:frontZone(b,L[u.key].rot,workDepth(s,u.c))}; });
+  const pl=units.filter(u=>L[u.key]).map(u=>{ const b=bbox(u.c,L[u.key]), a=posAng(L[u.key])!==0; return {u,b,a,rot:L[u.key].rot, f:frontZone(b,L[u.key].rot,workDepth(s,u.c)), ...(a?{P:unitPoly(u.c,L[u.key]),FP:frontPoly(u.c,L[u.key],workDepth(s,u.c))}:{})}; });
   const fl=pl.filter(p=>p.u.c.mount==='floor'), wl=pl.filter(p=>p.u.c.mount==='wall');
+  const rectX=(p,f)=>p.u?(f?p.f:p.b):p, polyX=(p,f)=>p.a?(f?p.FP:p.P):rectPoly(rectX(p,f));
+  const hitX=(p,q,f=false,g=false)=>p.a||q.a?polyHit(polyX(p,f),polyX(q,g)):ov(rectX(p,f),rectX(q,g));
+  const gapX=(p,q)=>p.a||q.a?polyGap(polyX(p,false),polyX(q,false)):gap(rectX(p,false),rectX(q,false));
+  const facingX=(p,q)=>{ if(!p.a&&!q.a) return Math.abs(p.rot-q.rot)===180; const a=frontDir(L[p.u.key]), b=frontDir(L[q.u.key]); return a.x*b.x+a.y*b.y< -0.9; };
   const nm=u=>shortName(u.c), sn=u=>u.c.lb2||u.c.s||shortName(u.c), me=p=>!one||p.u.key===key;
   const doors=s.openings.filter(o=>o.type==='door'), wins=s.openings.filter(o=>o.type==='window'), prots=s.openings.filter(isProt);
   for(const p of pl) if(me(p) && !(posAng(L[p.u.key])?unitInRoom(s.room,p.u.c,L[p.u.key]):rectInRoom(s.room,p.b))) iss.push({t:'bad', key:p.u.key, lbl:'Выходит за стену', m:`«${nm(p.u)}» выходит за стены помещения.`});
   for(const p of fl){ if(!me(p)) continue;
-    for(const o of prots) if(ov(p.b,protRect(s,o))) iss.push({t:'bad', key:p.u.key, lbl:'Упирается в выступ', m:`«${nm(p.u)}» упирается в выступ стены.`});
-    for(const o of doors) if(ov(p.b,doorBlock(s,o))) iss.push({t:'bad', key:p.u.key, lbl:'Загораживает дверь', m:`«${nm(p.u)}» загораживает дверь ${doorLabel(o)}.`});
+    for(const o of prots) if(hitX(p,protRect(s,o))) iss.push({t:'bad', key:p.u.key, lbl:'Упирается в выступ', m:`«${nm(p.u)}» упирается в выступ стены.`});
+    for(const o of doors) if(hitX(p,doorBlock(s,o))) iss.push({t:'bad', key:p.u.key, lbl:'Загораживает дверь', m:`«${nm(p.u)}» загораживает дверь ${doorLabel(o)}.`});
     for(const o of wins){ if(p.u.c.h<=(o.sill||0.9)+0.01) continue;
-      if(ov(p.b,bandOf(s,o,0.35))) iss.push({t:'bad', key:p.u.key, lbl:'Перекрывает окно', m:`«${nm(p.u)}» высотой ${fmt0(p.u.c.h*1000)} мм перекрывает окно (подоконник ${fmt0((o.sill||0.9)*1000)} мм). Под окном допустимы только столы и низкое оборудование.`});
-      else if(ov(p.b,bandOf(s,{side:o.side,off:o.off-0.08,w:o.w+0.16},0.35))) iss.push({t:'bad', key:p.u.key, lbl:'Вплотную к окну', m:`«${nm(p.u)}» ближе 80 мм к краю окна — высокое оборудование не ставят вплотную к проёму.`});
-      else if(ov(p.b,bandOf(s,{side:o.side,off:o.off-0.12,w:o.w+0.24},0.35))) iss.push({t:'warn', key:p.u.key, lbl:'Близко к окну', m:`«${nm(p.u)}» ближе 120 мм к краю окна. Отступ до 80 мм допустим, только если иначе расстановка не помещается.`}); }
-    if(rectInRoom(s.room,p.b) && !rectInRoom(s.room,p.f)){
+      if(hitX(p,bandOf(s,o,0.35))) iss.push({t:'bad', key:p.u.key, lbl:'Перекрывает окно', m:`«${nm(p.u)}» высотой ${fmt0(p.u.c.h*1000)} мм перекрывает окно (подоконник ${fmt0((o.sill||0.9)*1000)} мм). Под окном допустимы только столы и низкое оборудование.`});
+      else if(hitX(p,bandOf(s,{side:o.side,off:o.off-0.08,w:o.w+0.16},0.35))) iss.push({t:'bad', key:p.u.key, lbl:'Вплотную к окну', m:`«${nm(p.u)}» ближе 80 мм к краю окна — высокое оборудование не ставят вплотную к проёму.`});
+      else if(hitX(p,bandOf(s,{side:o.side,off:o.off-0.12,w:o.w+0.24},0.35))) iss.push({t:'warn', key:p.u.key, lbl:'Близко к окну', m:`«${nm(p.u)}» ближе 120 мм к краю окна. Отступ до 80 мм допустим, только если иначе расстановка не помещается.`}); }
+    if(p.a){ if(!polyInRoom(s.room,p.FP)) iss.push({t:'warn', key:p.u.key, lbl:'Мало места перед фронтом', m:`Перед «${nm(p.u)}» рабочая зона упирается в стену — отодвиньте соседнее оборудование или аппарат.`}); }
+    else if(rectInRoom(s.room,p.b) && !rectInRoom(s.room,p.f)){
       if(roomWalls(s.room).some(w=>!w.axis && segHitsRect(w.x1,w.y1,w.x2,w.y2,p.f))) iss.push({t:'warn', key:p.u.key, lbl:'Мало места перед фронтом', m:`Перед «${nm(p.u)}» рабочая зона упирается в косую стену — отодвиньте аппарат от неё.`});
       else iss.push({t:'warn', key:p.u.key, lbl:'Фронтом к стене', m:`«${nm(p.u)}» развёрнут фронтом к стене.`});
     }
   }
   for(let i=0;i<fl.length;i++) for(let j=i+1;j<fl.length;j++){
     const a=fl[i], b=fl[j]; if(one && a.u.key!==key && b.u.key!==key) continue;
-    const oth=a.u.key===key?b:a, pg=()=>`Проход ${fmtM(gap(a.b,b.b))}`;
-    if(ov(a.b,b.b)){ iss.push({t:'bad', key:a.u.key, lbl:`Наложение на ${sn(oth.u)}`, m:`«${nm(a.u)}» и «${nm(b.u)}» наложены друг на друга.`}); continue; }
-    if(ov(a.f,b.b)) iss.push({t:'warn', key:a.u.key, lbl:pg(), m:`Перед «${nm(a.u)}» меньше ${fmtM(workDepth(s,a.u.c))} для работы: мешает «${nm(b.u)}».`});
-    else if(ov(b.f,a.b)) iss.push({t:'warn', key:b.u.key, lbl:pg(), m:`Перед «${nm(b.u)}» меньше ${fmtM(workDepth(s,b.u.c))} для работы: мешает «${nm(a.u)}».`});
-    else if(Math.abs(a.rot-b.rot)===180 && ov(a.f,b.f)){ const g=gap(a.b,b.b);
+    const oth=a.u.key===key?b:a, pg=()=>`Проход ${fmtM(gapX(a,b))}`;
+    if(hitX(a,b)){ iss.push({t:'bad', key:a.u.key, lbl:`Наложение на ${sn(oth.u)}`, m:`«${nm(a.u)}» и «${nm(b.u)}» наложены друг на друга.`}); continue; }
+    if(hitX(a,b,true)) iss.push({t:'warn', key:a.u.key, lbl:pg(), m:`Перед «${nm(a.u)}» меньше ${fmtM(workDepth(s,a.u.c))} для работы: мешает «${nm(b.u)}».`});
+    else if(hitX(b,a,true)) iss.push({t:'warn', key:b.u.key, lbl:pg(), m:`Перед «${nm(b.u)}» меньше ${fmtM(workDepth(s,b.u.c))} для работы: мешает «${nm(a.u)}».`});
+    else if(facingX(a,b) && hitX(a,b,true,true)){ const g=gapX(a,b);
       if(g<s.norms.passage) iss.push({t:'warn', key:a.u.key, lbl:`Проход ${fmtM(g)}`, m:`Проход между «${nm(a.u)}» и «${nm(b.u)}» — ${fmtM(g)}, при двух рабочих местах лицом друг к другу удобно не меньше ${fmtM(s.norms.passage)}.`}); }
     const hc=(x,y)=>x.u.c.hot && (y.u.c.z==='cold'||y.u.c.role==='coldtable');
-    if((hc(a,b)||hc(b,a)) && gap(a.b,b.b)<0.3) iss.push({t:'warn', key:(a.u.c.hot?b:a).u.key, lbl:oth.u.c.hot?'Вплотную к тепловому':'Вплотную к холодильному', m:`Холодильное «${nm(a.u.c.hot?b.u:a.u)}» стоит вплотную к тепловому — нужен зазор от 0,3 м или теплоизоляционный экран.`});
+    if((hc(a,b)||hc(b,a)) && gapX(a,b)<0.3) iss.push({t:'warn', key:(a.u.c.hot?b:a).u.key, lbl:oth.u.c.hot?'Вплотную к тепловому':'Вплотную к холодильному', m:`Холодильное «${nm(a.u.c.hot?b.u:a.u)}» стоит вплотную к тепловому — нужен зазор от 0,3 м или теплоизоляционный экран.`});
     const raw=r=>['tableRaw','tableMeat','tableFish','bathRaw','bathMeat','bathFish'].includes(r), ready=r=>['tableReady','serveTable','marmit','coldtable'].includes(r);
-    if(s.norms.strict && ((raw(a.u.c.role)&&ready(b.u.c.role))||(raw(b.u.c.role)&&ready(a.u.c.role))) && gap(a.b,b.b)<0.5)
+    if(s.norms.strict && ((raw(a.u.c.role)&&ready(b.u.c.role))||(raw(b.u.c.role)&&ready(a.u.c.role))) && gapX(a,b)<0.5)
       iss.push({t:'warn', key:a.u.key, lbl:'Сырое рядом с готовым', m:`«${nm(a.u)}» и «${nm(b.u)}» рядом: сырая и готовая продукция не должны пересекаться — разнесите их по ходу технологического потока.`});
   }
   for(const p of wl){ if(!me(p)) continue;
     const dw=Math.min(...roomWalls(s.room).map(w=>backGap(s.room,w,p.b)));
-    if(dw>0.05) iss.push({t:'warn', key:p.u.key, lbl:'Не у стены', m:`Настенное «${nm(p.u)}» не у стены — его нужно повесить на стену.`});
-    for(const o of s.openings.filter(o=>o.type!=='prot'||isProt(o))){ if(isProt(o)){ if(ov(p.b,protRect(s,o))) iss.push({t:'bad', key:p.u.key, lbl:'Упирается в выступ', m:`Настенное «${nm(p.u)}» упирается в выступ стены.`}); } else if(ov(p.b,bandOf(s,o,0.6))) iss.push({t:'bad', key:p.u.key, lbl:o.type==='door'?'Висит на двери':'Висит на окне', m:`Настенное «${nm(p.u)}» висит на ${o.type==='door'?'двери':'окне'}.`}); }
+    if(dw>0.05 && !(p.a&&L[p.u.key].sw)) iss.push({t:'warn', key:p.u.key, lbl:'Не у стены', m:`Настенное «${nm(p.u)}» не у стены — его нужно повесить на стену.`});
+    for(const o of s.openings.filter(o=>o.type!=='prot'||isProt(o))){ if(isProt(o)){ if(hitX(p,protRect(s,o))) iss.push({t:'bad', key:p.u.key, lbl:'Упирается в выступ', m:`Настенное «${nm(p.u)}» упирается в выступ стены.`}); } else if(hitX(p,bandOf(s,o,0.6))) iss.push({t:'bad', key:p.u.key, lbl:o.type==='door'?'Висит на двери':'Висит на окне', m:`Настенное «${nm(p.u)}» висит на ${o.type==='door'?'двери':'окне'}.`}); }
   }
-  for(let i=0;i<wl.length;i++) for(let j=i+1;j<wl.length;j++) if((!one||wl[i].u.key===key||wl[j].u.key===key) && ov(wl[i].b,wl[j].b)) iss.push({t:'bad', key:wl[i].u.key, lbl:`Наложение на ${sn((wl[i].u.key===key?wl[j]:wl[i]).u)}`, m:`Настенные «${nm(wl[i].u)}» и «${nm(wl[j].u)}» наложены.`});
+  for(let i=0;i<wl.length;i++) for(let j=i+1;j<wl.length;j++) if((!one||wl[i].u.key===key||wl[j].u.key===key) && hitX(wl[i],wl[j])) iss.push({t:'bad', key:wl[i].u.key, lbl:`Наложение на ${sn((wl[i].u.key===key?wl[j]:wl[i]).u)}`, m:`Настенные «${nm(wl[i].u)}» и «${nm(wl[j].u)}» наложены.`});
   const gas=s.points.filter(p=>p.type==='gas');
   if(gas.length) for(const p of pl){ if(!p.u.c.gas||!me(p)) continue;
     const d=Math.min(...gas.map(g=>ptDist(s,p.b,g)));
@@ -2032,11 +2059,11 @@ function checkUnit(s, units, L, key){
   { const n=elN(s), lowmm=fmt0(n.h*1000)+' мм';
     for(const q of elPanels(s)){ const Z=elZone(s,q), P0=wallPt(s,q);
       for(const x of pl){ if(!me(x)) continue; const c=x.u.c;
-        if(ov(x.b,Z)){
+        if(hitX(x,Z)){
           if(!elOkKind(c)) iss.push({t:'bad', key:x.u.key, lbl:'Перед электрощитом', m:`Перед электрощитом стоит «${nm(x.u)}» — здесь допустимы только столы, нейтральное оборудование и холодильный стол до ${lowmm}.`});
           else if((c.h||0)>n.h+1e-6) iss.push({t:'bad', key:x.u.key, lbl:'Закрывает электрощит', m:`Перед электрощитом «${nm(x.u)}» высотой ${fmt0(c.h*1000)} мм — закрывает щит; допустимо до ${lowmm}.`});
           continue; }
-        if(elWater(c)){ const d=gap(x.b,P0); if(d<n.wd-1e-6) iss.push({t:'bad', key:x.u.key, lbl:`Вода в ${fmt1(d)} м от щита`, m:`${c.lb||nm(x.u)} в ${fmt1(d)} м от электрощита — источники воды не ближе ${fmtM(n.wd)}.`}); } }
+        if(elWater(c)){ const d=gapX(x,P0); if(d<n.wd-1e-6) iss.push({t:'bad', key:x.u.key, lbl:`Вода в ${fmt1(d)} м от щита`, m:`${c.lb||nm(x.u)} в ${fmt1(d)} м от электрощита — источники воды не ближе ${fmtM(n.wd)}.`}); } }
       if(!one) for(const w of s.points){ if(w.type!=='cw'&&w.type!=='hw') continue; const d=gap(wallPt(s,w),P0);
         if(d<n.wd-1e-6) iss.push({t:'bad', m:`Ввод ${w.type==='cw'?'холодной':'горячей'} воды в ${fmt1(d)} м от электрощита — перенесите кран или щит не ближе ${fmtM(n.wd)}.`}); } } }
   // газовый кран и розетки: аппарат у этой стены (ближе 0,3 м), перекрывает точку вдоль стены (±0,15 м)
@@ -5865,9 +5892,9 @@ function islandSvg(room,isl,col,fs,c){ const b=isl.x.b, W=room.w*100, D=room.d*1
   const vw=wallById(room,v.s), vy1=vw.ny>0?vw.y1*100:(b.y+b.h)*100, vy2=vw.ny>0?b.y*100:vw.y1*100;
   o+=`<line x1="${cx}" y1="${vy1}" x2="${cx}" y2="${vy2}" stroke="${c}" stroke-width="1.1" stroke-dasharray="5 3"/><line x1="${cx-6}" y1="${vy1}" x2="${cx+6}" y2="${vy1}" stroke="${c}"/><line x1="${cx-6}" y1="${vy2}" x2="${cx+6}" y2="${vy2}" stroke="${c}"/>`+dimText(cx-5, (vy1+vy2)/2, fmt0(v.d*1000), fs, {col:c, rot:true});
   return o; }
-function frontRayDist(room,b,rot){
-  const dx=rot===90?-1:rot===270?1:0, dy=rot===0?1:rot===180?-1:0;
-  const x=rot===90?b.x:rot===270?b.x+b.w:b.x+b.w/2, y=rot===0?b.y+b.h:rot===180?b.y:b.y+b.h/2;
+function frontRayDist(room,b,rot,ray){
+  const dx=ray?ray.dx:rot===90?-1:rot===270?1:0, dy=ray?ray.dy:rot===0?1:rot===180?-1:0;
+  const x=ray?ray.x:rot===90?b.x:rot===270?b.x+b.w:b.x+b.w/2, y=ray?ray.y:rot===0?b.y+b.h:rot===180?b.y:b.y+b.h/2;
   let dist=Infinity;
   for(const w of roomWalls(room)){
     const vx=w.x2-w.x1, vy=w.y2-w.y1, qx=w.x1-x, qy=w.y1-y, den=dx*vy-dy*vx;
@@ -5886,6 +5913,20 @@ function frontRayDist(room,b,rot){
 function frontGap(u, room){
   const p=S.layout[u.key], b=bbox(u.c,p), fw=wallForRot(room,(p.rot+180)%360,b); let dist, hit=null;   // стена перед фронтом
   const others=curUnitsOf(room).filter(o=>o.key!==u.key&&S.layout[o.key]&&o.c.mount==='floor').map(o=>({o, b:bbox(o.c,S.layout[o.key]), rot:S.layout[o.key].rot}));
+  if(posAng(p)){
+    const d=frontDir(p), F=frontPoly(u.c,p,0), ray={x:F.reduce((s,v)=>s+v.x,0)/4,y:F.reduce((s,v)=>s+v.y,0)/4,dx:d.x,dy:d.y};
+    dist=frontRayDist(room,b,p.rot,ray);
+    for(const x of others){ const Q=unitPoly(x.o.c,S.layout[x.o.key]);
+      for(let i=0;i<Q.length;i++){ const a=Q[i], z=Q[(i+1)%Q.length], vx=z.x-a.x, vy=z.y-a.y, qx=a.x-ray.x, qy=a.y-ray.y, den=ray.dx*vy-ray.dy*vx; let t;
+        if(Math.abs(den)<1e-12){ if(Math.abs(qx*ray.dy-qy*ray.dx)>1e-9) continue;
+          const t0=qx*ray.dx+qy*ray.dy, t1=(z.x-ray.x)*ray.dx+(z.y-ray.y)*ray.dy; if(Math.max(t0,t1)<0) continue; t=Math.max(0,Math.min(t0,t1));
+        } else { t=(qx*vy-qy*vx)/den; const v=(qx*ray.dy-qy*ray.dx)/den; if(t<0||v< -1e-9||v>1+1e-9) continue; }
+        if(t<dist){ dist=t; hit=x; }
+      }
+    }
+    const hd=hit&&frontDir(S.layout[hit.o.key]), facing=hit&&d.x*hd.x+d.y*hd.y< -0.9, norm=facing?S.norms.passage:workDepth(S,u.c);
+    return {dist:Math.max(0,dist), norm, facing, hit, b, rot:p.rot, ray};
+  }
   const ovl=(a1,a2,b1,b2)=>Math.min(a2,b2)-Math.max(a1,b1)>0.01;
   if(p.rot===0){ dist=fw?backDist(room,fw,b):frontRayDist(room,b,p.rot); for(const x of others) if(ovl(b.x,b.x+b.w,x.b.x,x.b.x+x.b.w) && x.b.y>=b.y+b.h-0.005 && x.b.y-(b.y+b.h)<dist){ dist=x.b.y-(b.y+b.h); hit=x; } }
   else if(p.rot===180){ dist=fw?backDist(room,fw,b):frontRayDist(room,b,p.rot); for(const x of others) if(ovl(b.x,b.x+b.w,x.b.x,x.b.x+x.b.w) && x.b.y+x.b.h<=b.y+0.005 && b.y-(x.b.y+x.b.h)<dist){ dist=b.y-(x.b.y+x.b.h); hit=x; } }
@@ -5915,8 +5956,8 @@ function selDimsSvg(room,u,ch,fs){
   }
   if(u.c.mount==='floor'){ const f=frontGap(u,room), bad=f.dist<f.norm-0.005, c=bad?'var(--bad)':ac;
     const fb=f.b, cx=(fb.x+fb.w/2)*k, cy=(fb.y+fb.h/2)*k;
-    const seg = f.rot===0?[cx,(fb.y+fb.h)*k,cx,(fb.y+fb.h+f.dist)*k] : f.rot===180?[cx,fb.y*k,cx,(fb.y-f.dist)*k] : f.rot===90?[fb.x*k,cy,(fb.x-f.dist)*k,cy] : [(fb.x+fb.w)*k,cy,(fb.x+fb.w+f.dist)*k,cy];
-    if(f.dist>0.004) o+=line(seg[0],seg[1],seg[2],seg[3],`проход ${fmt0(f.dist*1000)}${bad?' < '+fmt0(f.norm*1000):''}`,c,f.rot===0||f.rot===180); }
+    const seg = f.ray?[f.ray.x*k,f.ray.y*k,(f.ray.x+f.ray.dx*f.dist)*k,(f.ray.y+f.ray.dy*f.dist)*k] : f.rot===0?[cx,(fb.y+fb.h)*k,cx,(fb.y+fb.h+f.dist)*k] : f.rot===180?[cx,fb.y*k,cx,(fb.y-f.dist)*k] : f.rot===90?[fb.x*k,cy,(fb.x-f.dist)*k,cy] : [(fb.x+fb.w)*k,cy,(fb.x+fb.w+f.dist)*k,cy];
+    if(f.dist>0.004) o+=line(seg[0],seg[1],seg[2],seg[3],`проход ${fmt0(f.dist*1000)}${bad?' < '+fmt0(f.norm*1000):''}`,c,f.ray?Math.abs(f.ray.dy)>Math.abs(f.ray.dx):f.rot===0||f.rot===180); }
   return o;
 }
 

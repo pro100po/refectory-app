@@ -70,13 +70,41 @@ function Show-Note($text) {
   Write-Host "$(Get-Date -Format HH:mm:ss)  Уведомление: $text" -ForegroundColor Cyan
 }
 
+# Роутер: исполнитель GPT задаётся в TASK.md строкой «Исполнитель: sol / medium».
+# Строки нет — модель и уровень из настроек Codex. Строка с ошибкой — GPT не запускается (ошибка в codex-log.txt).
+$CodexModels = @{
+  astra = "gpt-6-astra"; "астра" = "gpt-6-astra"
+  sol = "gpt-6.1-sol"; "сол" = "gpt-6.1-sol"
+  terra = "gpt-6.1-terra"; "тера" = "gpt-6.1-terra"; "терра" = "gpt-6.1-terra"
+  luna = "gpt-6-luna"; "луна" = "gpt-6-luna"
+}
+$CodexEfforts = "low", "medium", "high", "xhigh", "max"
+
+function Get-CodexRoute($lines) {
+  $line = $lines | Where-Object { $_ -match "^[\s*#>-]*Исполнитель" } | Select-Object -First 1
+  if (-not $line) { return "" }
+  if ($line -notmatch "^\s*Исполнитель:\s*(\S+)\s*/\s*(\S+)\s*$") { throw "не разобрана строка «$line»; нужно: Исполнитель: sol / medium" }
+  $name = $Matches[1]; $effort = $Matches[2].ToLower()
+  $model = $CodexModels[$name]
+  if (-not $model) { throw "неизвестный исполнитель «$name»; можно: astra, sol, terra, luna" }
+  if ($CodexEfforts -notcontains $effort) { throw "неизвестный уровень «$effort»; можно: $($CodexEfforts -join ', ')" }
+  return "-m $model -c model_reasoning_effort=$effort"
+}
+
 function Do-Run {
   Remove-Item "go.flag", "done.flag" -ErrorAction SilentlyContinue
-  $task = ([System.IO.File]::ReadAllLines((Join-Path $PSScriptRoot "TASK.md"), $utf8) | Where-Object { $_.Trim() } | Select-Object -First 1) -replace "^#+\s*",""
+  $lines = [System.IO.File]::ReadAllLines((Join-Path $PSScriptRoot "TASK.md"), $utf8)
+  $task = ($lines | Where-Object { $_.Trim() } | Select-Object -First 1) -replace "^#+\s*",""
   Write-Host ""
   Write-Host "$(Get-Date -Format HH:mm:ss)  Claude дал задание GPT: $task" -ForegroundColor Yellow
-  Write-Host "$(Get-Date -Format HH:mm:ss)  GPT работает..."
-  cmd /c 'codex exec -s workspace-write "Execute the task described in TASK.md. Follow the rules in AGENTS.md strictly." > codex-log.txt 2>&1'
+  try {
+    $route = Get-CodexRoute $lines
+    Write-Host "$(Get-Date -Format HH:mm:ss)  GPT работает ($(if ($route) { $route } else { 'модель по умолчанию' }))..."
+    cmd /c "codex exec $route -s workspace-write ""Execute the task described in TASK.md. Follow the rules in AGENTS.md strictly."" > codex-log.txt 2>&1"
+  } catch {
+    [System.IO.File]::WriteAllText((Join-Path $PSScriptRoot "codex-log.txt"), "ОШИБКА МАРШРУТА: $_`r`n", $utf8)
+    Write-Host "$(Get-Date -Format HH:mm:ss)  ОШИБКА МАРШРУТА: $_" -ForegroundColor Red
+  }
   cmd /c 'git diff > review.diff'
   Set-Content "done.flag" "run"
   Write-Host "$(Get-Date -Format HH:mm:ss)  GPT закончил. Claude проверяет правку..."

@@ -5931,12 +5931,12 @@ function updateBars(f){
 let layMenuOpen=false;
 function layersBarHtml(mode){
   const b=(k,l)=>`<button class="btn lay" type="button" data-layer="${k}" aria-pressed="${k==='zones'?!!showZones:layerOn(k)}">${l}</button>`;
-  return `${(mode==='equip'||mode==='points')?`<div class="lay-menu${layMenuOpen?' open':''}" data-fs="plan"><button type="button" class="btn lay-tgl" aria-expanded="${layMenuOpen}" aria-controls="lay-pop">Слои ▾</button><div class="plan-layers lay-pop" id="lay-pop" role="group" aria-label="Слои плана">`:'<div class="plan-layers" data-fs="plan" role="group" aria-label="Слои плана">'}<span class="lbl">Слои</span>
+  return `<div class="lay-menu${layMenuOpen?' open':''}" data-fs="plan"><button type="button" class="btn lay-tgl" aria-expanded="${layMenuOpen}" aria-controls="lay-pop">Слои ▾</button><div class="plan-layers lay-pop" id="lay-pop" role="group" aria-label="Слои плана"><span class="lbl">Слои</span>
     ${mode==='equip'?`<span class="dims-seg" id="pdims-bar"><span class="lbl">Размеры</span>${seg('pdims',S.planDims||'all',[['off','Выкл'],['sel','У выбранного'],['all','Все']])}</span>`:b('dims','Размеры')}
     ${mode==='equip'?b('zones','Рабочие зоны'):''}
     ${mode==='equip'?`<button class="btn lay" type="button" data-layer="need" aria-pressed="${needOn()}">Куда вывести сети</button>`:''}
     ${mode!=='points'?b('pts','Подключения'):''}
-    ${b('labels','Подписи')}</div>${(mode==='equip'||mode==='points')?'</div>':''}`;
+    ${b('labels','Подписи')}</div></div>`;
 }
 function touchHintHtml(mode){
   if(!isTouch()) return '';

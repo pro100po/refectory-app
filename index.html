@@ -1208,7 +1208,7 @@ function wallPlace(room,id,t0,c,bo){
   const w=W_OF(room,id), rot=wallRot(w);
   if(w.axis==='h') return {x: w.dir.x>0 ? w.x1+t0 : w.x1-t0-c.w, y: w.ny>0 ? w.y1+bo : w.y1-c.d-bo, rot};
   if(w.axis==='v') return {x: w.nx>0 ? w.x1+bo : w.x1-c.d-bo, y: w.dir.y>0 ? w.y1+t0 : w.y1-t0-c.w, rot};
-  return null; }
+  return skewWallPos(room,w,t0,c,bo); }
 // координата поперёк стены для аппарата глубиной depth с отступом back
 function wallPerpPos(room,w,depth,back){ w=W_OF(room,w); return (w.axis==='h'?w.ny:w.nx)>0 ? (w.axis==='h'?w.y1:w.x1)+back : (w.axis==='h'?w.y1:w.x1)-depth-back; }
 // точка у стены в единицах плана (1 = 1 см): t вдоль стены, out — наружу (метки, размерные линии), inn — внутрь
@@ -1476,8 +1476,8 @@ const elOkKind=c=>c.mount!=='wall' && (EL_NEUTRAL.has(c.role)||!!c.neutral||c.ro
 function elAllowed(c,g){ return elOkKind(c) && (c.h||0)<=elN(g).h+1e-6; }
 const elWater=c=>EL_WATER.has(c.role);
 // для автоматической расстановки: нарушает ли аппарат правила щита
-function elBad(g,b,c){ const ps=elPanels(g); if(!ps.length) return false; const n=elN(g);
-  for(const p of ps){ if(ov(b,elZone(g,p)) && !elAllowed(c,g)) return true; if(elWater(c) && gap(b,wallPt(g,p))<n.wd-1e-6) return true; }
+function elBad(g,b,c,P){ const ps=elPanels(g); if(!ps.length) return false; const n=elN(g);
+  for(const p of ps){ if((P?polyHit(P,rectPoly(elZone(g,p))):ov(b,elZone(g,p))) && !elAllowed(c,g)) return true; if(elWater(c) && (P?polyGap(P,rectPoly(wallPt(g,p))):gap(b,wallPt(g,p)))<n.wd-1e-6) return true; }
   return false; }
 // зона перед щитом и круг «вода не ближе» — на плане и на печати
 let PRINT_EL=false;
@@ -1630,15 +1630,20 @@ function polyInRoom(room,poly,tol=0.004){ if(!poly.every(p=>pointInRoom(room,p.x
     } if(hi-lo>1e-9) return false;
   } return true; }
 function unskewPos(c,pos){ const b=bbox(c,pos), cx=b.x+b.w/2, cy=b.y+b.h/2; delete pos.ang; delete pos.sw; const nb=bbox(c,pos); pos.x=cx-nb.w/2; pos.y=cy-nb.h/2; }
+function skewRotAng(w){
+  const backs=[{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}], o={x:-w.nx,y:-w.ny}; let ri=0;
+  for(let i=1;i<backs.length;i++) if(backs[i].x*o.x+backs[i].y*o.y>backs[ri].x*o.x+backs[ri].y*o.y) ri=i;
+  const back=backs[ri]; return {rot:ri*90, ang:+(Math.atan2(back.x*o.y-back.y*o.x,back.x*o.x+back.y*o.y)*180/Math.PI).toFixed(2)}; }
+function skewWallPos(room,w,t0,c,bo){ const pos={x:0,y:0,...skewRotAng(w),sw:w.id}, b=bbox(c,pos);
+  const cx=w.x1+w.dir.x*(t0+c.w/2)+w.nx*(bo+c.d/2), cy=w.y1+w.dir.y*(t0+c.w/2)+w.ny*(bo+c.d/2);
+  pos.x=+(cx-b.w/2).toFixed(3); pos.y=+(cy-b.h/2).toFixed(3); return pos; }
 function skewPlace(room,u,pos,wallId){ const w=wallById(room,wallId);
   if(!w || w.axis!==null) return {error:'Выберите косую стену'};
   if(u.parts) return {error:'Составную линию нельзя поставить к косой стене'};
   if(w.len<u.c.w) return {error:'Аппарат шире этой стены'};
-  const backs=[{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}], o={x:-w.nx,y:-w.ny}; let ri=0;
-  for(let i=1;i<backs.length;i++) if(backs[i].x*o.x+backs[i].y*o.y>backs[ri].x*o.x+backs[ri].y*o.y) ri=i;
-  const back=backs[ri], b=bbox(u.c,pos), t=Math.max(u.c.w/2,Math.min(w.len-u.c.w/2,(b.x+b.w/2-w.x1)*w.dir.x+(b.y+b.h/2-w.y1)*w.dir.y));
+  const ra=skewRotAng(w), b=bbox(u.c,pos), t=Math.max(u.c.w/2,Math.min(w.len-u.c.w/2,(b.x+b.w/2-w.x1)*w.dir.x+(b.y+b.h/2-w.y1)*w.dir.y));
   const cx=w.x1+w.dir.x*t+w.nx*u.c.d/2, cy=w.y1+w.dir.y*t+w.ny*u.c.d/2;
-  pos.rot=ri*90; pos.ang=+(Math.atan2(back.x*o.y-back.y*o.x,back.x*o.x+back.y*o.y)*180/Math.PI).toFixed(2); pos.sw=w.id;
+  pos.rot=ra.rot; pos.ang=ra.ang; pos.sw=w.id;
   const nb=bbox(u.c,pos); pos.x=+(cx-nb.w/2).toFixed(3); pos.y=+(cy-nb.h/2).toFixed(3); return {ok:true}; }
 function skewNearest(room,pos,c){ const b=bbox(c,pos); let best=null, dist=Infinity;
   for(const w of roomWalls(room)){ if(w.axis!==null) continue; const d=segDist(b.x+b.w/2,b.y+b.h/2,w.x1,w.y1,w.x2,w.y2); if(d<dist){ best=w; dist=d; } } return best; }
@@ -1782,11 +1787,16 @@ function geomHelpers(g, occ){
   const sideAt=pm=>{ const a=perimeterAt(g.room,pm); return [a.id,a.st,a.len]; };   // стена под точкой обхода: [id, начало по периметру, длина]
   const posAt=(sd,t0,c,bo)=>wallPlace(g.room,sd,t0,c,bo);
   const isCold=c=>c.z==='cold'||c.role==='coldtable';
-  const winBad=(b,c,u,pos)=> u&&u.parts ? partRects(g,u,pos,b).some(pr=>wins.some(w=>ov(pr.b,w.r)&&pr.h>w.sill+0.01)) : wins.some(w=>ov(b,w.r)&&c.h>w.sill+0.01);
-  const free=(b,f,c,u,pos)=> rectInRoom(g.room,b) && rectInRoom(g.room,f) && !blocks.some(d=>ov(b,d)) && !winBad(b,c,u,pos) && !elBad(g,b,c) && !occ.some(q=>ov(b,q.b)||ov(b,q.f)||ov(f,q.b)||(((c.hot&&q.cold)||(isCold(c)&&q.hot))&&gap(b,q.b)<0.3));
+  const winBad=(b,c,u,pos,P)=> u&&u.parts ? partRects(g,u,pos,b).some(pr=>wins.some(w=>(P?polyHit(pr.P||rectPoly(pr.b),rectPoly(w.r)):ov(pr.b,w.r))&&pr.h>w.sill+0.01)) : wins.some(w=>(P?polyHit(P,rectPoly(w.r)):ov(b,w.r))&&c.h>w.sill+0.01);
+  const free=(b,f,c,u,pos)=>{ if(posAng(pos)===0 && !occ.some(q=>q.P)) return rectInRoom(g.room,b) && rectInRoom(g.room,f) && !blocks.some(d=>ov(b,d)) && !winBad(b,c,u,pos) && !elBad(g,b,c) && !occ.some(q=>ov(b,q.b)||ov(b,q.f)||ov(f,q.b)||(((c.hot&&q.cold)||(isCold(c)&&q.hot))&&gap(b,q.b)<0.3));
+    const P=posAng(pos)?unitPoly(c,pos):rectPoly(b), FP=posAng(pos)?frontPoly(c,pos,workDepth(g,c)):rectPoly(f);
+    return polyInRoom(g.room,P) && polyInRoom(g.room,FP) && !blocks.some(d=>polyHit(P,rectPoly(d))) && !winBad(b,c,u,pos,P) && !elBad(g,b,c,P) && !occ.some(q=>polyHit(P,q.P||rectPoly(q.b))||polyHit(P,q.FP||rectPoly(q.f))||polyHit(FP,q.P||rectPoly(q.b))||(((c.hot&&q.cold)||(isCold(c)&&q.hot))&&polyGap(P,q.P||rectPoly(q.b))<0.3)); };
   return {W,D,P,sideAt,posAt,free,isCold};
 }
 function partRects(g, u, pos, b){
+  if(pos.sw){ const c=u.c, w=wallById(g.room,pos.sw), bb=bbox(c,pos), t0=(bb.x+bb.w/2-w.x1)*w.dir.x+(bb.y+bb.h/2-w.y1)*w.dir.y-c.w/2, res=[]; let t=0;
+    for(const part of u.parts){ const pc=part.c, back=g.norms.align?c.d-pc.d:0, q=skewWallPos(g.room,w,t0+t,pc,back);
+      res.push({b:bbox(pc,q), h:pc.h, P:unitPoly(pc,q)}); t+=pc.w; } return res; }
   const c=u.c, rot=pos.rot, res=[], rw=wallForRot(g.room,rot,b); let t=0;
   for(const part of u.parts){ const pc=part.c, back=g.norms.align?c.d-pc.d:0, pp=wallPerpPos(g.room,rw,pc.d,back); let q;
     if(rot===0||rot===180) q={x:b.x+t,y:pp,rot}; else q={x:pp,y:b.y+t,rot};
@@ -1796,6 +1806,9 @@ function partRects(g, u, pos, b){
 function putUnit(g, u, pos, b, out){
   const c=u.c;
   if(!u.parts){ out.L[u.key]=pos; return; }
+  if(pos.sw){ const w=wallById(g.room,pos.sw), bb=bbox(c,pos), t0=(bb.x+bb.w/2-w.x1)*w.dir.x+(bb.y+bb.h/2-w.y1)*w.dir.y-c.w/2; let t=0;
+    for(const part of u.parts){ const pc=part.c, back=g.norms.align?c.d-pc.d:0;
+      out.L[part.key]=skewWallPos(g.room,w,t0+t,pc,back); t+=pc.w; } return; }
   let t=0; const rot=pos.rot, rw=wallForRot(g.room,rot,b);
   for(const part of u.parts){ const pc=part.c, back=g.norms.align?c.d-pc.d:0, pp=wallPerpPos(g.room,rw,pc.d,back); let q;
     if(rot===0||rot===180) q={x:b.x+t,y:pp,rot}; else q={x:pp,y:b.y+t,rot};
@@ -1808,12 +1821,13 @@ function placeAt(g, u, p, occ, out){
   const pos=H.posAt(sd,t0,c,0); if(pos===null) return null;
   const b=bbox(c,pos), f=frontZone(b,pos.rot,workDepth(g,c));
   if(!H.free(b,f,c,u,pos)) return null;
-  occ.push({b,f,hot:1,cold:false}); putUnit(g,u,pos,b,out); return {side:sd, end:p+c.w};
+  occ.push({b,f,hot:1,cold:false,...(posAng(pos)?{P:unitPoly(c,pos),FP:frontPoly(c,pos,workDepth(g,c))}:{})}); putUnit(g,u,pos,b,out); return {side:sd, end:p+c.w};
 }
 function packForward(g, seq, startP, occ, out, reserve, runInit){
   const H=geomHelpers(g,occ), {P,sideAt,posAt,free,isCold}=H;
   let p=startP, run=runInit?{...runInit}:{side:null, front:0, z:null};
   const closeCorner=(sd,len,t0)=>{
+    if(wallById(g.room,sd).axis===null) return 0;
     const rem=len-t0; if(run.side!==sd || rem<0.3) return 0;
     const dep=Math.max(0.5,run.front), c=insC(rem,dep,run.z), pos=posAt(sd,t0,c,0); if(pos===null) return 0;
     const b=bbox(c,pos);
@@ -1838,7 +1852,7 @@ function packForward(g, seq, startP, occ, out, reserve, runInit){
       continue;
     }
     const u=rest.splice(pick,1)[0], c=u.c, bo=u.parts?0:Math.max(0,(u.ld||c.d)-c.d);
-    occ.push({b,f,hot:!!c.hot,cold:isCold(c)}); putUnit(g,u,pos,b,out);
+    occ.push({b,f,hot:!!c.hot,cold:isCold(c),...(posAng(pos)?{P:unitPoly(c,pos),FP:frontPoly(c,pos,workDepth(g,c))}:{})}); putUnit(g,u,pos,b,out);
     run={side:sd, front:bo+c.d, z:c.z}; p+=c.w;
   }
   out.unplaced.push(...rest);
@@ -1847,7 +1861,7 @@ function packForward(g, seq, startP, occ, out, reserve, runInit){
 // заполнение промежутков вдоль стен столами-вставками
 function fillGaps(s, all, L, ins, cnt){
   const R=s.room;
-  const occ=all.filter(u=>L[u.key]&&u.c.mount==='floor').map(u=>{ const b=bbox(u.c,L[u.key]); return {u,b,f:frontZone(b,L[u.key].rot,workDepth(s,u.c)),rot:L[u.key].rot}; });
+  const occ=all.filter(u=>L[u.key]&&u.c.mount==='floor').map(u=>{ const b=bbox(u.c,L[u.key]); return {u,b,f:frontZone(b,L[u.key].rot,workDepth(s,u.c)),rot:L[u.key].rot,...(posAng(L[u.key])?{P:unitPoly(u.c,L[u.key]),FP:frontPoly(u.c,L[u.key],workDepth(s,u.c))}:{})}; });
   const blocks=s.openings.filter(o=>o.type==='door').map(o=>doorBlock(s,o)).concat(s.openings.filter(isProt).map(o=>protRect(s,o)));
   const wins=s.openings.filter(o=>o.type==='window').map(o=>({r:bandOf(s,o,0.35), sill:o.sill||0.9}));
   for(const w of roomWalls(R)){ if(!w.axis) continue;   // косые стены (30.3) — без вставок
@@ -1862,7 +1876,7 @@ function fillGaps(s, all, L, ins, cnt){
       const dep=Math.max(0.5, Math.min(...[x,y].filter(q=>q.it).map(q=>q.fr))), z=(x.it?x:y).z;
       const strip=(a,e)=>wallBand(R,side,a,e-a,dep);
       const elZ=0.87>elN(s).h+1e-6?elPanels(s).map(p=>elZone(s,p)):[];   // стол-вставка 870 мм перед щитом допустим, пока он не выше elPanelLowH
-      const hits=r=>[...occ.flatMap(q=>[q.b,q.f]), ...blocks, ...elZ, ...ins.map(q=>bbox(q.c,L[q.key]))].filter(o=>ov(r,o));
+      const hits=r=>[...occ.flatMap(q=>[...(q.P?polyHit(rectPoly(r),q.P):ov(r,q.b))?[q.b]:[], ...(q.FP?polyHit(rectPoly(r),q.FP):ov(r,q.f))?[q.f]:[]]), ...[...blocks, ...elZ, ...ins.map(q=>bbox(q.c,L[q.key]))].filter(o=>ov(r,o))];
       for(const o of hits(strip(a,e))){ const oa=(horiz?o.x:o.y)-O, oe=(horiz?o.x+o.w:o.y+o.h)-O; if(oa<=a+0.01) a=Math.max(a,oe); else if(oe>=e-0.01) e=Math.min(e,oa); }
       if(e-a<0.3 || hits(strip(a,e)).length) continue;
       if(wins.some(w=>ov(strip(a,e),w.r) && 0.87>w.sill+0.01)) continue;
@@ -1915,11 +1929,11 @@ function flowInGeom(g, units, cnt, opt){
   }
   // 2. выдача (и мойка при одной двери) — от двери в трапезную назад
   if(sd){
-    const end=hd||sd, gm=mirrorGeom(g), mdoor=gm.openings[g.openings.indexOf(end)], outM=mk(), occM=occ.map(q=>({b:mirRect(W,q.b), f:mirRect(W,q.f), hot:q.hot, cold:q.cold})), n0=occM.length;
+    const end=hd||sd, gm=mirrorGeom(g), mdoor=gm.openings[g.openings.indexOf(end)], outM=mk(), occM=occ.map(q=>({b:mirRect(W,q.b), f:mirRect(W,q.f), hot:q.hot, cold:q.cold, ...(q.P?{P:q.P.map(p=>({x:W-p.x,y:p.y}))}:{}), ...(q.FP?{FP:q.FP.map(p=>({x:W-p.x,y:p.y}))}:{})})), n0=occM.length;
     packForward(gm, hd||opt.washP!=null?serve:[...wash,...serve], cwEdges(gm,mdoor)[1], occM, outM, reserve);
     const cm=new Map(); fl.forEach(u=>cm.set(u.key,u.c)); outM.ins.forEach(i=>cm.set(i.key,i.c));
     for(const k in outM.L) out.L[k]=mirPos(W,cm.get(k),outM.L[k]);
-    out.ins.push(...outM.ins); occ.push(...occM.slice(n0).map(q=>({b:mirRect(W,q.b), f:mirRect(W,q.f), hot:q.hot, cold:q.cold})));
+    out.ins.push(...outM.ins); occ.push(...occM.slice(n0).map(q=>({b:mirRect(W,q.b), f:mirRect(W,q.f), hot:q.hot, cold:q.cold, ...(q.P?{P:q.P.map(p=>({x:W-p.x,y:p.y}))}:{}), ...(q.FP?{FP:q.FP.map(p=>({x:W-p.x,y:p.y}))}:{})})));
     post.push(...outM.unplaced.filter(u=>u.c.z==='serve')); wash.push(...outM.unplaced.filter(u=>u.c.z==='wash'));
   } else post.push(...serve);
   if(opt.washP!=null && opt.washEarly) packForward(g, wash, opt.washP, occ, out, reserve);   // мойка у выпуска — раньше сервировки
@@ -1938,8 +1952,8 @@ function flowInGeom(g, units, cnt, opt){
     for(let p=0;p<P;p+=0.05){ const pa=perimeterAt(g.room,p), side=pa.id, st=pa.st, len=pa.len, t0=p-st;
       if(t0+c.w>len) continue;
       const pos=wallPlace(g.room,side,t0,c,0); if(pos===null) continue;
-      const b=bbox(c,pos);
-      if(rectInRoom(g.room,b) && !bands.some(x=>ov(b,x)) && !wpl.some(q=>ov(b,q)) && !elBad(g,b,c)){ out.L[u.key]=pos; wpl.push(b); break; } } }
+      const b=bbox(c,pos), P=posAng(pos)?unitPoly(c,pos):null;
+      if((P?polyInRoom(g.room,P):rectInRoom(g.room,b)) && !bands.some(x=>P?polyHit(P,rectPoly(x)):ov(b,x)) && !wpl.some(q=>P||q.P?polyHit(P||rectPoly(b),q.P||rectPoly(q)):ov(b,q)) && !elBad(g,b,c,P)){ out.L[u.key]=pos; wpl.push(P?{...b,P}:b); break; } } }
   return out;
 }
 function flowLayout(s, units, dir, opt){

@@ -1335,7 +1335,11 @@ function wallName(room,id){
   if(!hasPoly(room)) return `${SIDE_RU[id]||'правая'} стена`;
   const i=roomWalls(room).findIndex(w=>w.id===id); return `стена ${i<0?'?':i+1}`; }
 function wallTitle(room,id){ if(id==='floor') return 'пол'; if(!hasPoly(room)) return SIDE_RU[id]+' стена'; return wallName(room,id); }
-function wallFrom(room,id){ if(!hasPoly(room)) return SIDE_FROM[id]; const w=wallById(room,id); return w&&w.axis==='v'?'от верхнего угла':'от левого угла'; }
+function wallTextAngle(w){ let a=Math.atan2(w.dir.y,w.dir.x)*180/Math.PI; if(a<=-90) a+=180; if(a>90) a-=180; return a; }
+function wallEndNames(room,id){ const walls=roomWalls(room), i=walls.findIndex(w=>w.id===id), w=walls[i];
+  if(w.axis==='h') return {a:'Слева',b:'Справа'}; if(w.axis==='v') return {a:'Сверху',b:'Снизу'};
+  return {a:'У стены '+((i+walls.length-1)%walls.length+1),b:'У стены '+((i+1)%walls.length+1)}; }
+function wallFrom(room,id){ if(!hasPoly(room)) return SIDE_FROM[id]; const w=wallById(room,id); if(w&&w.axis===null){ const walls=roomWalls(room), i=walls.findIndex(w=>w.id===id); return 'от угла со стеной '+((i+walls.length-1)%walls.length+1); } return w&&w.axis==='v'?'от верхнего угла':'от левого угла'; }
 function setRoomShape(room,shape,shift){
   const shiftX=Number(shift&&shift.x)||0, shiftY=Number(shift&&shift.y)||0;
   const tpl=shape&&shape.tpl, paramsError=tpl==='custom'?null:shapeParamsError(tpl,shape&&shape.p); if(paramsError) return {error:paramsError};
@@ -2665,7 +2669,7 @@ function shapeFieldHtml(tpl,p,r){
     const kind=p.kind==='iso'||p.kind==='free'?p.kind:'right', side=p.side==='r'?'r':'l', built=shapeTemplate(tpl,r&&r.shape&&r.shape.rot||0,p);
     const label=(text,role,required)=>{ const id=r&&r.shape&&r.shape.roles&&r.shape.roles[role]; return text+(id?' — '+wallName(r,id):required?' — стена '+(built.roles.indexOf(role)+1):'')+', мм'; };
     const specs=[['a',label('Длинная стена','long')],['b',label('Короткая стена','short')],...(kind==='right'?[['h',label('Прямая боковая стена',side==='r'?'sideR':'sideL')]]:kind==='iso'?[['c','Боковые стены, мм']]:[['c',label('Боковая стена','sideL',true)],['d',label('Боковая стена','sideR',true)]])];
-    const g=trapGeom(p), hint=g?`${kind==='right'?'Косая стена — '+fmt0(Math.hypot(g.a-g.b,g.D)*1000)+' мм · ':''}Между длинной и короткой стенами — ${fmt0(g.D*1000)} мм · углы у длинной стены — ${Math.round(Math.atan2(g.D,g.to)*180/Math.PI)}° и ${Math.round(Math.atan2(g.D,g.a-g.b-g.to)*180/Math.PI)}° · габарит — ${fmt0(Math.max(...built.pts.map(q=>q.x))*1000)} × ${fmt0(Math.max(...built.pts.map(q=>q.y))*1000)} мм`:'';
+    const g=trapGeom(p), hint=g?`${kind==='right'?'Косая стена — '+fmt0(Math.hypot(g.a-g.b,g.D)*1000)+' мм · ':''}Между длинной и короткой стенами — ${fmt0(g.D*1000)} мм · углы у длинной стены — ${Math.round(Math.atan2(g.D,g.to)*180/Math.PI)}° и ${Math.round(Math.atan2(g.D,g.a-g.b-g.to)*180/Math.PI)}° · габарит — ${fmt0(Math.max(...built.pts.map(q=>q.y))*1000)} × ${fmt0(Math.max(...built.pts.map(q=>q.x))*1000)} мм`:'';
     return seg('trap-kind',kind,[['right','Прямоугольная'],['iso','Равнобедренная'],['free','Разносторонняя']])+`<div class="fields shp-fields">${specs.map(([key,text])=>num(`shp-${key}`,text,Math.round(p[key]*1000),10,300,30000,'',`data-shp-param="${key}"`)).join('')}</div>`+(kind==='right'?seg('trap-side',side,[['l','Прямая стена слева'],['r','Прямая стена справа']]):'')+(hint?`<p class="hint">${hint}</p>`:''); }
   const specs=tpl==='L'?[['D','Общая длина ↕'],['W','Общая ширина ↔'],['cd','Вырез ↕'],['cw','Вырез ↔']]
     :tpl==='U'?[['D','Общая длина ↕'],['W','Общая ширина ↔'],['cd','Глубина выреза ↕'],['cw','Ширина выреза ↔'],['co','Отступ выреза ↔']]
@@ -2956,7 +2960,7 @@ function opTitle(o){ return o.type==='door' ? 'Дверь '+doorLabel(o) : opNam
 function chainIn(attr,label,val,mid,neg){ return `<label class="${mid?'mid':''}">${mid?`<span>${label}</span>`:label}<input type="text" inputmode="decimal" data-num autocomplete="off" min="0" step="10" ${attr} value="${val===''?'':Math.round(val*1000)}" class="${neg?'neg':''}" aria-label="${label}, мм"></label>`; }
 function wallRows(){
   return roomWalls(S.room).map(w=>w.id).map(side=>{ const els=wallEls(S,side); if(!els.length) return '';
-    const L=sideLen(S,side), horiz=wallById(S.room,side).axis!=='v', A=horiz?'Слева':'Сверху', B=horiz?'Справа':'Снизу';
+    const L=sideLen(S,side), {a:A,b:B}=wallEndNames(S.room,side);
     return `<div class="chain-wall"><h4>${wallTitle(S.room,side).replace(/^./,c=>c.toUpperCase())} <span class="num">${fmt0(L*1000)} мм</span></h4>${els.map((o,i)=>{ const pv=els[i-1], nx=els[i+1];
       const gb=o.off-(pv?pv.off+pv.w:0), ga=(nx?nx.off:L)-(o.off+o.w);
       const cells=[chainIn(`data-chain="${o.id}:b"`,`${A}, от ${pv?OP_GEN[pv.type]:'угла'}`,gb,0,gb<-0.001),
@@ -2974,7 +2978,7 @@ function pointRows(){
 function pointRow(p){
   const d=PT[p.type], hood=p.type==='hood', at=f=>`data-pchain="${p.id}:${f}"`; let cells;
   if(p.side==='floor'){ cells=[chainIn(at('x'),'От левой стены',p.x), chainIn(at('y'),'От верхней стены',p.y)]; if(hood) cells.push(chainIn(at('w'),'Длина зонта',p.w,1), chainIn(at('d'),'Глубина зонта',p.d,1)); }
-  else { const horiz=wallById(S.room,p.side).axis!=='v', A=horiz?'Слева':'Сверху', B=horiz?'Справа':'Снизу', lr=ptLR(S,p), sp=ptSpan(p);
+  else { const {a:A,b:B}=wallEndNames(S.room,p.side), lr=ptLR(S,p), sp=ptSpan(p);
     cells=[chainIn(at('l'),`${A}, от ${lr.l.n}`,sp[0]-lr.l.pos)];
     if(hood) cells.push(chainIn(at('w'),'Ширина зонта',p.w,1));
     cells.push(chainIn(at('r'),`${B}, до ${lr.r.n}`,lr.r.pos-sp[1]));
@@ -3130,7 +3134,7 @@ function openingSvg(o, mode){
     const off=mode==='equip'?-20:(o.swing==='in'?w+20:22), mx=(A[0]+B[0])/2+g.nx*off, my=(A[1]+B[1])/2+g.ny*off, vert=wallById(S.room,o.side).axis==='v';
     const lab=doorLabel(o), dfs=scrK?Math.max(15,11/scrK):15;   // на экране — не мельче 11 px; не помещается у двери — не пишем
     if(!(typeof planUnified==='function' && (planUnified()||(step===1&&S.rooms.length>1)) && (o.derived || String(o.to||'').startsWith('room:'))) && (!scrK || (layerOn('labels') && lab.length*0.55*dfs<=w+60)))
-      out+=`<text x="${mx}" y="${my}" font-size="${+dfs.toFixed(2)}" fill="var(--ink-2)" text-anchor="middle" dominant-baseline="central" ${vert?`transform="rotate(-90 ${mx} ${my})"`:''}>${esc(lab)}</text>`;
+      out+=`<text x="${mx}" y="${my}" font-size="${+dfs.toFixed(2)}" fill="var(--ink-2)" text-anchor="middle" dominant-baseline="central" ${wallById(S.room,o.side).axis===null?`transform="rotate(${wallTextAngle(wallById(S.room,o.side))} ${mx} ${my})"`:vert?`transform="rotate(-90 ${mx} ${my})"`:''}>${esc(lab)}</text>`;
   }
   if(mode==='room'){
     const hx=-g.nx*30, hy=-g.ny*30, ix=g.nx*30, iy=g.ny*30;
@@ -3313,6 +3317,8 @@ function chainsSvg(withPts, BL){
       const isEl=spans.has(Math.round(pts[i])+':'+Math.round(pts[i+1])), fs0=len<45?12:15, fs=scrK?Math.max(fs0,11/scrK):fs0;
       if(scrK && (scrK<0.25 || String(Math.round(len*10)).length*fs*0.6+2>len)) continue;
       const oA=(scrK?Math.max(45,38+3/scrK):45)+sh, oB=(scrK?Math.max(56,38+3/scrK+0.75*fs):56)+sh;
+      if(ww.axis===null){ const tx=wallOutU(S.room,side,m,sg*(38+sh+0.8*fs+2));
+        out+=`<text x="${tx[0]}" y="${tx[1]}" font-size="${+fs.toFixed(2)}" font-family="var(--f-mono)" text-anchor="middle" fill="${isEl?'var(--ink)':col}" ${isEl?'font-weight="600"':''} dominant-baseline="central" transform="rotate(${wallTextAngle(ww)} ${tx[0]} ${tx[1]})">${Math.round(len*10)}</text>`; continue; }
       const tx=wallOutU(S.room,side,m,inw?-(nearW?oB:oA):(nearW?oA:oB));
       out+=`<text x="${tx[0]}" y="${tx[1]}" font-size="${+fs.toFixed(2)}" font-family="var(--f-mono)" text-anchor="middle" fill="${isEl?'var(--ink)':col}" ${isEl?'font-weight="600"':''} ${vertW?`transform="rotate(-90 ${tx[0]} ${tx[1]})"`:''}>${Math.round(len*10)}</text>`; }
   }
@@ -5687,7 +5693,7 @@ function curUnitsOf(room){ return P.units.filter(u=>P.roomOf[u.key]===room.id); 
 const unitShort=u=>u?(u.c.lb2||u.c.s||shortName(u.c)):'угол';
 
 /* ---- отрисовка цепочек: экран и печать ---- */
-function dimText(x,y,txt,fs,o){ o=o||{}; const rot=o.rot?` transform="rotate(-90 ${x} ${y})"`:'';
+function dimText(x,y,txt,fs,o){ o=o||{}; const rot=o.ang!=null?` dominant-baseline="central" transform="rotate(${o.ang} ${x} ${y})"`:o.rot?` transform="rotate(-90 ${x} ${y})"`:'';
   return `<text x="${x}" y="${y}" font-size="${fs}" font-family="var(--f-mono)" text-anchor="middle" fill="${o.col||'var(--ink-2)'}" ${o.bold?'font-weight="700"':''}${rot}${o.attr?' '+o.attr:''}>${txt}</text>`; }
 // px на единицу плана (1 единица = 1 см): размер подписи на экране постоянен, при увеличении влезает больше чисел
 function planPxPerUnit(room){ if(typeof scrK==='number'&&scrK>0) return scrK; return (typeof kFor==='function')?kFor('plan',room.w*100+250):1; }
@@ -5712,6 +5718,11 @@ function equipDimsSvg(room, units, opts){
         const attr=print?'':(g.kind==='gap'?`data-gap="${s}:${i}" style="cursor:pointer"`:`data-wid="${s}:${i}" style="cursor:help"`);
         const fits=need<=L0;
         if(!print && (!fits || ppu<0.25)) return;                 // на экране — только то, что помещается
+        const ww=wallById(room,s);
+        if(ww.axis===null){ const off=(fits?38+0.8*fs+2:(nr?(lvl%2?78:64):(lvl%2?84:70)))+SH(s), pos=wallOutU(room,s,m,off), ang=wallTextAngle(ww); if(!fits) lvl++;
+          if(!fits){ const base=P2(s,m); out+=`<line x1="${base[0]}" y1="${base[1]}" x2="${pos[0]}" y2="${pos[1]}" stroke="${col}" stroke-width="0.7"/>`; }
+          if(!print && g.kind==='gap'){ const hw=Math.max(need,24), hh=fs*1.4; out+=`<rect x="${pos[0]-hw/2}" y="${pos[1]-hh*0.8}" width="${hw}" height="${hh}" fill="transparent" transform="rotate(${ang} ${pos[0]} ${pos[1]})" ${attr}/>`; }
+          out+=dimText(pos[0], pos[1], txt, fs, {ang, bold, col:tc, attr}); return; }
         let off=fits?(print?(nr?45:52):(nr?Math.max(45,38+3/ppu):Math.max(52,38+3/ppu+0.75*fs))):(nr?(lvl%2?78:64):(lvl%2?84:70)); off+=SH(s); if(!fits) lvl++;
         const pos=wallOutU(room,s,m,off);
         if(!fits){ const base=P2(s,m); out+=`<line x1="${base[0]}" y1="${base[1]}" x2="${pos[0]+(vert?(nr?6:-6):0)}" y2="${pos[1]+(vert?0:(nr?6:-12))}" stroke="${col}" stroke-width="0.7"/>`; }

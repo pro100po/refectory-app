@@ -675,6 +675,14 @@ function doorLabel(o){ if(o.to&&o.to.startsWith('room:')) return 'в «'+roomNam
 // дверь на стене помещения A → то же место на стене соседнего помещения B
 function mapDoor(A,d,B){
   const tol=0.4, wa=wallById(A,d.side), pa=wallPoint(A,d.side,d.off);
+  if(wa.axis===null){ const pb=wallPoint(A,d.side,d.off+d.w);
+    for(const wb of roomWalls(B)){ if(wb.axis!==null || Math.abs(wb.nx+wa.nx)>=1e-6 || Math.abs(wb.ny+wa.ny)>=1e-6) continue;
+      const outside=-(((B.x+wb.x1)-(A.x+wa.x1))*wa.nx+((B.y+wb.y1)-(A.y+wa.y1))*wa.ny);
+      if(Math.abs(outside)>tol) continue;
+      const off=Math.min(projectToWall(B,wb.id,A.x+pa.x-B.x,A.y+pa.y-B.y).off,projectToWall(B,wb.id,A.x+pb.x-B.x,A.y+pb.y-B.y).off);
+      if(off<-0.01||off+d.w>wb.len+0.01) continue;
+      return {id:'d_'+d.id, type:'door', side:wb.id, off:Math.max(0,off), w:d.w, swing:d.swing==='in'?'out':'in', hinge:d.hinge==='l'?'r':'l', to:'room:'+A.id, derived:true}; }
+    return null; }
   for(const wb of roomWalls(B)){ if(Math.abs(wb.nx+wa.nx)>1e-9 || Math.abs(wb.ny+wa.ny)>1e-9 || wb.axis!==wa.axis || !wa.axis) continue;
     const h=wa.axis==='h', la=(h?A.y:A.x)+(h?wa.y1:wa.x1), lb=(h?B.y:B.x)+(h?wb.y1:wb.x1);
     if(Math.abs(la-lb)>tol) continue;
@@ -2356,7 +2364,14 @@ function doorFor(a,b){ const A=rById(a); if(!A) return null; const tgt=LINK_EXT[
   const B=!LINK_EXT[b]&&rById(b); return B ? B.openings.find(o=>o.type==='door'&&o.to==='room:'+a)||null : null; }
 function sharedSpans(A,B){ const tol=0.4, out=[];
   const ws=hasPoly(A)?roomWalls(A):['t','b','l','r'].map(id=>wallById(A,id));   // порядок прежний: верх, низ, лево, право
-  for(const wa of ws){ if(!wa.axis) continue; const h=wa.axis==='h', la=(h?A.y:A.x)+(h?wa.y1:wa.x1), a0=(h?A.x:A.y)+Math.min(h?wa.x1:wa.y1,h?wa.x2:wa.y2), a1=(h?A.x:A.y)+Math.max(h?wa.x1:wa.y1,h?wa.x2:wa.y2), origin=(h?A.x+wa.offOrigin.x:A.y+wa.offOrigin.y);
+  for(const wa of ws){ if(wa.axis===null){
+      for(const wb of roomWalls(B)){ if(wb.axis!==null || Math.abs(wb.nx+wa.nx)>=1e-6 || Math.abs(wb.ny+wa.ny)>=1e-6) continue;
+        const x=(B.x+wb.x1)-(A.x+wa.x1), y=(B.y+wb.y1)-(A.y+wa.y1), outside=-(x*wa.nx+y*wa.ny);
+        if(Math.abs(outside)>tol) continue;
+        const t1=x*wa.dir.x+y*wa.dir.y, t2=((B.x+wb.x2)-(A.x+wa.x1))*wa.dir.x+((B.y+wb.y2)-(A.y+wa.y1))*wa.dir.y, lo=Math.max(0,Math.min(t1,t2)), hi=Math.min(wa.len,Math.max(t1,t2));
+        out.push({side:wa.id,lo,hi}); }
+      continue; }
+    const h=wa.axis==='h', la=(h?A.y:A.x)+(h?wa.y1:wa.x1), a0=(h?A.x:A.y)+Math.min(h?wa.x1:wa.y1,h?wa.x2:wa.y2), a1=(h?A.x:A.y)+Math.max(h?wa.x1:wa.y1,h?wa.x2:wa.y2), origin=(h?A.x+wa.offOrigin.x:A.y+wa.offOrigin.y);
     for(const wb of roomWalls(B)){ if(Math.abs(wb.nx+wa.nx)>1e-9 || Math.abs(wb.ny+wa.ny)>1e-9 || wb.axis!==wa.axis || Math.abs(la-((h?B.y:B.x)+(h?wb.y1:wb.x1)))>tol) continue;
       const b0=(h?B.x:B.y)+Math.min(h?wb.x1:wb.y1,h?wb.x2:wb.y2), b1=(h?B.x:B.y)+Math.max(h?wb.x1:wb.y1,h?wb.x2:wb.y2), lo=Math.max(a0,b0)-origin, hi=Math.min(a1,b1)-origin;
       out.push({side:wa.id,lo,hi}); } }
@@ -2942,12 +2957,28 @@ function createRoom(choice, o){
   toast(`Добавлено «${r.name}»`+(miss.length?`. Дверь ${miss.map(n=>'в «'+n+'»').join(', ')} поставить не удалось — поставьте её кнопкой «+ Дверь»`:''));
 }
 function snapRoom(r){
+  const straightTargets=()=>{
   let bx=null, by=null, dx=0.3, dy=0.3;
   for(const o of S.rooms){ if(o===r) continue;
     for(const t of [o.x+o.w+WALL_GAP, o.x-r.w-WALL_GAP, o.x, o.x+o.w-r.w]){ const d=Math.abs(r.x-t); if(d<dx){ dx=d; bx=t; } }
     for(const t of [o.y+o.d+WALL_GAP, o.y-r.d-WALL_GAP, o.y, o.y+o.d-r.d]){ const d=Math.abs(r.y-t); if(d<dy){ dy=d; by=t; } }
     if(hasPoly(o)) for(const w of roomWalls(o)){ if(w.axis==='v'){ const X=o.x+w.x1; for(const t of [X+WALL_GAP,X-r.w-WALL_GAP,X,X-r.w]){ const d=Math.abs(r.x-t); if(d<dx){ dx=d; bx=t; } } }
       else if(w.axis==='h'){ const Y=o.y+w.y1; for(const t of [Y+WALL_GAP,Y-r.d-WALL_GAP,Y,Y-r.d]){ const d=Math.abs(r.y-t); if(d<dy){ dy=d; by=t; } } } } }
+  return {bx,by}; };
+  let skew=null, ds=0.3;
+  for(const wa of roomWalls(r)){ if(wa.axis!==null) continue;
+    for(const o of S.rooms){ if(o===r) continue;
+      for(const wb of roomWalls(o)){ if(wb.axis!==null || Math.abs(wb.nx+wa.nx)>=1e-6 || Math.abs(wb.ny+wa.ny)>=1e-6) continue;
+        const x=(o.x+wb.x1)-(r.x+wa.x1), y=(o.y+wb.y1)-(r.y+wa.y1), outside=-(x*wa.nx+y*wa.ny), t1=x*wa.dir.x+y*wa.dir.y, t2=((o.x+wb.x2)-(r.x+wa.x1))*wa.dir.x+((o.y+wb.y2)-(r.y+wa.y1))*wa.dir.y;
+        if(Math.min(wa.len,Math.max(t1,t2))-Math.max(0,Math.min(t1,t2))<=0) continue;
+        const err=WALL_GAP-outside; if(Math.abs(err)<ds){ ds=Math.abs(err); skew={x:wa.nx*err,y:wa.ny*err,dir:wa.dir}; } } } }
+  if(skew){ r.x+=skew.x; r.y+=skew.y;
+    const {bx,by}=straightTargets(), t=skew.dir; let s=null;
+    if(bx!=null && Math.abs(t.x)>0.2) s=(bx-r.x)/t.x;
+    if(by!=null && Math.abs(t.y)>0.2){ const sy=(by-r.y)/t.y; if(s===null || Math.abs(sy)<Math.abs(s)) s=sy; }
+    if(s!==null && Math.abs(s)<0.3){ r.x+=t.x*s; r.y+=t.y*s; }
+    r.x=+r.x.toFixed(3); r.y=+r.y.toFixed(3); return; }
+  const {bx,by}=straightTargets();
   if(bx!=null) r.x=+bx.toFixed(3); if(by!=null) r.y=+by.toFixed(3);
 }
 bind[1]=()=>{
@@ -3264,7 +3295,12 @@ function roomAt(x,y){ return S.rooms.find(r=>hasPoly(r)?pointInRoom(r,x-r.x,y-r.
 // стороны помещения, к которым ближе 1 м стоит другое помещение: там размерные цепочки снаружи не рисуются
 function blockedSides(r){ const B=new Set();
   for(const q of S.rooms){ if(q===r) continue; const closed=new Set();
-    for(const wa of roomWalls(r)){ if(!wa.axis) continue; const h=wa.axis==='h', nx=wa.nx, ny=wa.ny, ax=r.x+wa.x1, ay=r.y+wa.y1, a0=(h?r.x:r.y)+Math.min(h?wa.x1:wa.y1,h?wa.x2:wa.y2), a1=(h?r.x:r.y)+Math.max(h?wa.x1:wa.y1,h?wa.x2:wa.y2);
+    for(const wa of roomWalls(r)){ if(wa.axis===null){
+        for(const wb of roomWalls(q)){ if(wb.axis!==null || Math.abs(wb.nx+wa.nx)>=1e-6 || Math.abs(wb.ny+wa.ny)>=1e-6) continue;
+          const x=(q.x+wb.x1)-(r.x+wa.x1), y=(q.y+wb.y1)-(r.y+wa.y1), outside=-(x*wa.nx+y*wa.ny), t1=x*wa.dir.x+y*wa.dir.y, t2=((q.x+wb.x2)-(r.x+wa.x1))*wa.dir.x+((q.y+wb.y2)-(r.y+wa.y1))*wa.dir.y;
+          if(outside>=-0.02 && outside<1 && Math.min(wa.len,Math.max(t1,t2))-Math.max(0,Math.min(t1,t2))>0.05){ closed.add(wa.id); break; } }
+        continue; }
+      const h=wa.axis==='h', nx=wa.nx, ny=wa.ny, ax=r.x+wa.x1, ay=r.y+wa.y1, a0=(h?r.x:r.y)+Math.min(h?wa.x1:wa.y1,h?wa.x2:wa.y2), a1=(h?r.x:r.y)+Math.max(h?wa.x1:wa.y1,h?wa.x2:wa.y2);
       for(const wb of roomWalls(q)){ if(wb.axis!==wa.axis || wb.nx!==-nx || wb.ny!==-ny) continue; const bx=q.x+wb.x1, by=q.y+wb.y1, outside=-((bx-ax)*nx+(by-ay)*ny), b0=(h?q.x:q.y)+Math.min(h?wb.x1:wb.y1,h?wb.x2:wb.y2), b1=(h?q.x:q.y)+Math.max(h?wb.x1:wb.y1,h?wb.x2:wb.y2);
         if(outside>=-0.02 && outside<1 && Math.min(a1,b1)-Math.max(a0,b0)>0.05){ closed.add(wa.id); break; } } }
     const order=hasPoly(r)?roomWalls(r).map(w=>w.id):['t','b','l','r'];

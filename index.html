@@ -2626,7 +2626,7 @@ function roomsPlanSvg(){
       const bg=hasPoly(r)?`<polygon class="rm-bg" data-rbg="${r.id}" points="${points}" fill="var(--steel-soft)" fill-opacity="${on?0.75:0}" style="cursor:${many?'grab':'pointer'}"><title>${esc(r.name)} — настройки помещения</title></polygon>`:`<rect class="rm-bg" data-rbg="${r.id}" x="0" y="0" width="${q(r.w*100)}" height="${q(r.d*100)}" fill="var(--steel-soft)" fill-opacity="${on?0.75:0}" style="cursor:${many?'grab':'pointer'}"><title>${esc(r.name)} — настройки помещения</title></rect>`;
       const nicheBg=nicheRectsSvg(r).map(n=>`<rect class="rm-bg" data-rbg="${r.id}" x="${q(n.x)}" y="${q(n.y)}" width="${q(n.w)}" height="${q(n.h)}" fill="var(--steel-soft)" fill-opacity="${on?0.75:0}" style="cursor:${many?'grab':'pointer'}"><title>${esc(r.name)} ? ????????? ?????????</title></rect>`).join('');
       const wallNums=on&&hasPoly(r)?roomWalls(r).map(w=>{ const x=(w.x1+w.x2)*50+w.nx*22/k, y=(w.y1+w.y2)*50+w.ny*22/k; return `<g style="pointer-events:none"><circle cx="${q(x)}" cy="${q(y)}" r="${q(11/k)}" fill="var(--paper)" stroke="var(--rule)" stroke-width="${q(1.2/k)}"/><text x="${q(x)}" y="${q(y)}" font-size="${q(12/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--ink-2)">${w.i+1}</text></g>`; }).join(''):'';
-      const wallHandles=on?roomWalls(r).map(w=>{ const x=(w.x1+w.x2)*50, y=(w.y1+w.y2)*50, cursor=w.axis==='h'?'ns-resize':'ew-resize'; return `<g class="shp-handle" data-wall-handle="${esc(w.id)}" data-room="${esc(r.id)}" style="cursor:${cursor}"><circle cx="${q(x)}" cy="${q(y)}" r="${q(22/k)}" fill="transparent" stroke="none"/><circle cx="${q(x)}" cy="${q(y)}" r="${q(7/k)}" fill="var(--paper)" stroke="var(--steel)" stroke-width="${q(2/k)}" style="pointer-events:none"/><title>Перетащите, чтобы сдвинуть стену</title></g>`; }).join(''):'';
+      const wallHandles=on?roomWalls(r).map(w=>{ if(w.axis===null) return ''; const x=(w.x1+w.x2)*50, y=(w.y1+w.y2)*50, cursor=w.axis==='h'?'ns-resize':'ew-resize'; return `<g class="shp-handle" data-wall-handle="${esc(w.id)}" data-room="${esc(r.id)}" style="cursor:${cursor}"><circle cx="${q(x)}" cy="${q(y)}" r="${q(22/k)}" fill="transparent" stroke="none"/><circle cx="${q(x)}" cy="${q(y)}" r="${q(7/k)}" fill="var(--paper)" stroke="var(--steel)" stroke-width="${q(2/k)}" style="pointer-events:none"/><title>Перетащите, чтобы сдвинуть стену</title></g>`; }).join(''):'';
       const wallPreview=on?`<polygon id="shp-ghost" points="${points||roomPoly(r).map(p=>`${q(p.x*100)},${q(p.y*100)}`).join(' ')}" fill="none" stroke="var(--steel)" stroke-width="${q(2/k)}" stroke-dasharray="${q(6/k)} ${q(4/k)}" stroke-linejoin="round" display="none" style="pointer-events:none"/><text id="shp-drag-label" x="0" y="0" font-size="${q(13/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--steel)" display="none" style="pointer-events:none"></text>`:'';
       body+=`<g data-rg="${r.id}" class="${on?'rm-on':''}" transform="translate(${q(r.x*100)},${q(r.y*100)})">${bg}${nicheBg}${planSvg('room',[],{inner:true, k, bare:true, blocked:many?blockedSides(r):new Set()})}${wallNums}${wallPreview}${wallHandles}${roomLabelSvg(r,k)}</g>`; } }
   finally{ S.cur=keep; scrK=null; PT_SH={t:0,r:0,b:0,l:0}; }
@@ -2717,8 +2717,15 @@ function bindShapeEditor(){
   sec.querySelectorAll('[data-shp-param]').forEach(el=>el.addEventListener('change',()=>{ const r=S.room, tpl=shapeCurrentTpl(r), value=Number(String(el.value).replace(/\s+/g,'').replace(',','.')); if(!Number.isFinite(value)||value<300||value>30000){ shapeShowError(sec,el,'Введите размер от 300 до 30 000 мм.'); return; }
     const p=shapeCurrentParams(r,tpl); p[el.dataset.shpParam]=value/1000; applyRoomShape(r,{tpl,rot:r.shape&&r.shape.rot||0,p},sec,el); }));
   sec.querySelectorAll('[data-wall-len]').forEach(el=>el.addEventListener('change',()=>{ const r=S.room, value=Number(String(el.value).replace(/\s+/g,'').replace(',','.')); if(!Number.isFinite(value)||value<300||value>30000){ shapeShowError(sec,el,'Введите длину от 300 до 30 000 мм.'); return; }
-    const w=roomWalls(r).find(q=>q.id===el.dataset.wallLen); if(!w) return; const pts=r.poly.map(p=>({...p})), n=pts.length, delta=value/1000-w.len, dx=w.dir.x*delta, dy=w.dir.y*delta;
-    for(const i of [(w.i+1)%n,(w.i+2)%n]){ pts[i].x+=dx; pts[i].y+=dy; } applyRoomShape(r,{tpl:'custom',pts},sec,el); }));
+    const walls=roomWalls(r), w=walls.find(q=>q.id===el.dataset.wallLen); if(!w) return; const pts=r.poly.map(p=>({...p})), n=pts.length, delta=value/1000-w.len, dx=w.dir.x*delta, dy=w.dir.y*delta;
+    const tiltsStraight=()=>polyWalls(pts).some((q,i)=>walls[i].axis!==null&&q.axis!==walls[i].axis);
+    for(const i of [(w.i+1)%n,(w.i+2)%n]){ pts[i].x+=dx; pts[i].y+=dy; }
+    if(tiltsStraight()){
+      for(let i=0;i<n;i++){ pts[i].x=r.poly[i].x; pts[i].y=r.poly[i].y; }
+      for(const i of [w.i,(w.i+n-1)%n]){ pts[i].x-=dx; pts[i].y-=dy; }
+      if(tiltsStraight()){ shapeShowError(sec,el,'Эту стену не удлинить без наклона соседней прямой стены — перетащите соседнюю стену на плане'); return; }
+    }
+    applyRoomShape(r,{tpl:'custom',pts},sec,el); }));
 }
 addRoomSection({id:'room', title:'Помещение', html:r=>`<div class="fields rmp-fields">
     <label class="field rmp-wide"><span>Название</span><input id="rname" type="text" value="${esc(r.name)}" autocomplete="off"></label>
@@ -2789,8 +2796,14 @@ function wallDragPreview(st,e){
     if(snap!==null) delta=(snap-line0)/n;
   }
   const pts=st.base.map(q=>({...q})), a=pts[st.wall.i], b=pts[(st.wall.i+1)%pts.length];
-  a.x+=st.wall.nx*delta; a.y+=st.wall.ny*delta; b.x+=st.wall.nx*delta; b.y+=st.wall.ny*delta;
-  const error=shapeError(pts), q=v=>+v.toFixed(2), midX=(st.wall.x1+st.wall.x2)*50+st.wall.nx*delta*100, midY=(st.wall.y1+st.wall.y2)*50+st.wall.ny*delta*100;
+  const walls=roomWalls({w:st.room.w,d:st.room.d,poly:st.base}); let moveError=null;
+  for(const [end,wall] of [[a,walls[(st.wall.i+pts.length-1)%pts.length]],[b,walls[(st.wall.i+1)%pts.length]]]){
+    if(wall.axis!==null){ end.x+=st.wall.nx*delta; end.y+=st.wall.ny*delta; }
+    else { const u=wall.dir, dot=u.x*st.wall.nx+u.y*st.wall.ny;
+      if(Math.abs(dot)<1e-6){ moveError='Стену нельзя сдвинуть вдоль соседней стены'; continue; }
+      end.x+=u.x*(delta/dot); end.y+=u.y*(delta/dot); }
+  }
+  const error=moveError||shapeError(pts), q=v=>+v.toFixed(2), midX=(st.wall.x1+st.wall.x2)*50+st.wall.nx*delta*100, midY=(st.wall.y1+st.wall.y2)*50+st.wall.ny*delta*100;
   st.delta=delta; st.moved=Math.abs(delta)>1e-9; st.pts=pts; st.error=error;
   st.ghost.setAttribute('points',pts.map(v=>`${q(v.x*100)},${q(v.y*100)}`).join(' ')); st.ghost.setAttribute('stroke',error?'var(--bad)':'var(--steel)');
   st.circles.forEach(c=>{ c.setAttribute('cx',q(midX)); c.setAttribute('cy',q(midY)); });

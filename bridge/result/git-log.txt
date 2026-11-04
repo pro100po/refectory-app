@@ -1,7 +1,0 @@
-﻿
-warning: in the working copy of 'versions.html', LF will be replaced by CRLF the next time Git touches it
-[main d9bb566] Пункт аудита 30.2.2, шаг «План»: одна строка инструментов — слои в меню «Слои ▾», ссылки на стены и подключения в пояснении
- 5 files changed, 6213 insertions(+), 8 deletions(-)
- create mode 100644 versions/2026-11-04_1610.html
-To https://github.com/pro100po/refectory-app.git
-   c4538d0..d9bb566  main -> main

@@ -1,8 +1,0 @@
-﻿
-warning: in the working copy of 'versions.html', LF will be replaced by CRLF the next time Git touches it
-[main ae55780] Пункт аудита 30.2.2, шаг «Подключения»: компактная шапка — переключатель сетей, слои и масштаб одной строкой, палитра под ними
- 6 files changed, 6198 insertions(+), 5 deletions(-)
- create mode 100644 notes/user-prefs.md
- create mode 100644 versions/2026-11-04_1618.html
-To https://github.com/pro100po/refectory-app.git
-   d9bb566..ae55780  main -> main

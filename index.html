@@ -2909,7 +2909,7 @@ function wallDragPreview(st,e){
   st.ghost.setAttribute('points',pts.map(v=>`${q(v.x*100)},${q(v.y*100)}`).join(' ')); st.ghost.setAttribute('stroke',error?'var(--bad)':'var(--steel)');
   st.circles.forEach(c=>{ c.setAttribute('cx',q(midX)); c.setAttribute('cy',q(midY)); });
   st.label.setAttribute('x',q(midX+st.wall.nx*24/st.k)); st.label.setAttribute('y',q(midY+st.wall.ny*24/st.k)); st.label.setAttribute('fill',error?'var(--bad)':'var(--steel)');
-  st.label.textContent=error||`${delta<0?'−':'+'}${Math.round(Math.abs(delta)*1000)} мм`;
+  st.label.textContent=error||`${delta>0?'−':'+'}${Math.round(Math.abs(delta)*1000)} мм`;
 }
 function wallDragFinish(cancel){
   const st=wallDrag; if(!st) return; wallDrag=null;

@@ -2210,7 +2210,7 @@ document.addEventListener('keydown',e=>{ if(!e.altKey||e.ctrlKey||e.metaKey||(e.
   if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)){ if(!IS_MAC) e.preventDefault(); return; }
   e.preventDefault(); const n=step+(e.key==='ArrowRight'?1:-1); if(n>=0&&n<STEP_NAMES.length) go(n); });
 document.getElementById('steps').addEventListener('click',e=>{ const b=e.target.closest('[data-step]'); if(b) go(+b.dataset.step); });
-function go(i){ fieldMsgs={}; heatRecOpen=false; heatRecErr=false; step=i; sel=null; selRoom=null; addMode=null; editUid=null; draft=null; rpOpen=false; confirmArrange=false; confirmRoomDel=false; render(); const cur=document.querySelector('[aria-current="page"]'); cur&&cur.scrollIntoView({inline:'center',block:'nearest'}); updNavFade(); window.scrollTo({top:0}); }
+function go(i){ layMenuOpen=false; fieldMsgs={}; heatRecOpen=false; heatRecErr=false; step=i; sel=null; selRoom=null; addMode=null; editUid=null; draft=null; rpOpen=false; confirmArrange=false; confirmRoomDel=false; render(); const cur=document.querySelector('[aria-current="page"]'); cur&&cur.scrollIntoView({inline:'center',block:'nearest'}); updNavFade(); window.scrollTo({top:0}); }
 function render(){
   recompute(); selSync(); stepIss(); nameInp.value=S.name;
   main.innerHTML=[stepInput,stepRoom,stepPoints,stepExisting,stepSelect,stepPlan,stepEng,stepCost,stepNorms][step]();
@@ -3731,8 +3731,7 @@ function finePointer(){ try{ return matchMedia('(pointer: fine)').matches && !is
 function planCheckList(iss){ return iss.filter(i=>i.t!=='info').length?notesHtml(iss):`<ul class="notes"><li class="ok">Наложений, перекрытых рабочих зон, дверей и узких проходов не найдено.</li>${iss.map(i=>`<li class="info">${esc(i.m)}</li>`).join('')}</ul>`; }
 function stepPlan(){
   planMode='equip';   // режимы «Стены» и «Подключения» на этом шаге заменены ссылками на шаги 2 и 3
-  const head=`${stepHead('План расстановки', `${planMode==='equip'?'Перетаскивайте оборудование пальцем или мышью. Толстая линия — фронт обслуживания, крупный пунктир вокруг теплового — вытяжной зонт, мелкий пунктир — настенное. Размеры — в миллиметрах.':planMode==='room'?'Стены: двери, окна, выступы. Оборудование показано бледно.':'Точки подключения. Оборудование показано бледно.'}`)}
-  <div class="plan-tools plan-links" id="pmode-bar"><button type="button" class="btn" data-goto="1">Изменить стены →</button><button type="button" class="btn" data-goto="2">Изменить подключения →</button></div>`;
+  const head=`${stepHead('План расстановки', `${planMode==='equip'?'Перетаскивайте оборудование пальцем или мышью. Толстая линия — фронт обслуживания, крупный пунктир вокруг теплового — вытяжной зонт, мелкий пунктир — настенное. Размеры — в миллиметрах. <button type="button" class="linkish" data-goto="1">Изменить стены →</button> · <button type="button" class="linkish" data-goto="2">Изменить подключения →</button>':planMode==='room'?'Стены: двери, окна, выступы. Оборудование показано бледно.':'Точки подключения. Оборудование показано бледно.'}`)}`;
   const CU=curUnits(), iss=(P.iss&&P.iss.lay&&P.iss.lay[S.cur])||checkLayout(curGeom(),CU);
   const UNI=planUnified(), ALL=UNI?P.units:CU, un=ALL.filter(u=>!S.layout[u.key]);
   const many=selKeys().length>1, su=!many&&sel&&CU.find(u=>u.key===sel&&S.layout[u.key]);
@@ -3784,7 +3783,6 @@ function alignRun(key){
   S.layoutManual=true; touch(); render(); toast(`Линия из ${run.length} ${plural(run.length,'позиции','позиций','позиций')} выровнена по глубине ${fmt0(maxD*1000)} мм`);
 }
 bind[5]=()=>{
-  segBind(document.getElementById('pmode-bar'),(k,v)=>{ planMode=v; sel=null; selRoom=null; addMode=null; render(); });
   bindRoomTabs();
   const mvr=document.getElementById('mv-room'); mvr&&mvr.addEventListener('change',()=>{ S.unitRoom[sel]=mvr.value; if(S.layoutManual) delete S.layout[sel]; else S.layoutSig=''; const nm=roomName(S,mvr.value); sel=null; touch(); render(); toast(S.layoutManual?`Перенесено в «${nm}» — ищите в резерве этого помещения`:`Перенесено в «${nm}»`); });
   if(planMode!=='equip'){ bindRoomEditor(); return; }
@@ -5840,6 +5838,18 @@ const ZOOM_CSS=`
 .plan-layers .lay[aria-pressed="false"]{color:var(--ink-2);background:transparent}
 .plan-layers .lay[aria-pressed="true"]::before{content:"✓";margin-right:2px;color:var(--steel);font-weight:700}
 .plan-layers .dims-seg{gap:6px}
+.lay-tgl{min-height:44px}
+@media (min-width:900px){
+  .lay-menu{position:relative}
+  .lay-pop{display:none}
+  .lay-pop>.lbl{display:none}
+  .lay-menu.open .lay-pop{display:flex;position:absolute;top:calc(100% + 6px);left:0;z-index:20;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:max-content}
+}
+@media (max-width:899px){
+  .plan-bar .lay-menu>.lay-tgl,.pfs-head .lay-menu>.lay-tgl{display:none}
+  .plan-bar>.lay-menu{flex:0 1 auto;min-width:0}
+  .plan-bar>.lay-menu>.plan-layers{margin:0}
+}
 .touch-hint{font-size:13px;color:var(--ink-2);margin:8px 0 0}
 #plan .hold-on rect,#plan .hold-on circle,#plan polygon.hold-on,#plan rect.rm-bg.hold-on{stroke:var(--accent)!important;stroke-width:5px!important}
 /* список под планом */
@@ -5913,14 +5923,15 @@ function updateBars(f){
     if(m) m.disabled=z<=0.1+1e-9; if(pl) pl.disabled=z>=4-1e-9; });
 }
 /* ---- слои ---- */
+let layMenuOpen=false;
 function layersBarHtml(mode){
   const b=(k,l)=>`<button class="btn lay" type="button" data-layer="${k}" aria-pressed="${k==='zones'?!!showZones:layerOn(k)}">${l}</button>`;
-  return `<div class="plan-layers" data-fs="plan" role="group" aria-label="Слои плана"><span class="lbl">Слои</span>
+  return `${mode==='equip'?`<div class="lay-menu${layMenuOpen?' open':''}" data-fs="plan"><button type="button" class="btn lay-tgl" aria-expanded="${layMenuOpen}" aria-controls="lay-pop">Слои ▾</button><div class="plan-layers lay-pop" id="lay-pop" role="group" aria-label="Слои плана">`:'<div class="plan-layers" data-fs="plan" role="group" aria-label="Слои плана">'}<span class="lbl">Слои</span>
     ${mode==='equip'?`<span class="dims-seg" id="pdims-bar"><span class="lbl">Размеры</span>${seg('pdims',S.planDims||'all',[['off','Выкл'],['sel','У выбранного'],['all','Все']])}</span>`:b('dims','Размеры')}
     ${mode==='equip'?b('zones','Рабочие зоны'):''}
     ${mode==='equip'?`<button class="btn lay" type="button" data-layer="need" aria-pressed="${needOn()}">Куда вывести сети</button>`:''}
     ${mode!=='points'?b('pts','Подключения'):''}
-    ${b('labels','Подписи')}</div>`;
+    ${b('labels','Подписи')}</div>${mode==='equip'?'</div>':''}`;
 }
 function touchHintHtml(mode){
   if(!isTouch()) return '';
@@ -6100,7 +6111,7 @@ function applyFs(){
   const ov=document.createElement('div'); ov.className='plan-fs'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true');
   ov.setAttribute('aria-label', 'План на весь экран');
   const head=document.createElement('div'); head.className='pfs-head'; const foot=document.createElement('div'); foot.className='pfs-foot';
-  for(const el of els){ if(el===box) continue; if(el.classList.contains('zbar')||el.classList.contains('plan-layers')) head.appendChild(el); else foot.appendChild(el); }
+  for(const el of els){ if(el===box) continue; if(el.classList.contains('zbar')||el.classList.contains('plan-layers')||el.classList.contains('lay-menu')) head.appendChild(el); else foot.appendChild(el); }
   ov.append(head, box, foot); main.appendChild(ov);
   document.documentElement.classList.add('pfs-lock');
 }
@@ -6121,6 +6132,21 @@ function planAfter(){
 }
 for(const i of [1,2,5]){ const b0=bind[i]; bind[i]=()=>{ b0&&b0(); planAfter(); }; }
 const goPrev=go; go=function(i){ if(fsField){ fsField=null; document.documentElement.classList.remove('pfs-lock'); } return goPrev(i); };
+
+/* ---- меню слоёв ---- */
+function handleLayMenu(e){
+  const menu=main.querySelector('.lay-menu'); if(!menu) return;
+  const toggle=menu.querySelector('.lay-tgl'), esc=e.type==='keydown'&&e.key==='Escape';
+  if(e.type==='keydown'){
+    if(!esc||!layMenuOpen) return;
+    e.preventDefault(); e.stopImmediatePropagation(); layMenuOpen=false;
+  } else if(e.target.closest('.lay-tgl')) layMenuOpen=!layMenuOpen;
+  else { if(!layMenuOpen||e.target.closest('.lay-menu')) return; layMenuOpen=false; }
+  menu.classList.toggle('open',layMenuOpen); toggle.setAttribute('aria-expanded',String(layMenuOpen));
+  if(esc) toggle.focus();
+}
+document.addEventListener('click',handleLayMenu,true);
+document.addEventListener('keydown',handleLayMenu,true);
 
 /* ---- кнопки: масштаб, «Вписать», слои, правка, весь экран, карточка, список ---- */
 main.addEventListener('click',e=>{

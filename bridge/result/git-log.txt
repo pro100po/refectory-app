@@ -1,0 +1,8 @@
+﻿
+warning: in the working copy of 'versions.html', LF will be replaced by CRLF the next time Git touches it
+[main df923e3] Пункт аудита 30.2: «Уступ на стене» — ступенчатые помещения (лесенка, Z-форма) в разделе «Форма»
+ 6 files changed, 6287 insertions(+), 2 deletions(-)
+ create mode 100644 notes/handoff-30.3.md
+ create mode 100644 versions/2026-11-04_1729.html
+To https://github.com/pro100po/refectory-app.git
+   5e57a57..df923e3  main -> main

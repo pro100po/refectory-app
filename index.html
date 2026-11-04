@@ -1954,7 +1954,10 @@ function checkUnit(s, units, L, key){
       if(ov(p.b,bandOf(s,o,0.35))) iss.push({t:'bad', key:p.u.key, lbl:'Перекрывает окно', m:`«${nm(p.u)}» высотой ${fmt0(p.u.c.h*1000)} мм перекрывает окно (подоконник ${fmt0((o.sill||0.9)*1000)} мм). Под окном допустимы только столы и низкое оборудование.`});
       else if(ov(p.b,bandOf(s,{side:o.side,off:o.off-0.08,w:o.w+0.16},0.35))) iss.push({t:'bad', key:p.u.key, lbl:'Вплотную к окну', m:`«${nm(p.u)}» ближе 80 мм к краю окна — высокое оборудование не ставят вплотную к проёму.`});
       else if(ov(p.b,bandOf(s,{side:o.side,off:o.off-0.12,w:o.w+0.24},0.35))) iss.push({t:'warn', key:p.u.key, lbl:'Близко к окну', m:`«${nm(p.u)}» ближе 120 мм к краю окна. Отступ до 80 мм допустим, только если иначе расстановка не помещается.`}); }
-    if(rectInRoom(s.room,p.b) && !rectInRoom(s.room,p.f)) iss.push({t:'warn', key:p.u.key, lbl:'Фронтом к стене', m:`«${nm(p.u)}» развёрнут фронтом к стене.`});
+    if(rectInRoom(s.room,p.b) && !rectInRoom(s.room,p.f)){
+      if(roomWalls(s.room).some(w=>!w.axis && segHitsRect(w.x1,w.y1,w.x2,w.y2,p.f))) iss.push({t:'warn', key:p.u.key, lbl:'Мало места перед фронтом', m:`Перед «${nm(p.u)}» рабочая зона упирается в косую стену — отодвиньте аппарат от неё.`});
+      else iss.push({t:'warn', key:p.u.key, lbl:'Фронтом к стене', m:`«${nm(p.u)}» развёрнут фронтом к стене.`});
+    }
   }
   for(let i=0;i<fl.length;i++) for(let j=i+1;j<fl.length;j++){
     const a=fl[i], b=fl[j]; if(one && a.u.key!==key && b.u.key!==key) continue;
@@ -3191,7 +3194,8 @@ function planSvg(mode, iss, opts){
   if(hasPoly(S.room)){ const id=`rc-${S.room.id||'r'}`, points=contourPts(S.room,0).map(p=>`${p.x},${p.y}`).join(' '); gridClip=`<clipPath id="${id}"><polygon points="${points}"/></clipPath>`; g=`<g clip-path="url(#${id})">${g}</g>`; }
   g+=nicheGridSvg(S.room);
   const H=bare||!layerOn('pts')?{list:[]}:hoods(curGeom(),curUnits());
-  const hoodsSvg=H.list.map(r=>`<rect x="${r.x*100}" y="${r.y*100}" width="${r.w*100}" height="${r.h*100}" fill="none" stroke="var(--z-hot)" stroke-width="2.5" stroke-dasharray="10 7" opacity=".85" style="pointer-events:none"/>`).join('');
+  let hoodsSvg=H.list.map(r=>`<rect x="${r.x*100}" y="${r.y*100}" width="${r.w*100}" height="${r.h*100}" fill="none" stroke="var(--z-hot)" stroke-width="2.5" stroke-dasharray="10 7" opacity=".85" style="pointer-events:none"/>`).join('');
+  if(gridClip && hasPoly(S.room) && roomWalls(S.room).some(w=>!w.axis)) hoodsSvg=`<g clip-path="url(#rc-${S.room.id||'r'})">${hoodsSvg}</g>`;
   let zonesSvg='';
   const eq=(bare?[]:curUnits()).filter(u=>S.layout[u.key]).sort((a,b)=>(a.c.mount==='wall')-(b.c.mount==='wall')).map(u=>{
     const pos=S.layout[u.key], b=bbox(u.c,pos), w=b.w*100, h=b.h*100, c=`var(--z-${u.c.z})`, wall=u.c.mount==='wall';
@@ -4435,7 +4439,8 @@ function printPlanSvg(opts){
         const dash = wall ? 'stroke-dasharray="3 5"' : u.src==='have' ? 'stroke-dasharray="7 4"' : '';
         eq+=`<g transform="translate(${b.x*100},${b.y*100})"><rect width="${w}" height="${h}" fill="#ffffff"/><rect width="${w}" height="${h}" fill="${fill}" fill-opacity="${fop}" stroke="${mono?ink:zc}" stroke-width="2" ${dash}/>${wall?'':`<line x1="${fe[0]}" y1="${fe[1]}" x2="${fe[2]}" y2="${fe[3]}" stroke="${mono?ink:zc}" stroke-width="6"/>`}</g>`;
         const pp=pos&&pos.unit(u); if(pp) nums+=numCircle(b.x*100+w/2, b.y*100+h/2, pp.no); }
-      const hs=H.list.map(r=>`<rect x="${r.x*100}" y="${r.y*100}" width="${r.w*100}" height="${r.h*100}" fill="none" stroke="${mono?ink:'var(--z-hot)'}" stroke-width="2.5" stroke-dasharray="10 7"/>`).join('');
+      let hs=H.list.map(r=>`<rect x="${r.x*100}" y="${r.y*100}" width="${r.w*100}" height="${r.h*100}" fill="none" stroke="${mono?ink:'var(--z-hot)'}" stroke-width="2.5" stroke-dasharray="10 7"/>`).join('');
+      if(gridClip && hasPoly(S.room) && roomWalls(S.room).some(w=>!w.axis)) hs=`<g clip-path="url(#rcp-${S.room.id||'r'})">${hs}</g>`;
       body=zones+eq+hs+walls+ops+hoodsOnly+nums+(typeof equipDimsSvg==='function'?equipDimsSvg(S.room, curUnits(), {print:true}):'');
     } else if(layer==='need'){
       let eq='', marks='', nums=''; const avoid=[];   // подписи длины слива не закрывают метки подключений и номера

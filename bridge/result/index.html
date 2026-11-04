@@ -5842,10 +5842,11 @@ const ZOOM_CSS=`
 @media (min-width:900px){
   .lay-menu{position:relative}
   .lay-pop{display:none}
+  .lay-pop>.lbl{display:none}
   .lay-menu.open .lay-pop{display:flex;position:absolute;top:calc(100% + 6px);left:0;z-index:20;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:max-content}
 }
 @media (max-width:899px){
-  .lay-tgl{display:none}
+  .plan-bar .lay-menu>.lay-tgl,.pfs-head .lay-menu>.lay-tgl{display:none}
   .plan-bar>.lay-menu{flex:0 1 auto;min-width:0}
   .plan-bar>.lay-menu>.plan-layers{margin:0}
 }

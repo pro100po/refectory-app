@@ -7,16 +7,16 @@ approval: never
 sandbox: workspace-write [workdir, /tmp, $TMPDIR]
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a1a6a8-2471-7f01-86c0-edf90cfe56d7
+session id: 01a1a6ac-ae5e-72b2-834f-b19687d98f53
 --------
 user
 Execute the task described in TASK.md. Follow the rules in AGENTS.md strictly.
 codex
-Прочитаю `TASK.md` и правила, затем внесу только указанные изменения в `index.html`.
+Прочитаю `TASK.md` и правила проекта, затем внесу только указанные изменения в `index.html`.
 
 exec
 "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -Raw AGENTS.md; Get-Content -Raw TASK.md' in C:\Users\pro10\refectory-app
- succeeded in 1026ms:
+ succeeded in 647ms:
 # ÐŸÑ€Ð°Ð²Ð¸Ð»Ð° Ð´Ð»Ñ Ð¸ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»Ñ (Codex / GPT)
 
 Ð¢Ñ‹ â€” Ð¸ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒ. Ð—Ð°Ð´Ð°Ñ‡Ð¸ ÑÑ‚Ð°Ð²Ð¸Ñ‚ Ð¸ Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÐµÑ‚ Ð´Ñ€ÑƒÐ³Ð¾Ð¹ Ð°Ð³ÐµÐ½Ñ‚; Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ Ð²ÑÐµÐ³Ð´Ð° Ð»ÐµÐ¶Ð¸Ñ‚ Ð² `TASK.md`.
@@ -90,10 +90,17 @@ exec
 - Ð¨Ð¸Ñ€Ð¸Ð½Ð° 390 px: ÑÐ»Ð¾Ð¸ â€” Ð¾Ð±Ñ‹Ñ‡Ð½Ð¾Ð¹ ÑÑ‚Ñ€Ð¾ÐºÐ¾Ð¹, ÐºÐ°Ðº ÑÐµÐ¹Ñ‡Ð°Ñ, ÐºÐ½Ð¾Ð¿ÐºÐ¸ Â«Ð¡Ð»Ð¾Ð¸ â–¾Â» Ð½ÐµÑ‚.
 - Ð’ ÐºÐ¾Ð½ÑÐ¾Ð»Ð¸ Ð½ÐµÑ‚ Ð¾ÑˆÐ¸Ð±Ð¾Ðº; Ð½Ð° ÑˆÐ°Ð³Ð°Ñ… Â«ÐŸÐ¾Ð¼ÐµÑ‰ÐµÐ½Ð¸ÑÂ» Ð¸ Â«ÐŸÐ¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸ÑÂ» Ð½Ð¸Ñ‡ÐµÐ³Ð¾ Ð½Ðµ Ð¸Ð·Ð¼ÐµÐ½Ð¸Ð»Ð¾ÑÑŒ.
 
+## Ð—Ð°Ð¼ÐµÑ‡Ð°Ð½Ð¸Ñ (Ð¿Ð¾Ð²Ñ‚Ð¾Ñ€, Ð¿Ñ€Ð°Ð²ÐºÐ¸ Ð¸Ð· Ð¿ÐµÑ€Ð²Ð¾Ð³Ð¾ Ð¿Ñ€Ð¾Ñ…Ð¾Ð´Ð° ÑÐ¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ)
+
+1. **Ð¢ÐµÐ»ÐµÑ„Ð¾Ð½ (390 px): ÐºÐ½Ð¾Ð¿ÐºÐ° Â«Ð¡Ð»Ð¾Ð¸ â–¾Â» Ð²Ð¸Ð´Ð½Ð°.** ÐŸÑ€Ð°Ð²Ð¸Ð»Ð¾ `@media (max-width:899px){ .lay-tgl{display:none} }` Ð¿ÐµÑ€ÐµÐ±Ð¸Ð²Ð°ÐµÑ‚ÑÑ Ð±Ð¾Ð»ÐµÐµ ÑÐ¿ÐµÑ†Ð¸Ñ„Ð¸Ñ‡Ð½Ñ‹Ð¼ Ð¿Ñ€Ð°Ð²Ð¸Ð»Ð¾Ð¼ Ð´Ð»Ñ `.btn` (Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð½Ñ‹Ð¹ `display` â€” `inline-flex`). ÐŸÐ¾Ð´Ð½ÑÑ‚ÑŒ ÑÐ¿ÐµÑ†Ð¸Ñ„Ð¸Ñ‡Ð½Ð¾ÑÑ‚ÑŒ, Ð½Ð°Ð¿Ñ€Ð¸Ð¼ÐµÑ€ `.plan-bar .lay-menu>.lay-tgl{display:none}` (Ð¸ Ð´Ð»Ñ Ñ€ÐµÐ¶Ð¸Ð¼Ð° Ð¿Ð¾Ð»Ð½Ð¾Ð³Ð¾ ÑÐºÑ€Ð°Ð½Ð° â€” `.lay-menu>.lay-tgl` Ð²Ð½ÑƒÑ‚Ñ€Ð¸ `.pfs-head` Ð² Ñ‚Ð¾Ð¹ Ð¶Ðµ media). ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ°: Ð½Ð° 390 px `getComputedStyle(document.querySelector('.lay-tgl')).display === 'none'`, ÑÐ»Ð¾Ð¸ â€” Ð¾Ð±Ñ‹Ñ‡Ð½Ð¾Ð¹ ÑÑ‚Ñ€Ð¾ÐºÐ¾Ð¹, ÐºÐ°Ðº Ð´Ð¾ Ð¿Ñ€Ð°Ð²ÐºÐ¸.
+2. **ÐšÐ¾Ð¼Ð¿ÑŒÑŽÑ‚ÐµÑ€: Ð² Ð²Ñ‹Ð¿Ð°Ð´Ð°ÑŽÑ‰ÐµÐ¹ Ð¿Ð°Ð½ÐµÐ»Ð¸ Ð¿Ð¾Ð²Ñ‚Ð¾Ñ€ÑÐµÑ‚ÑÑ Ð¿Ð¾Ð´Ð¿Ð¸ÑÑŒ Â«Ð¡Ð»Ð¾Ð¸Â»** (Ð½Ð°Ð´ Â«Ð Ð°Ð·Ð¼ÐµÑ€Ñ‹Â»). ÐŸÑ€Ð¸ `min-width:900px` ÑÐºÑ€Ñ‹Ñ‚ÑŒ `.lay-pop>.lbl` (Ð½Ð° Ñ‚ÐµÐ»ÐµÑ„Ð¾Ð½Ðµ Ð¿Ð¾Ð´Ð¿Ð¸ÑÑŒ Ð¾ÑÑ‚Ð°Ñ‘Ñ‚ÑÑ).
+
+Ð‘Ð¾Ð»ÑŒÑˆÐµ Ð½Ð¸Ñ‡ÐµÐ³Ð¾ Ð½Ðµ Ð¼ÐµÐ½ÑÑ‚ÑŒ.
+
 
 exec
-"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Raw -Encoding UTF8 TASK.md; rg -n 'layersBarHtml|pmode-bar|function go\\(|data-layer|pfs-head|plan-layers|function stepPlan|Escape' index.html" in C:\Users\pro10\refectory-app
- succeeded in 1309ms:
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Raw -Encoding UTF8 TASK.md; rg -n 'lay-menu|lay-tgl|lay-pop|layMenuOpen|function layersBarHtml|function stepPlan|pmode-bar' index.html; git diff --stat -- index.html" in C:\Users\pro10\refectory-app
+ succeeded in 1770ms:
 # Пункт аудита 30.2.2, шаг «План»: одна строка инструментов над планом
 
 Цель: на шаге «План» (функция `stepPlan()`) на экране шире 900 px над планом остаётся одна строка инструментов вместо трёх. На телефоне (до 900 px) всё как сейчас.
@@ -152,419 +159,87 @@ exec
 - Ширина 390 px: слои — обычной строкой, как сейчас, кнопки «Слои ▾» нет.
 - В консоли нет ошибок; на шагах «Помещения» и «Подключения» ничего не изменилось.
 
-437:.plan-bar>.plan-layers{margin:0;flex:0 1 auto;min-width:0}
-440:@media (min-width:900px){ .plan-bar .plan-layers .btn,.plan-bar-actions>.btn,.plan-bar-actions .rt-g>.btn,.plan-bar>.zbar>.btn{padding-inline:5px;font-size:13px} }
-2213:function go(i){ fieldMsgs={}; heatRecOpen=false; heatRecErr=false; step=i; sel=null; selRoom=null; addMode=null; editUid=null; draft=null; rpOpen=false; confirmArrange=false; confirmRoomDel=false; render(); const cur=document.querySelector('[aria-current="page"]'); cur&&cur.scrollIntoView({inline:'center',block:'nearest'}); updNavFade(); window.scrollTo({top:0}); }
-2546:    <div class="plan-bar">${layersBarHtml('room')}<div class="plan-bar-actions"><span class="rt-g" role="group" aria-label="Добавить на стену">${['door','window','prot'].map(k=>`<button class="btn" type="button" data-add="${k}" aria-pressed="${addMode===k}">+ ${OPN[k]}</button>`).join('')}</span><span class="rt-g rt-r">${many?`<button class="btn" type="button" id="room-arrange" aria-expanded="${confirmArrange}">Расставить по связям</button>`:''}<button class="btn primary" type="button" id="room-add" aria-haspopup="dialog">+ Помещение</button></span></div>${zoomCtl()}</div>${arrUi}${hint}
-2778:    if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); closeNewRoom(); return; }
-2861:  return `<div class="plan-bar"><div class="plan-bar-actions">${tools}</div>${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div>${hint}
+## Замечания (повтор, правки из первого прохода сохранить)
+
+1. **Телефон (390 px): кнопка «Слои ▾» видна.** Правило `@media (max-width:899px){ .lay-tgl{display:none} }` перебивается более специфичным правилом для `.btn` (вычисленный `display` — `inline-flex`). Поднять специфичность, например `.plan-bar .lay-menu>.lay-tgl{display:none}` (и для режима полного экрана — `.lay-menu>.lay-tgl` внутри `.pfs-head` в той же media). Проверка: на 390 px `getComputedStyle(document.querySelector('.lay-tgl')).display === 'none'`, слои — обычной строкой, как до правки.
+2. **Компьютер: в выпадающей панели повторяется подпись «Слои»** (над «Размеры»). При `min-width:900px` скрыть `.lay-pop>.lbl` (на телефоне подпись остаётся).
+
+Больше ничего не менять.
+
+2213:function go(i){ layMenuOpen=false; fieldMsgs={}; heatRecOpen=false; heatRecErr=false; step=i; sel=null; selRoom=null; addMode=null; editUid=null; draft=null; rpOpen=false; confirmArrange=false; confirmRoomDel=false; render(); const cur=document.querySelector('[aria-current="page"]'); cur&&cur.scrollIntoView({inline:'center',block:'nearest'}); updNavFade(); window.scrollTo({top:0}); }
 3732:function stepPlan(){
-3735:  <div class="plan-tools plan-links" id="pmode-bar"><button type="button" class="btn" data-goto="1">Изменить стены →</button><button type="button" class="btn" data-goto="2">Изменить подключения →</button></div>`;
-3740:  return head+`<div class="plan-bar">${typeof layersBarHtml==='function'?layersBarHtml('equip'):''}<div class="plan-bar-actions">
-3787:  segBind(document.getElementById('pmode-bar'),(k,v)=>{ planMode=v; sel=null; selRoom=null; addMode=null; render(); });
-4120:document.addEventListener('keydown',e=>{ if(e.key!=='Escape'||!document.getElementById('set-ov')) return; const t=e.target;
-5026:  ov.addEventListener('keydown',e=>{ if(e.key==='Escape') closeReport(); });
-5062:  pv.addEventListener('keydown',e=>{ if(e.key==='Escape') closePreview(); });
-5219:  ov.addEventListener('click',e=>{ if(e.target===ov) closePjDialog(); }); ov.addEventListener('keydown',e=>{ if(e.key==='Escape') closePjDialog(); });
-5352:  m.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeProjMenu(); document.getElementById('proj-menu-btn').focus(); } });
-5511:  if(e.key==='Escape'){
-5775:  inp.addEventListener('keydown',e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); d.remove(); gapEdit=null; box.focus&&box.focus(); }
-5835:.zbar>.btn,.plan-layers .btn{min-height:44px}
-5838:.plan-layers{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin-bottom:10px}
-5839:.plan-layers>.lbl{margin-right:2px}
-5840:.plan-layers .lay[aria-pressed="false"]{color:var(--ink-2);background:transparent}
-5841:.plan-layers .lay[aria-pressed="true"]::before{content:"✓";margin-right:2px;color:var(--steel);font-weight:700}
-5842:.plan-layers .dims-seg{gap:6px}
-5870:.pfs-head{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;flex:0 0 auto}
-5871:.pfs-head .zbar{margin-left:0}
-5872:.pfs-head .plan-layers{margin:0}
-5875:.pfs-head{flex-direction:column;align-items:stretch;flex-wrap:nowrap}
-5876:.pfs-head .zbar,.pfs-head .plan-layers{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%}
-5877:.pfs-head .zbar::-webkit-scrollbar,.pfs-head .plan-layers::-webkit-scrollbar{display:none}
-5878:.pfs-head .zbar>*,.pfs-head .plan-layers>*{flex:0 0 auto}
-5879:.pfs-head .plan-layers .seg{flex-wrap:nowrap}
-5880:.pfs-head .plan-layers .seg button{white-space:nowrap}
-5916:function layersBarHtml(mode){
-5917:  const b=(k,l)=>`<button class="btn lay" type="button" data-layer="${k}" aria-pressed="${k==='zones'?!!showZones:layerOn(k)}">${l}</button>`;
-5918:  return `<div class="plan-layers" data-fs="plan" role="group" aria-label="Слои плана"><span class="lbl">Слои</span>
-5921:    ${mode==='equip'?`<button class="btn lay" type="button" data-layer="need" aria-pressed="${needOn()}">Куда вывести сети</button>`:''}
-6102:  const head=document.createElement('div'); head.className='pfs-head'; const foot=document.createElement('div'); foot.className='pfs-foot';
-6103:  for(const el of els){ if(el===box) continue; if(el.classList.contains('zbar')||el.classList.contains('plan-layers')) head.appendChild(el); else foot.appendChild(el); }
-6127:  const t=e.target.closest('[data-z],[data-pedit],[data-mpick],[data-fs-open],[data-fs-close],[data-layer],[data-sheet],[data-plist]'); if(!t) return;
-6141:  if(e.key!=='Escape'||e.defaultPrevented) return; const t=e.target;
-
-exec
-"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$s=Get-Content -Encoding UTF8 index.html; $s[426..442]; $s[3731..3749]; $s[5900..5932]; $s[6087..6150]; $s[5505..5524]; git diff --stat -- index.html; node --version' in C:\Users\pro10\refectory-app
- succeeded in 1430ms:
-.nr-dlg .dish,.nr-dlg .btn,.nr-dlg select,.nr-dlg input{min-height:44px}
-/* палитра точек: кружок с обозначением и название; до 640 px — только кружки в один ряд с прокруткой внутри */
-.pt-pal{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0;max-width:100%}
-.pt-pal .btn{min-height:44px;gap:8px;padding:6px 12px 6px 8px}
-.pt-pal .pt-dot{width:26px;height:26px;font-size:10.5px;letter-spacing:-.02em}
-.pt-pal .btn[aria-pressed="true"]{box-shadow:inset 0 0 0 1px var(--steel)}
-.pt-pal .pt-hood{padding-inline:14px}
-.pt-pal.compact .pt-pb{flex:0 0 44px;width:44px;padding:0;justify-content:center} .pt-pal.compact .pt-pn{display:none}
-/* строка над планом: слева слои, справа масштаб; не помещается — масштаб переносится под слои, прижатым вправо */
-.plan-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:10px}
-.plan-bar>.plan-layers{margin:0;flex:0 1 auto;min-width:0}
-.plan-bar>.zbar{margin-left:auto}
-@media (max-width:899px){ .plan-bar-actions{order:-1;flex:0 0 100%} }
-@media (min-width:900px){ .plan-bar .plan-layers .btn,.plan-bar-actions>.btn,.plan-bar-actions .rt-g>.btn,.plan-bar>.zbar>.btn{padding-inline:5px;font-size:13px} }
-/* переключатель «Сети есть / проектируем»: на телефоне — в две строки */
-.nets-panel .seg button{min-height:44px;white-space:normal;line-height:1.25}
-@media (max-width:640px){ .nets-panel .seg{flex-direction:column} }
-function stepPlan(){
-  planMode='equip';   // режимы «Стены» и «Подключения» на этом шаге заменены ссылками на шаги 2 и 3
-  const head=`${stepHead('План расстановки', `${planMode==='equip'?'Перетаскивайте оборудование пальцем или мышью. Толстая линия — фронт обслуживания, крупный пунктир вокруг теплового — вытяжной зонт, мелкий пунктир — настенное. Размеры — в миллиметрах.':planMode==='room'?'Стены: двери, окна, выступы. Оборудование показано бледно.':'Точки подключения. Оборудование показано бледно.'}`)}
-  <div class="plan-tools plan-links" id="pmode-bar"><button type="button" class="btn" data-goto="1">Изменить стены →</button><button type="button" class="btn" data-goto="2">Изменить подключения →</button></div>`;
-  const CU=curUnits(), iss=(P.iss&&P.iss.lay&&P.iss.lay[S.cur])||checkLayout(curGeom(),CU);
-  const UNI=planUnified(), ALL=UNI?P.units:CU, un=ALL.filter(u=>!S.layout[u.key]);
-  const many=selKeys().length>1, su=!many&&sel&&CU.find(u=>u.key===sel&&S.layout[u.key]);
-  const zs=[...new Set(ALL.map(u=>u.c.z))];
-  return head+`<div class="plan-bar">${typeof layersBarHtml==='function'?layersBarHtml('equip'):''}<div class="plan-bar-actions">
-    <button class="btn primary" type="button" id="auto-lay">Расставить автоматически</button>
-    ${hotGroups(S,CU,S.layout)>1||CU.some(u=>u.c.hot&&!S.layout[u.key])?'<button class="btn" type="button" id="gather">Собрать тепловое под один зонт</button>':''}
-  </div>${zoomCtl()}</div>
-  <div class="plan-box ${VZ('plan')>1.001?'zbig':''}" id="pbox" data-fs="plan" style="--pz:${VZ('plan')}">${UNI?unifiedPlanSvg():planSvg('equip',iss)}</div>
-  ${typeof touchHintHtml==='function'?touchHintHtml('equip'):''}
-  ${UNI?`<p class="hint uni-hint">${isTouch()?(planEdit?'Ведите аппарат в другое помещение — он перейдёт туда.':'В режиме «✎ Править» аппарат можно перевести в другое помещение — ведите его туда.'):'Перетащите аппарат в другое помещение — он перейдёт туда. Нажмите на название помещения или дважды по пустому месту в нём — помещение крупно; «Вписать» — весь план.'}</p>`:''}
-  ${su&&isTouch()&&!planEdit&&typeof planSheetHtml==='function'?planSheetHtml(su):''}
-  ${su&&!(isTouch()&&!planEdit)?`<div class="sel-bar" data-fs="plan"><span class="nm">${esc(su.c.n)}</span>
-    <button class="btn small" type="button" data-act="rot" title="Повернуть на 90° (R; Shift+R — обратно). ${KH}">Повернуть ↻</button>
-    ${su.c.mount==='floor'?`<button class="btn small" type="button" data-act="align">Выровнять линию</button>`:''}
-    </span>
-    <button class="btn" type="button" data-z="fit" data-zf="${f}" title="Весь план в видимой части окна">Вписать</button>
-    ${isTouch()?`<button class="btn" type="button" data-pedit="${f}" aria-pressed="${planEdit}">${planEdit?'Готово':'✎ Править'}</button>`:''}
-    ${isTouch()&&planEdit&&f==='plan'&&step===5&&planMode==='equip'?`<button class="btn" type="button" data-mpick aria-pressed="${multiPick}">Выбрать несколько</button>`:''}
-    ${fs?`<button class="btn" type="button" data-fs-close="${f}">Закрыть</button>`:`<button class="btn" type="button" data-fs-open="${f}" aria-label="План на весь экран" title="План на весь экран">⛶</button>`}
-  </span>`;
-}
-function updateBars(f){
-  const z=VZ(f);
-  main.querySelectorAll(`[data-zbar="${f}"]`).forEach(bar=>{
-    const p=bar.querySelector('[data-z="1"]'); if(p){ p.textContent=pctOf(z)+' %'; p.setAttribute('aria-label',`Масштаб ${pctOf(z)} %. Нажмите, чтобы вернуть 100 %`); }
-    const m=bar.querySelector('[data-z="-"]'), pl=bar.querySelector('[data-z="+"]');
-    if(m) m.disabled=z<=0.1+1e-9; if(pl) pl.disabled=z>=4-1e-9; });
-}
-/* ---- слои ---- */
-function layersBarHtml(mode){
-  const b=(k,l)=>`<button class="btn lay" type="button" data-layer="${k}" aria-pressed="${k==='zones'?!!showZones:layerOn(k)}">${l}</button>`;
-  return `<div class="plan-layers" data-fs="plan" role="group" aria-label="Слои плана"><span class="lbl">Слои</span>
-    ${mode==='equip'?`<span class="dims-seg" id="pdims-bar"><span class="lbl">Размеры</span>${seg('pdims',S.planDims||'all',[['off','Выкл'],['sel','У выбранного'],['all','Все']])}</span>`:b('dims','Размеры')}
-    ${mode==='equip'?b('zones','Рабочие зоны'):''}
-    ${mode==='equip'?`<button class="btn lay" type="button" data-layer="need" aria-pressed="${needOn()}">Куда вывести сети</button>`:''}
-    ${mode!=='points'?b('pts','Подключения'):''}
-    ${b('labels','Подписи')}</div>`;
-}
-function touchHintHtml(mode){
-  if(!isTouch()) return '';
-  return `<p class="touch-hint" data-fs="plan">${planEdit?'Правка: удерживайте палец на элементе, пока он не подсветится, и ведите. Быстрое движение прокручивает план.'
-    :`Просмотр: касание ${mode==='equip'?'аппарата открывает карточку':'элемента открывает его настройки'}. Чтобы сдвигать — «✎ Править». Масштаб — щипком двумя пальцами.`}</p>`;
-}
-
-/* ---- подпись аппарата: название не мельче 11 px, иначе номер позиции в кружке, совсем мелкий — без подписи ---- */
-function eqLabelScr(c,w,h,u){
-  if(!layerOn('labels')) return '';
-  const br=box.getBoundingClientRect(), vc=visCenter(box);
-  box.scrollLeft+= (r.left+r.width/2)-(br.left+box.clientLeft+box.clientWidth/2);
-  box.scrollTop+= (r.top+r.height/2)-vc.y;
-  memoScroll(box);
-}
-
-/* ---- план на весь экран: свой слой поверх приложения ---- */
-function fsOpen(f){ fsField=f; render(); requestAnimationFrame(()=>fitZoom(f)); }
-function fsClose(){ fsField=null; document.documentElement.classList.remove('pfs-lock'); render(); }
-function applyFs(){
-  const f=fsField, els=f?[...main.querySelectorAll(`[data-fs="${f}"]`)]:[], box=els.find(x=>x.classList.contains('plan-box'));
-  if(!f||!box){ fsField=null; document.documentElement.classList.remove('pfs-lock'); return; }
-  const ov=document.createElement('div'); ov.className='plan-fs'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true');
-  ov.setAttribute('aria-label', 'План на весь экран');
-  const head=document.createElement('div'); head.className='pfs-head'; const foot=document.createElement('div'); foot.className='pfs-foot';
-  for(const el of els){ if(el===box) continue; if(el.classList.contains('zbar')||el.classList.contains('plan-layers')) head.appendChild(el); else foot.appendChild(el); }
-  ov.append(head, box, foot); main.appendChild(ov);
-  document.documentElement.classList.add('pfs-lock');
-}
-
-/* ---- после каждой отрисовки шага с планом ---- */
-let lastPlanCtx='';
-function planAfter(){
-  document.body.classList.toggle('has-sheet', !!document.getElementById('psheet'));
-  applyFs();
-  const ctx=step+'|'+(step===1||(typeof planUnified==='function'&&planUnified())?'all':S.cur)+'|'+planMode, same=ctx===lastPlanCtx; lastPlanCtx=ctx;
-  for(const f of ['plan']){ const box=fieldBox(f); if(!box) continue;
-    if(isTouch()) bindPinch(box,f);
-    box.addEventListener('scroll',()=>memoScroll(box),{passive:true});
-    if(Math.abs(box.clientWidth-(lastCW[f]||0))>2) refreshField(f);   // ширина поля изменилась — подписи под неё
-    const m=boxScroll[box.id]; if(same && m){ box.scrollLeft=m.l; box.scrollTop=m.t; }
-  }
-  const pl=document.getElementById('plist'); pl&&pl.addEventListener('toggle',()=>{ VIEW.list=pl.open; saveView(); });
-}
-for(const i of [1,2,5]){ const b0=bind[i]; bind[i]=()=>{ b0&&b0(); planAfter(); }; }
-const goPrev=go; go=function(i){ if(fsField){ fsField=null; document.documentElement.classList.remove('pfs-lock'); } return goPrev(i); };
-
-/* ---- кнопки: масштаб, «Вписать», слои, правка, весь экран, карточка, список ---- */
-main.addEventListener('click',e=>{
-  const t=e.target.closest('[data-z],[data-pedit],[data-mpick],[data-fs-open],[data-fs-close],[data-layer],[data-sheet],[data-plist]'); if(!t) return;
-  if(t.hasAttribute('data-mpick')){ multiPick=!multiPick; render(); toast(multiPick?'Касание аппарата добавляет его к выделению или убирает':'Касание выбирает один аппарат'); return; }
-  if(t.dataset.z){ const f=t.dataset.zf||'plan', a=t.dataset.z;
-    if(a==='+') stepZoom(f,1); else if(a==='-') stepZoom(f,-1); else if(a==='1') setZoom(f,1); else if(a==='fit') fitZoom(f); return; }
-  if(t.hasAttribute('data-pedit')){ planEdit=!planEdit; if(!planEdit) multiPick=false; render(); toast(planEdit?'Правка: удерживайте палец на элементе и ведите':'Просмотр: касания ничего не сдвигают'); return; }
-  if(t.dataset.fsOpen){ fsOpen(t.dataset.fsOpen); return; }
-  if(t.dataset.fsClose){ fsClose(); return; }
-  if(t.dataset.layer){ const k=t.dataset.layer;
-    if(k==='zones'){ showZones=!showZones; VIEW.layers.zones=showZones; } else if(k==='need') VIEW.layers.need=!needOn(); else VIEW.layers[k]=!layerOn(k);
-    saveView(); render(); return; }
-  if(t.dataset.sheet){ if(t.dataset.sheet==='close'){ sel=null; render(); } else if(t.dataset.sheet==='edit'){ planEdit=true; render(); } return; }
-  if(t.dataset.plist){ focusUnit(t.dataset.plist); return; }
-});
-document.addEventListener('keydown',e=>{
-  if(e.key!=='Escape'||e.defaultPrevented) return; const t=e.target;
-  if(t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
-  if(document.getElementById('psheet')){ e.preventDefault(); sel=null; render(); return; }
-  if(fsField){ e.preventDefault(); fsClose(); }
-});
-// ширина окна изменилась — подписи под новую ширину поля
-let rsT=0; window.addEventListener('resize',()=>{ clearTimeout(rsT); rsT=setTimeout(()=>{ for(const f of ['plan']){ const b=fieldBox(f); if(b && Math.abs(b.clientWidth-(lastCW[f]||0))>2){ const c=visCenter(b), a=anchorOf(b,c.x,c.y); refreshField(f); keepAnchor(b,a); } } },150); });
-
-</script>
-
-</body></html>
-    const key=elKey(t), changed=t.value!==t.__focusVal;
-    if(changed) t.dispatchEvent(new Event('change',{bubbles:true}));
-    setTimeout(()=>{ const el=findKey(key)||t; if(document.contains(el) && el.getAttribute('aria-invalid')!=='true'){ el.focus({preventScroll:true}); try{ el.select(); }catch(_){} el.__focusVal=el.value; if(!changed) flashOk(el); } },15);
-    return;
-  }
-  if(e.key==='Escape'){
-    if(wallDrag){ e.preventDefault(); e.stopImmediatePropagation(); wallDragFinish(true); return; }
-    if((tag==='INPUT'||tag==='TEXTAREA') && t.__focusVal!=null && t.value!==t.__focusVal){ e.preventDefault(); e.stopImmediatePropagation(); t.value=t.__focusVal; clearFieldError(t); try{ t.select(); }catch(_){} return; }
-    if(overlay) return;                        // окна выгрузки и проектов закрываются своими обработчиками
-    for(const s of CLOSE_ORDER){ const b=document.querySelector(s); if(b && !b.disabled && b.offsetParent!==null){ e.preventDefault(); b.click(); return; } }
-    // Esc снимает выделение аппарата на плане (карточку на телефоне закрывает модуль масштаба)
-    if(planKeysOn(e) && step===5 && planMode==='equip' && sel && !document.getElementById('psheet')){ e.preventDefault(); sel=null; render(); }
-    return;
-  }
-  // R / Shift+R — повернуть выбранный аппарат; Delete и Backspace — аппарат в резерв, проём или точку удалить (как кнопки панели)
-  if(planKeysOn(e) && !e.ctrlKey && !e.metaKey && !e.altKey){
-    const equip=step===5 && planMode==='equip' && sel && S.layout[sel] && typeof planAct==='function';
-    if(e.code==='KeyR' && equip){ e.preventDefault(); planAct(e.shiftKey?'rotb':'rot'); return; }
-    if(e.key==='Delete'||e.key==='Backspace'){
-      if(equip){ e.preventDefault(); planAct('off'); return; }
-v26.13.0
-
-codex
-В `applyFs()` перенос в шапку полного экрана определяется классом элемента. Добавлю туда новый контейнер меню, чтобы «Слои» оставались над планом и в этом режиме. Обработчики переключения слоёв останутся прежними.
-
-exec
-"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
-from pathlib import Path
-p=Path('index.html')
-s=p.read_bytes().decode('utf-8')
-nl='\\r\\n' if '\\r\\n' in s else '\\n'
-def replace(a,b):
- global s
- a=a.replace('\\n',nl); b=b.replace('\\n',nl)
- assert s.count(a)==1, (a[:90],s.count(a))
- s=s.replace(a,b)
-replace('function go(i){ fieldMsgs={};', 'function go(i){ layMenuOpen=false; fieldMsgs={};')
-replace('Размеры — в миллиметрах.\\':planMode', 'Размеры — в миллиметрах. <button type=\"button\" class=\"linkish\" data-goto=\"1\">Изменить стены →</button> · <button type=\"button\" class=\"linkish\" data-goto=\"2\">Изменить подключения →</button>\\':planMode')
-replace('}"'`)}'"\\n  <div class=\"plan-tools plan-links\" id=\"pmode-bar\"><button type=\"button\" class=\"btn\" data-goto=\"1\">Изменить стены →</button><button type=\"button\" class=\"btn\" data-goto=\"2\">Изменить подключения →</button></div>"'`;'"', '}"'`)}`;'"')
-replace(\"  segBind(document.getElementById('pmode-bar'),(k,v)=>{ planMode=v; sel=null; selRoom=null; addMode=null; render(); });\\n\",'')
-replace('function layersBarHtml(mode){','let layMenuOpen=false;\\nfunction layersBarHtml(mode){')
-replace('  return "'`<div class="plan-layers" data-fs="plan" role="group" aria-label="Слои плана"><span class="lbl">Слои</span>'"', '  return "'`${mode==='"\\'equip\\'?"'`<div class="lay-menu${layMenuOpen?'"\\' open\\':\\'\\'}\" data-fs=\"plan\"><button type=\"button\" class=\"btn lay-tgl\" aria-expanded=\""'${layMenuOpen}" aria-controls="lay-pop">Слои ▾</button><div class="plan-layers lay-pop" id="lay-pop" role="group" aria-label="Слои плана">`:'"\\'<div class=\"plan-layers\" data-fs=\"plan\" role=\"group\" aria-label=\"Слои плана\">\\'}<span class=\"lbl\">Слои</span>')
-replace(\"    "'${b('"'labels','Подписи')}</div>"'`;", "    ${b('"'labels','Подписи')}</div>"'${mode==='"'equip'?'</div>':''}"'`;")
-replace('"'.plan-layers .dims-seg{gap:6px}', '''.plan-layers .dims-seg{gap:6px}
-.lay-tgl{min-height:44px}
-@media (min-width:900px){
-  .lay-menu{position:relative}
-  .lay-pop{display:none}
-  .lay-menu.open .lay-pop{display:flex;position:absolute;top:calc(100% + 6px);left:0;z-index:20;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:max-content}
-}
-@media (max-width:899px){
-  .lay-tgl{display:none}
-  .plan-bar>.lay-menu{flex:0 1 auto;min-width:0}
-  .plan-bar>.lay-menu>.plan-layers{margin:0}
-}''')
-replace(\"el.classList.contains('zbar')||el.classList.contains('plan-layers')\", \"el.classList.contains('zbar')||el.classList.contains('plan-layers')||el.classList.contains('lay-menu')\")
-replace(\"/* ---- кнопки: масштаб, «Вписать», слои, правка, весь экран, карточка, список ---- */\", '''/* ---- меню слоёв ---- */
-function handleLayMenu(e){
-  const menu=main.querySelector('.lay-menu'); if("'!menu) return;
-  const toggle=menu.querySelector('"'.lay-tgl'), esc=e.type==='keydown'&&e.key==='Escape';
-  if(e.type==='keydown'){
-    if("'!esc||!layMenuOpen) return;
-    e.preventDefault(); e.stopImmediatePropagation(); layMenuOpen=false;
-  } else if(e.target.closest('"'.lay-tgl')) layMenuOpen="'!layMenuOpen;
-  else { if(!layMenuOpen||e.target.closest('"'.lay-menu')) return; layMenuOpen=false; }
-  menu.classList.toggle('open',layMenuOpen); toggle.setAttribute('aria-expanded',String(layMenuOpen));
-  if(esc) toggle.focus();
-}
-document.addEventListener('click',handleLayMenu,true);
-document.addEventListener('keydown',handleLayMenu,true);
-
-/* ---- кнопки: масштаб, «Вписать», слои, правка, весь экран, карточка, список ---- */''')
-p.write_bytes(s.encode('utf-8'))
-'@ | python -" in C:\Users\pro10\refectory-app
- exited 1 in 9294ms:
-python : The term 'python' is not recognized as the name of a cmdlet, function, script file, or operable program. 
-Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
-At line:49 char:6
-+ '@ | python -
-+      ~~~~~~
-    + CategoryInfo          : ObjectNotFound: (python:String) [], CommandNotFoundException
-    + FullyQualifiedErrorId : CommandNotFoundException
- 
-
-2026-11-04T13:05:03.835942Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in C:\Users\pro10\refectory-app\index.html:
-.plan-layers .dims-seg{gap:6px}
-2026-11-04T13:05:12.162127Z ERROR codex_core::tools::router: error=apply_patch verification failed: invalid patch: multiple operations target C:\Users\pro10\.codex\memories_v2\memory_summary.md
-exec
-"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
-const fs=require('fs'); const p='index.html'; let s=fs.readFileSync(p,'utf8'); const nl=s.includes('\\r\\n')?'\\r\\n':'\\n';
-function rep(a,b){a=a.replace(/\\n/g,nl);b=b.replace(/\\n/g,nl);if(s.split(a).length"'!==2)throw Error(a);s=s.replace(a,b);}
-rep('"'function go(i){ fieldMsgs={};','function go(i){ layMenuOpen=false; fieldMsgs={};');
-rep(\"Размеры — в миллиметрах.':planMode\",'Размеры — в миллиметрах. <button type=\"button\" class=\"linkish\" data-goto=\"1\">Изменить стены →</button> · <button type=\"button\" class=\"linkish\" data-goto=\"2\">Изменить подключения →</button>\\':planMode');
-s=s.replace(/\\r?\\n  <div class=\"plan-tools plan-links\" id=\"pmode-bar\">.*?<\\/div>"'`;/,'"'"'`;'"');
-s=s.replace(/  segBind\\(document.getElementById\\('pmode-bar'\\).*?\\r?\\n/,'');
-rep('function layersBarHtml(mode){','let layMenuOpen=false;\\nfunction layersBarHtml(mode){');
-rep('  return "'`<div class="plan-layers" data-fs="plan" role="group" aria-label="Слои плана"><span class="lbl">Слои</span>'"', '  return "'`${mode==='"\\'equip\\'?"'`<div class="lay-menu${layMenuOpen?'"\\' open\\':\\'\\'}\" data-fs=\"plan\"><button type=\"button\" class=\"btn lay-tgl\" aria-expanded=\""'${layMenuOpen}" aria-controls="lay-pop">Слои ▾</button><div class="plan-layers lay-pop" id="lay-pop" role="group" aria-label="Слои плана">`:'"\\'<div class=\"plan-layers\" data-fs=\"plan\" role=\"group\" aria-label=\"Слои плана\">\\'}<span class=\"lbl\">Слои</span>');
-rep(\"    "'${b('"'labels','Подписи')}</div>"'`;", "    ${b('"'labels','Подписи')}</div>"'${mode==='"'equip'?'</div>':''}"'`;");
-rep('"'.plan-layers .dims-seg{gap:6px}',"'`.plan-layers .dims-seg{gap:6px}
-.lay-tgl{min-height:44px}
-@media (min-width:900px){
-  .lay-menu{position:relative}
-  .lay-pop{display:none}
-  .lay-menu.open .lay-pop{display:flex;position:absolute;top:calc(100% + 6px);left:0;z-index:20;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:max-content}
-}
-@media (max-width:899px){
-  .lay-tgl{display:none}
-  .plan-bar>.lay-menu{flex:0 1 auto;min-width:0}
-  .plan-bar>.lay-menu>.plan-layers{margin:0}
-}`);
-rep("el.classList.contains('"'zbar')||el.classList.contains('plan-layers')\",\"el.classList.contains('zbar')||el.classList.contains('plan-layers')||el.classList.contains('lay-menu')\");
-rep('/* ---- кнопки: масштаб, «Вписать», слои, правка, весь экран, карточка, список ---- */',"'`/* ---- меню слоёв ---- */
-function handleLayMenu(e){
-  const menu=main.querySelector('"'.lay-menu'); if("'!menu) return;
-  const toggle=menu.querySelector('"'.lay-tgl'), esc=e.type==='keydown'&&e.key==='Escape';
-  if(e.type==='keydown'){
-    if("'!esc||!layMenuOpen) return;
-    e.preventDefault(); e.stopImmediatePropagation(); layMenuOpen=false;
-  } else if(e.target.closest('"'.lay-tgl')) layMenuOpen="'!layMenuOpen;
-  else { if(!layMenuOpen||e.target.closest('"'.lay-menu')) return; layMenuOpen=false; }
-  menu.classList.toggle('open',layMenuOpen); toggle.setAttribute('aria-expanded',String(layMenuOpen));
-  if(esc) toggle.focus();
-}
-document.addEventListener('click',handleLayMenu,true);
-document.addEventListener('keydown',handleLayMenu,true);
-
-/* ---- кнопки: масштаб, «Вписать», слои, правка, весь экран, карточка, список ---- */"'`);
-for(const m of s.matchAll(/<script'"\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/g))new Function(m[1]);
-fs.writeFileSync(p,s);console.log('JavaScript syntax OK');
-try{console.log(require.resolve('playwright'))}catch{console.log('No local playwright')}
-'@ | node -
-git diff --check -- index.html
-git diff --stat -- index.html" in C:\Users\pro10\refectory-app
- succeeded in 739ms:
-[stdin]:2
-function rep(a,b){a=a.replace(/\n/g,nl);b=b.replace(/\n/g,nl);if(s.split(a).length!==2)throw Error(a);s=s.replace(a,b);}
-                                                                                       ^
-
-Error: ??????? ? ? ???????????.':planMode
-    at rep ([stdin]:2:94)
-    at [stdin]:4:1
-    at runScriptInThisContext (node:internal/vm:219:10)
-    at node:internal/process/execution:485:12
-    at [stdin]-wrapper:6:24
-    at runScriptInContext (node:internal/process/execution:483:60)
-    at evalFunction (node:internal/process/execution:317:30)
-    at evalTypeScript (node:internal/process/execution:329:3)
-    at node:internal/main/eval_stdin:51:5
-    at Socket.<anonymous> (node:internal/process/execution:239:5)
-
-Node.js v26.13.0
-
-exec
-"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$OutputEncoding=[System.Text.UTF8Encoding]::new($false)
-@'"'
-const fs=require('fs');let s=fs.readFileSync('index.html','utf8');const nl=s.includes('\\r\\n')?'\\r\\n':'\\n';
-function rep(a,b){a=a.replace(/\\n/g,nl);b=b.replace(/\\n/g,nl);if(s.split(a).length"'!==2)throw Error(a);s=s.replace(a,b);}
-rep('"'function go(i){ fieldMsgs={};','function go(i){ layMenuOpen=false; fieldMsgs={};');
-rep(\"Размеры — в миллиметрах.':planMode\",'Размеры — в миллиметрах. <button type=\"button\" class=\"linkish\" data-goto=\"1\">Изменить стены →</button> · <button type=\"button\" class=\"linkish\" data-goto=\"2\">Изменить подключения →</button>\\':planMode');
-s=s.replace(/\\r?\\n  <div class=\"plan-tools plan-links\" id=\"pmode-bar\">.*?<\\/div>"'`;/,'"'"'`;'"');
-s=s.replace(/  segBind\\(document.getElementById\\('pmode-bar'\\).*?\\r?\\n/,'');
-rep('function layersBarHtml(mode){','let layMenuOpen=false;\\nfunction layersBarHtml(mode){');
-rep('  return "'`<div class="plan-layers" data-fs="plan" role="group" aria-label="Слои плана"><span class="lbl">Слои</span>'"', '  return "'`${mode==='"\\'equip\\'?"'`<div class="lay-menu${layMenuOpen?'"\\' open\\':\\'\\'}\" data-fs=\"plan\"><button type=\"button\" class=\"btn lay-tgl\" aria-expanded=\""'${layMenuOpen}" aria-controls="lay-pop">Слои ▾</button><div class="plan-layers lay-pop" id="lay-pop" role="group" aria-label="Слои плана">`:'"\\'<div class=\"plan-layers\" data-fs=\"plan\" role=\"group\" aria-label=\"Слои плана\">\\'}<span class=\"lbl\">Слои</span>');
-rep(\"    "'${b('"'labels','Подписи')}</div>"'`;", "    ${b('"'labels','Подписи')}</div>"'${mode==='"'equip'?'</div>':''}"'`;");
-rep('"'.plan-layers .dims-seg{gap:6px}',"'`.plan-layers .dims-seg{gap:6px}
-.lay-tgl{min-height:44px}
-@media (min-width:900px){
-  .lay-menu{position:relative}
-  .lay-pop{display:none}
-  .lay-menu.open .lay-pop{display:flex;position:absolute;top:calc(100% + 6px);left:0;z-index:20;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:max-content}
-}
-@media (max-width:899px){
-  .lay-tgl{display:none}
-  .plan-bar>.lay-menu{flex:0 1 auto;min-width:0}
-  .plan-bar>.lay-menu>.plan-layers{margin:0}
-}`);
-rep("el.classList.contains('"'zbar')||el.classList.contains('plan-layers')\",\"el.classList.contains('zbar')||el.classList.contains('plan-layers')||el.classList.contains('lay-menu')\");
-rep('/* ---- кнопки: масштаб, «Вписать», слои, правка, весь экран, карточка, список ---- */',"'`/* ---- меню слоёв ---- */
-function handleLayMenu(e){
-  const menu=main.querySelector('"'.lay-menu'); if("'!menu) return;
-  const toggle=menu.querySelector('"'.lay-tgl'), esc=e.type==='keydown'&&e.key==='Escape';
-  if(e.type==='keydown'){
-    if("'!esc||!layMenuOpen) return;
-    e.preventDefault(); e.stopImmediatePropagation(); layMenuOpen=false;
-  } else if(e.target.closest('"'.lay-tgl')) layMenuOpen="'!layMenuOpen;
-  else { if(!layMenuOpen||e.target.closest('"'.lay-menu')) return; layMenuOpen=false; }
-  menu.classList.toggle('open',layMenuOpen); toggle.setAttribute('aria-expanded',String(layMenuOpen));
-  if(esc) toggle.focus();
-}
-document.addEventListener('click',handleLayMenu,true);
-document.addEventListener('keydown',handleLayMenu,true);
-
-/* ---- кнопки: масштаб, «Вписать», слои, правка, весь экран, карточка, список ---- */"'`);
-for(const m of s.matchAll(/<script'"\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/g))new Function(m[1]);
-fs.writeFileSync('index.html',s);console.log('JavaScript syntax OK');
-try{console.log(require.resolve('playwright'))}catch{console.log('No local playwright')}
-'@ | node -
-git diff --check -- index.html
-git diff --stat -- index.html" in C:\Users\pro10\refectory-app
- succeeded in 927ms:
-JavaScript syntax OK
-No local playwright
+5841:.lay-tgl{min-height:44px}
+5843:  .lay-menu{position:relative}
+5844:  .lay-pop{display:none}
+5845:  .lay-menu.open .lay-pop{display:flex;position:absolute;top:calc(100% + 6px);left:0;z-index:20;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:max-content}
+5848:  .lay-tgl{display:none}
+5849:  .plan-bar>.lay-menu{flex:0 1 auto;min-width:0}
+5850:  .plan-bar>.lay-menu>.plan-layers{margin:0}
+5925:let layMenuOpen=false;
+5926:function layersBarHtml(mode){
+5928:  return `${mode==='equip'?`<div class="lay-menu${layMenuOpen?' open':''}" data-fs="plan"><button type="button" class="btn lay-tgl" aria-expanded="${layMenuOpen}" aria-controls="lay-pop">Слои ▾</button><div class="plan-layers lay-pop" id="lay-pop" role="group" aria-label="Слои плана">`:'<div class="plan-layers" data-fs="plan" role="group" aria-label="Слои плана">'}<span class="lbl">Слои</span>
+6113:  for(const el of els){ if(el===box) continue; if(el.classList.contains('zbar')||el.classList.contains('plan-layers')||el.classList.contains('lay-menu')) head.appendChild(el); else foot.appendChild(el); }
+6137:  const menu=main.querySelector('.lay-menu'); if(!menu) return;
+6138:  const toggle=menu.querySelector('.lay-tgl'), esc=e.type==='keydown'&&e.key==='Escape';
+6140:    if(!esc||!layMenuOpen) return;
+6141:    e.preventDefault(); e.stopImmediatePropagation(); layMenuOpen=false;
+6142:  } else if(e.target.closest('.lay-tgl')) layMenuOpen=!layMenuOpen;
+6143:  else { if(!layMenuOpen||e.target.closest('.lay-menu')) return; layMenuOpen=false; }
+6144:  menu.classList.toggle('open',layMenuOpen); toggle.setAttribute('aria-expanded',String(layMenuOpen));
  index.html | 39 ++++++++++++++++++++++++++++++++-------
  1 file changed, 32 insertions(+), 7 deletions(-)
 
-codex
-Изменения внесены; синтаксис JavaScript и проверка diff проходят. Сейчас проверю сохранение состояния меню, закрытие по Esc и неизменность разметки слоёв на шагах «Помещения» и «Подключения».
-
 exec
-"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$OutputEncoding=[System.Text.UTF8Encoding]::new($false)
-@'"'
-const fs=require('fs'),vm=require('vm'),cp=require('child_process'),assert=require('assert');
-const s=fs.readFileSync('index.html','utf8'),old=cp.execFileSync('git',['show','HEAD:index.html'],{encoding:'utf8'});
-const extract=(src,name)=>src.slice(src.indexOf('function '+name+'('),src.indexOf('\\n}',src.indexOf('function '+name+'('))+2);
-const ctx={S:{planDims:'all'},showZones:true,layerOn:()=>true,needOn:()=>true,seg:()=>'<span>dims</span>'};
-vm.createContext(ctx);vm.runInContext('let layMenuOpen=false;'+extract(s,'layersBarHtml'),ctx);
-const prev=vm.createContext({...ctx});vm.runInContext(extract(old,'layersBarHtml'),prev);
-for(const mode of ['room','points'])assert.equal(ctx.layersBarHtml(mode),prev.layersBarHtml(mode));
-assert(ctx.layersBarHtml('equip').includes('aria-expanded=\"false\"'));
-let focused=false,expanded,open;
-const toggle={setAttribute:(k,v)=>expanded=v,focus:()=>focused=true};
-ctx.main={querySelector:()=>({querySelector:()=>toggle,classList:{toggle:(k,v)=>open=v}})};
-vm.runInContext(extract(s,'handleLayMenu'),ctx);
-const click=(where)=>({type:'click',target:{closest:sel=>sel===where?{}:null}});
-ctx.handleLayMenu(click('.lay-tgl'));assert(open);assert.equal(expanded,'true');assert(ctx.layersBarHtml('equip').includes('lay-menu open'));
-ctx.handleLayMenu(click('.lay-menu'));assert(open);
-ctx.handleLayMenu(click('outside'));assert("'!open);
-ctx.handleLayMenu(click('"'.lay-tgl'));
-let prevented=false;const esc={type:'keydown',key:'Escape',preventDefault:()=>prevented=true,stopImmediatePropagation:()=>{}};
-ctx.handleLayMenu(esc);assert("'!open&&focused&&prevented);prevented=false;ctx.handleLayMenu(esc);assert(!prevented);
-assert(!s.includes('"'pmode-bar'));
-console.log('PASS: room/points markup unchanged; menu toggle, rerender state, inside/outside click, Escape and focus.');
-'@ | node -
-git diff -- index.html" in C:\Users\pro10\refectory-app
- succeeded in 780ms:
-PASS: room/points markup unchanged; menu toggle, rerender state, inside/outside click, Escape and focus.
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$lines=Get-Content -Encoding UTF8 index.html; $lines[5828..5857]; rg -n '"'display:inline-flex|pfs-head.*btn|plan-bar.*btn' index.html; git diff -- index.html" in C:\Users\pro10\refectory-app
+ succeeded in 1418ms:
+   ниже масштаб слева и кнопки справа; совсем узко — двумя строками без пустых полос */
+.zgrp{display:inline-flex;align-items:stretch;border:1px solid var(--rule);border-radius:var(--r);background:var(--sheet);overflow:hidden}
+.zgrp .btn{border:0;border-radius:0;min-width:44px;min-height:44px;padding:0 10px;font-size:18px}
+.zgrp .zpct{font:500 14px var(--f-mono);min-width:66px;border-inline:1px solid var(--rule)}
+.zbar>.btn,.plan-layers .btn{min-height:44px}
+.zbar [data-fs-open]{min-width:44px;font-size:18px;padding:0 10px}
+.zbar [data-pedit][aria-pressed="true"]{background:var(--steel);border-color:var(--steel);color:var(--sheet)}
+.plan-layers{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin-bottom:10px}
+.plan-layers>.lbl{margin-right:2px}
+.plan-layers .lay[aria-pressed="false"]{color:var(--ink-2);background:transparent}
+.plan-layers .lay[aria-pressed="true"]::before{content:"✓";margin-right:2px;color:var(--steel);font-weight:700}
+.plan-layers .dims-seg{gap:6px}
+.lay-tgl{min-height:44px}
+@media (min-width:900px){
+  .lay-menu{position:relative}
+  .lay-pop{display:none}
+  .lay-menu.open .lay-pop{display:flex;position:absolute;top:calc(100% + 6px);left:0;z-index:20;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:max-content}
+}
+@media (max-width:899px){
+  .lay-tgl{display:none}
+  .plan-bar>.lay-menu{flex:0 1 auto;min-width:0}
+  .plan-bar>.lay-menu>.plan-layers{margin:0}
+}
+.touch-hint{font-size:13px;color:var(--ink-2);margin:8px 0 0}
+#plan .hold-on rect,#plan .hold-on circle,#plan polygon.hold-on,#plan rect.rm-bg.hold-on{stroke:var(--accent)!important;stroke-width:5px!important}
+/* список под планом */
+.plist{margin-top:12px;padding:0}
+.plist>summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;padding:6px 16px;font:600 13px/1.3 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.plist>summary::-webkit-details-marker{display:none}
+.plist>summary::before{content:"▸";font-size:12px;transition:transform .15s}
+58:nav.steps .step-arr{flex:0 0 44px;width:44px;height:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--rule);background:var(--sheet);color:var(--ink);font:400 26px/1 var(--f-body);border-radius:var(--r);cursor:pointer}
+99:.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--rule);background:var(--sheet);color:var(--ink);font:500 14px var(--f-body);padding:8px 13px;border-radius:var(--r);cursor:pointer;white-space:nowrap}
+118:.dish{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--rule);background:var(--paper);color:var(--ink-2);border-radius:20px;padding:7px 14px 7px 10px;font:500 14.5px var(--f-body);cursor:pointer}
+203:.stepper{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:var(--r);overflow:hidden}
+223:.legend span{display:inline-flex;align-items:center;gap:6px}
+229:.res span{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:3px 10px 3px 4px;border-radius:14px;background:var(--grid);color:var(--ink-2)}
+317:nav.steps button .sbadge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin:-4px 0 -4px 6px;border-radius:8px;font:700 10.5px/1 var(--f-body);color:var(--sheet);vertical-align:middle}
+332:#set-badge.sbadge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:8px;font:700 10.5px/1 var(--f-body);color:var(--sheet)}
+338:@media (max-width:600px){ nav.steps .undo .btn.icon-only{padding:0} nav.steps .undo .btn.icon-only span, nav.steps .undo #set-open .set-ic{display:inline} nav.steps .undo #set-open #set-badge.sbadge{display:inline-flex} }
+371:.plan-bar-actions .btn{min-height:44px}
+440:@media (min-width:900px){ .plan-bar .plan-layers .btn,.plan-bar-actions>.btn,.plan-bar-actions .rt-g>.btn,.plan-bar>.zbar>.btn{padding-inline:5px;font-size:13px} }
+2546:    <div class="plan-bar">${layersBarHtml('room')}<div class="plan-bar-actions"><span class="rt-g" role="group" aria-label="Добавить на стену">${['door','window','prot'].map(k=>`<button class="btn" type="button" data-add="${k}" aria-pressed="${addMode===k}">+ ${OPN[k]}</button>`).join('')}</span><span class="rt-g rt-r">${many?`<button class="btn" type="button" id="room-arrange" aria-expanded="${confirmArrange}">Расставить по связям</button>`:''}<button class="btn primary" type="button" id="room-add" aria-haspopup="dialog">+ Помещение</button></span></div>${zoomCtl()}</div>${arrUi}${hint}
+4834:.rp-notes .mk{display:inline-flex;width:4.2mm;height:4.2mm;border-radius:50%;align-items:center;justify-content:center;font-weight:700;font-size:7.5pt;color:#fff;background:#2e5964}
+4842:.rp-legend span{display:inline-flex;gap:1.5mm;align-items:center}
+5106:.pj-more>summary{list-style:none;display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border:1px solid var(--rule);border-radius:var(--r);background:var(--sheet);cursor:pointer;font-size:18px}
+5125:#proj-menu-btn{display:inline-flex;gap:6px;align-items:center}
+5827:.zbar{display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center;margin-left:auto}
+5830:.zgrp{display:inline-flex;align-items:stretch;border:1px solid var(--rule);border-radius:var(--r);background:var(--sheet);overflow:hidden}
 diff --git a/index.html b/index.html
 index a4b8434..0dccded 100644
 --- a/index.html
@@ -665,21 +340,58 @@ index a4b8434..0dccded 100644
    const t=e.target.closest('[data-z],[data-pedit],[data-mpick],[data-fs-open],[data-fs-close],[data-layer],[data-sheet],[data-plist]'); if(!t) return;
 
 codex
-Изменён только `index.html`:
+Правки первого прохода уже есть. По замечаниям в `TASK.md` изменю только два CSS-правила: скрою кнопку «Слои ▾» на телефоне, включая полноэкранный режим, и повторную подпись «Слои» в меню на компьютере.
 
-- `stepPlan()` — ссылки перенесены в пояснение, удалена привязка `pmode-bar`.
-- `layersBarHtml()` и стили — добавлено выпадающее меню для компьютера.
-- `handleLayMenu()` и `go()` — переключение, закрытие, возврат фокуса и сброс состояния.
-- `applyFs()` — меню переносится в шапку полного экрана.
+apply patch
+patch: completed
+C:\Users\pro10\refectory-app\index.html
+diff --git a/index.html b/index.html
+index 878d09dc892efc37af9a2f7d9e5ad069a6d4994c..40f05fa7d137abf25b9f57d058b25501ece4984e
+--- a/index.html
++++ b/index.html
+@@ -5842,10 +5842,11 @@
+ @media (min-width:900px){
+   .lay-menu{position:relative}
+   .lay-pop{display:none}
++  .lay-pop>.lbl{display:none}
+   .lay-menu.open .lay-pop{display:flex;position:absolute;top:calc(100% + 6px);left:0;z-index:20;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:max-content}
+ }
+ @media (max-width:899px){
+-  .lay-tgl{display:none}
++  .plan-bar .lay-menu>.lay-tgl,.pfs-head .lay-menu>.lay-tgl{display:none}
+   .plan-bar>.lay-menu{flex:0 1 auto;min-width:0}
+   .plan-bar>.lay-menu>.plan-layers{margin:0}
+ }
 
-Проверены синтаксис, логика меню и неизменность разметки слоёв других шагов. Визуальная проверка на 1366 и 390 px не проводилась.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "node -e \"for(const m of ['playwright','puppeteer']){try{console.log(m+': '+require.resolve(m))}catch{console.log(m+': unavailable')}}\"; git diff --check -- index.html" in C:\Users\pro10\refectory-app
+ succeeded in 378ms:
+playwright: unavailable
+puppeteer: unavailable
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync('index.html','utf8');
+let count=0;
+for(const match of html.matchAll(/<script\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/gi)){if(match[1].trim()){new vm.Script(match[1]);count++;}}
+assert(html.includes('@media (min-width:900px){\\n  .lay-menu{position:relative}\\n  .lay-pop{display:none}\\n  .lay-pop>.lbl{display:none}'.replace(/\\n/g,html.includes('\\r\\n')?'\\r\\n':'\\n')));
+assert(html.includes('.plan-bar .lay-menu>.lay-tgl,.pfs-head .lay-menu>.lay-tgl{display:none}'));
+console.log('JS syntax OK ('+count+' scripts); targeted CSS checks OK');
+'@ | node" in C:\Users\pro10\refectory-app
+ succeeded in 613ms:
+JS syntax OK (7 scripts); targeted CSS checks OK
+
+codex
+В `index.html` изменены только два CSS-правила:
+- Усилена специфичность скрытия «Слои ▾» на телефоне, включая полноэкранный режим.
+- Скрыта повторная подпись «Слои» в меню при ширине от 900 px.
+
+Правки первого прохода сохранены. Проверки синтаксиса JavaScript и `git diff --check` прошли. В браузере не проверял.
 tokens used
-31 218
-Изменён только `index.html`:
+24 027
+В `index.html` изменены только два CSS-правила:
+- Усилена специфичность скрытия «Слои ▾» на телефоне, включая полноэкранный режим.
+- Скрыта повторная подпись «Слои» в меню при ширине от 900 px.
 
-- `stepPlan()` — ссылки перенесены в пояснение, удалена привязка `pmode-bar`.
-- `layersBarHtml()` и стили — добавлено выпадающее меню для компьютера.
-- `handleLayMenu()` и `go()` — переключение, закрытие, возврат фокуса и сброс состояния.
-- `applyFs()` — меню переносится в шапку полного экрана.
-
-Проверены синтаксис, логика меню и неизменность разметки слоёв других шагов. Визуальная проверка на 1366 и 390 px не проводилась.
+Правки первого прохода сохранены. Проверки синтаксиса JavaScript и `git diff --check` прошли. В браузере не проверял.

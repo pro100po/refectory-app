@@ -1,5 +1,5 @@
 diff --git a/index.html b/index.html
-index a4b8434..0dccded 100644
+index a4b8434..a7fbfc7 100644
 --- a/index.html
 +++ b/index.html
 @@ -2210,7 +2210,7 @@ document.addEventListener('keydown',e=>{ if(!e.altKey||e.ctrlKey||e.metaKey||(e.
@@ -29,7 +29,7 @@ index a4b8434..0dccded 100644
    bindRoomTabs();
    const mvr=document.getElementById('mv-room'); mvr&&mvr.addEventListener('change',()=>{ S.unitRoom[sel]=mvr.value; if(S.layoutManual) delete S.layout[sel]; else S.layoutSig=''; const nm=roomName(S,mvr.value); sel=null; touch(); render(); toast(S.layoutManual?`Перенесено в «${nm}» — ищите в резерве этого помещения`:`Перенесено в «${nm}»`); });
    if(planMode!=='equip'){ bindRoomEditor(); return; }
-@@ -5840,6 +5838,17 @@ const ZOOM_CSS=`
+@@ -5840,6 +5838,18 @@ const ZOOM_CSS=`
  .plan-layers .lay[aria-pressed="false"]{color:var(--ink-2);background:transparent}
  .plan-layers .lay[aria-pressed="true"]::before{content:"✓";margin-right:2px;color:var(--steel);font-weight:700}
  .plan-layers .dims-seg{gap:6px}
@@ -37,17 +37,18 @@ index a4b8434..0dccded 100644
 +@media (min-width:900px){
 +  .lay-menu{position:relative}
 +  .lay-pop{display:none}
++  .lay-pop>.lbl{display:none}
 +  .lay-menu.open .lay-pop{display:flex;position:absolute;top:calc(100% + 6px);left:0;z-index:20;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:max-content}
 +}
 +@media (max-width:899px){
-+  .lay-tgl{display:none}
++  .plan-bar .lay-menu>.lay-tgl,.pfs-head .lay-menu>.lay-tgl{display:none}
 +  .plan-bar>.lay-menu{flex:0 1 auto;min-width:0}
 +  .plan-bar>.lay-menu>.plan-layers{margin:0}
 +}
  .touch-hint{font-size:13px;color:var(--ink-2);margin:8px 0 0}
  #plan .hold-on rect,#plan .hold-on circle,#plan polygon.hold-on,#plan rect.rm-bg.hold-on{stroke:var(--accent)!important;stroke-width:5px!important}
  /* список под планом */
-@@ -5913,14 +5922,15 @@ function updateBars(f){
+@@ -5913,14 +5923,15 @@ function updateBars(f){
      if(m) m.disabled=z<=0.1+1e-9; if(pl) pl.disabled=z>=4-1e-9; });
  }
  /* ---- слои ---- */
@@ -65,7 +66,7 @@ index a4b8434..0dccded 100644
  }
  function touchHintHtml(mode){
    if(!isTouch()) return '';
-@@ -6100,7 +6110,7 @@ function applyFs(){
+@@ -6100,7 +6111,7 @@ function applyFs(){
    const ov=document.createElement('div'); ov.className='plan-fs'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true');
    ov.setAttribute('aria-label', 'План на весь экран');
    const head=document.createElement('div'); head.className='pfs-head'; const foot=document.createElement('div'); foot.className='pfs-foot';
@@ -74,7 +75,7 @@ index a4b8434..0dccded 100644
    ov.append(head, box, foot); main.appendChild(ov);
    document.documentElement.classList.add('pfs-lock');
  }
-@@ -6122,6 +6132,21 @@ function planAfter(){
+@@ -6122,6 +6133,21 @@ function planAfter(){
  for(const i of [1,2,5]){ const b0=bind[i]; bind[i]=()=>{ b0&&b0(); planAfter(); }; }
  const goPrev=go; go=function(i){ if(fsField){ fsField=null; document.documentElement.classList.remove('pfs-lock'); } return goPrev(i); };
  

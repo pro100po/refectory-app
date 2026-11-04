@@ -1,7 +1,0 @@
-﻿
-warning: in the working copy of 'versions.html', LF will be replaced by CRLF the next time Git touches it
-[main fb70060] Пункт аудита 30.2.2, шаг «Помещения»: слои в меню «Слои ▾» — строка инструментов не переносится и при открытой панели
- 5 files changed, 6187 insertions(+), 3 deletions(-)
- create mode 100644 versions/2026-11-04_1630.html
-To https://github.com/pro100po/refectory-app.git
-   e7f46d0..fb70060  main -> main

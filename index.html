@@ -2263,6 +2263,7 @@ let S = (()=>{ const id=STORE.last()||((STORE.list()[0]||{}).id); const d=id&&ST
   if(d){ try{ const m=migrate(d); if(m){ ensureIds(m,id); return m; } }catch(e){} }
   const e=exampleState(); e.pid=''; return e; })();   // pid пустой — проект не выбран, ничего не сохраняется
 let step=0, sel=null, zoom=1, showZones=false, P=null, confirmReset=false;
+let planRebuilt=false;
 let selSet=new Set();   // выделенное оборудование на «Плане» (режим «Оборудование»); sel — главный, последний добавленный
 let heatRecOpen=false, heatRecOff=new Set(), heatRecErr=false;   // панель «Типовой набор изменит»: снятые галочки, предупреждение
 let planMode='equip', selRoom=null, addMode=null, editUid=null, formErr=false, draft=null;
@@ -2341,7 +2342,7 @@ function recompute(){
   if(P.manualConverted){ setTimeout(()=>toast('Ручной режим заменён правками — расчёт снова обновляется'),50); save(); }
   P.roomOf=assignRooms(S, real);
   const sig=JSON.stringify([real.map(u=>u.key+u.c.w+u.c.d+u.c.h+u.c.mount+(u.c.roomId||'')), S.rooms, S.unitRoom, S.norms.align, S.norms.work, [S.norms.elPanelDepth,S.norms.elPanelWidth,S.norms.elPanelLowH,S.norms.elWaterDist], S.norms.sewerMax, 'flow3']);
-  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ const r=layoutAll(S,real); S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room; S.inserts=r.inserts.map(i=>({key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, gap:i.c.gap||0, room:i.room})); S.layoutSig=sig; }
+  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ if(S.layoutSig) planRebuilt=true; const r=layoutAll(S,real); S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room; S.inserts=r.inserts.map(i=>({key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, gap:i.c.gap||0, room:i.room})); S.layoutSig=sig; }
   S.inserts=(S.inserts||[]).filter(i=>S.layout[i.key]||i.off);
   const ins=insertUnits(S.inserts); S.inserts.forEach(i=>{ P.roomOf[i.key]=i.room&&S.rooms.some(r=>r.id===i.room)?i.room:S.rooms[0].id; });
   P.units=[...real, ...ins];
@@ -2418,6 +2419,7 @@ function render(){
   bind[step]&&bind[step]();
   renderNav();
   setSyncValues(); updSetUi(); fitPal();
+  if(step===5 && planRebuilt){ toast('План пересобран: исходные изменились, ручных правок расстановки не было'); planRebuilt=false; }
 }
 // шаги без своего блока проверки: вверху — «На этом шаге: …», список свёрнут; на «Плане» — замечания других помещений
 // у «Помещений», «Имеющегося», «Подбора», «Инженерии» свой блок замечаний

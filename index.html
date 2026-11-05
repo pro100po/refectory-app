@@ -3368,6 +3368,11 @@ function pointSvg(p, mode){
     if(mk.lead){ const l=mk.lead; deco+=`<line x1="${n(l[0])}" y1="${n(l[1])}" x2="${n(l[2])}" y2="${n(l[3])}" stroke="var(${d.col})" stroke-width="${n(k?1.5/k:1.5)}"/>`; } }
   return g+`<g class="ptm" data-ptid="${p.id}" ${attr}>${deco}<circle cx="${n(mk.x)}" cy="${n(mk.y)}" r="${n(R)}" fill="var(${d.col})" ${mk.wall?'':'fill-opacity=".75"'} stroke="${isSel?'var(--ink)':'var(--sheet)'}" stroke-width="${n(sw)}"/><text x="${n(mk.x)}" y="${n(mk.y)}" font-size="${n(fs)}" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="var(--sheet)">${d.l}</text></g>`;
 }
+function issueBadgeSvg(t,w,r,ang){
+  if(!t) return '';
+  const x=w-r-1, y=r+1;
+  return `<g class="iss-badge" style="pointer-events:none" transform="translate(${x},${y}) rotate(${-ang})">${t==='bad'?`<circle r="${r}" fill="var(--bad)"/>`:`<polygon points="0,${-r} ${r*Math.sqrt(3)/2},${r/2} ${-r*Math.sqrt(3)/2},${r/2}" fill="var(--warn)"/>`}<text x="0" y="${r*(t==='bad'?.08:.05)}" text-anchor="middle" dominant-baseline="central" font-size="${r*(t==='bad'?1.6:1.2)}" font-weight="bold" fill="${t==='bad'?'#fff':'var(--ink)'}">!</text></g>`;
+}
 function planSvg(mode, iss, opts){
   opts=opts||{};
   // помещение можно передать явно: на время отрисовки S.room указывает на него, потом всё возвращается
@@ -3399,10 +3404,11 @@ function planSvg(mode, iss, opts){
     const fe=pos.rot===0?[0,h,w,h]:pos.rot===180?[0,0,w,0]:pos.rot===90?[0,0,0,h]:[w,0,w,h];
     const st=bad.has(u.key)?'var(--bad)':selSet.has(u.key)?'var(--ink)':warn.has(u.key)?'var(--warn)':c;
     const dash = wall ? 'stroke-dasharray="3 5"' : u.src==='have' ? 'stroke-dasharray="7 4"' : '';
-    return `<g class="it" data-key="${esc(u.key)}" transform="${posAng(pos)?skewTransform(u.c,pos):`translate(${b.x*100},${b.y*100})`}" ${mode!=='equip'?'style="pointer-events:none;opacity:.4"':''}>
+    const r=Math.min(scrK?Math.max(9,7/scrK):9,Math.min(w,h)/2-1);
+    return `<g class="it" data-key="${esc(u.key)}" ${mode==='equip'?`data-iss-r="${r}"`:''} transform="${posAng(pos)?skewTransform(u.c,pos):`translate(${b.x*100},${b.y*100})`}" ${mode!=='equip'?'style="pointer-events:none;opacity:.4"':''}>
       <rect width="${w}" height="${h}" rx="2" fill="${c}" fill-opacity="${wall?.06:u.src==='have'?.12:.24}" stroke="${st}" stroke-width="${selSet.has(u.key)||bad.has(u.key)?4:2}" ${dash}/>
       ${wall?'':`<line x1="${fe[0]}" y1="${fe[1]}" x2="${fe[2]}" y2="${fe[3]}" stroke="${c}" stroke-width="6"/>`}
-      <title>${esc(u.c.n)}${u.src==='have'?' (имеется)':''}</title>${eqLabel(u.c,w,h,u)}</g>`;
+      <title>${esc(u.c.n)}${u.src==='have'?' (имеется)':''}</title>${eqLabel(u.c,w,h,u)}${mode==='equip'?issueBadgeSvg(bad.has(u.key)?'bad':warn.has(u.key)?'warn':null,w,r,posAng(pos)):''}</g>`;
   }).join('');
   const walls=hasPoly(S.room)?wallsPathSvg(S.room,T,'var(--ink)'):`<g stroke="var(--ink)" stroke-width="${T}" stroke-linecap="square"><line x1="${-T/2}" y1="${-T/2}" x2="${W+T/2}" y2="${-T/2}"/><line x1="${W+T/2}" y1="${-T/2}" x2="${W+T/2}" y2="${D+T/2}"/><line x1="${-T/2}" y1="${D+T/2}" x2="${W+T/2}" y2="${D+T/2}"/><line x1="${-T/2}" y1="${-T/2}" x2="${-T/2}" y2="${D+T/2}"/></g>`;
   let swSvg='';
@@ -3698,7 +3704,9 @@ function startEquipDrag(e,g){
     const bad=new Set(rest.filter(i=>i.t==='bad').map(i=>i.key)), warn=new Set(rest.filter(i=>i.t==='warn').map(i=>i.key));
     svg.querySelectorAll(uni?`g[data-rg="${src.id}"] .it`:'.it').forEach(el=>{ const kk=el.dataset.key, v=CU.find(x=>x.key===kk), r=el.querySelector('rect'); if(!v||!r) return;
       const me=excl.has(kk), st=me?`var(--z-${v.c.z})`:bad.has(kk)?'var(--bad)':selSet.has(kk)?'var(--ink)':warn.has(kk)?'var(--warn)':`var(--z-${v.c.z})`;
-      r.setAttribute('stroke',st); r.setAttribute('stroke-width',!me&&(selSet.has(kk)||bad.has(kk))?4:2); });
+      r.setAttribute('stroke',st); r.setAttribute('stroke-width',!me&&(selSet.has(kk)||bad.has(kk))?4:2);
+      const badge=el.querySelector('.iss-badge'); if(badge) badge.remove();
+      if(!me && el.dataset.issR) el.insertAdjacentHTML('beforeend',issueBadgeSvg(bad.has(kk)?'bad':warn.has(kk)?'warn':null,+r.getAttribute('width'),+el.dataset.issR,posAng(S.layout[kk]))); });
     svg.querySelectorAll('.grp-box').forEach(x=>x.remove());
     // перетаскиваемые — поверх всех помещений
     if(uni){ const sg=svg.querySelector(`g[data-rg="${src.id}"]`); sg&&svg.appendChild(sg); }

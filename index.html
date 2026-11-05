@@ -3342,10 +3342,11 @@ function openingSvg(o, mode){
     const Lf=[H[0]+g.nx*dir*w, H[1]+g.ny*dir*w];
     const a1=Math.atan2(Lf[1]-H[1],Lf[0]-H[0]), a2=Math.atan2(E[1]-H[1],E[0]-H[0]); let dl=a2-a1; while(dl>Math.PI) dl-=2*Math.PI; while(dl<=-Math.PI) dl+=2*Math.PI;
     out+=`<line x1="${H[0]}" y1="${H[1]}" x2="${Lf[0]}" y2="${Lf[1]}" stroke="var(--ink)" stroke-width="3"/><path d="M ${Lf[0]} ${Lf[1]} A ${w} ${w} 0 0 ${dl>0?1:0} ${E[0]} ${E[1]}" fill="none" stroke="var(--ink-2)" stroke-width="1.3"/>`;
-    const off=mode==='equip'?-20:(o.swing==='in'?w+20:22), mx=(A[0]+B[0])/2+g.nx*off, my=(A[1]+B[1])/2+g.ny*off, vert=wallById(S.room,o.side).axis==='v';
     const lab=doorLabel(o), dfs=scrK?Math.max(15,11/scrK):15;   // на экране — не мельче 11 px; не помещается у двери — не пишем
-    if(!(typeof planUnified==='function' && (planUnified()||(step===1&&S.rooms.length>1)) && (o.derived || String(o.to||'').startsWith('room:'))) && (!scrK || (layerOn('labels') && lab.length*0.55*dfs<=w+60)))
-      out+=`<text x="${mx}" y="${my}" font-size="${+dfs.toFixed(2)}" fill="var(--ink-2)" text-anchor="middle" dominant-baseline="central" ${wallById(S.room,o.side).axis===null?`transform="rotate(${wallTextAngle(wallById(S.room,o.side))} ${mx} ${my})"`:vert?`transform="rotate(-90 ${mx} ${my})"`:''}>${esc(lab)}</text>`;
+    const wall=wallById(S.room,o.side), angle=wall.axis===null?wallTextAngle(wall):wall.axis==='v'?-90:0, off=-(T+dfs/2+4), along=o.swing==='in'?0:6/Math.hypot(E[0]-H[0],E[1]-H[1]), mx=(o.swing==='in'?(A[0]+B[0])/2:E[0]+(E[0]-H[0])*along)+g.nx*off, my=(o.swing==='in'?(A[1]+B[1])/2:E[1]+(E[1]-H[1])*along)+g.ny*off;
+    const anchor=o.swing==='in'?'middle':(E[0]-H[0])*Math.cos(angle*Math.PI/180)+(E[1]-H[1])*Math.sin(angle*Math.PI/180)>0?'start':'end';
+    if(!(typeof planUnified==='function' && (planUnified()||(step===1&&S.rooms.length>1)) && (o.derived || String(o.to||'').startsWith('room:'))) && (!scrK || (layerOn('labels') && lab.length*0.55*dfs<=w+60 && 14+dfs<=36)))
+      out+=`<text x="${mx}" y="${my}" font-size="${+dfs.toFixed(2)}" fill="var(--ink-2)" text-anchor="${anchor}" dominant-baseline="central" paint-order="stroke" stroke="var(--sheet)" stroke-width="3" ${wall.axis===null||wall.axis==='v'?`transform="rotate(${angle} ${mx} ${my})"`:''}>${esc(lab)}</text>`;
   }
   if(mode==='room'){
     const hx=-g.nx*30, hy=-g.ny*30, ix=g.nx*30, iy=g.ny*30;

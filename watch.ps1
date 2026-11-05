@@ -1,5 +1,6 @@
 ﻿# Наблюдатель: запускает GPT (Codex) и git по сигнальным файлам от Claude.
-# После принятой правки: коммит, копия приложения в versions/, обновление versions.html, отправка на GitHub.
+# Принят промежуточный шаг пункта (step.flag): только коммит на компьютере, на GitHub ничего не уходит.
+# Принят пункт целиком (accept.flag): коммит, копия приложения в versions/, обновление versions.html, отправка на GitHub.
 Set-Location $PSScriptRoot
 $Host.UI.RawUI.WindowTitle = "Claude + GPT watcher"
 $utf8 = New-Object System.Text.UTF8Encoding $false
@@ -110,19 +111,29 @@ function Do-Run {
   Write-Host "$(Get-Date -Format HH:mm:ss)  GPT закончил. Claude проверяет правку..."
 }
 
-function Do-Accept {
-  Remove-Item "accept.flag", "done.flag" -ErrorAction SilentlyContinue
+function Do-Accept([switch]$Step) {
+  Remove-Item "$(if ($Step) { 'step' } else { 'accept' }).flag", "done.flag" -ErrorAction SilentlyContinue
   $msg1 = ([System.IO.File]::ReadAllLines((Join-Path $PSScriptRoot "commit-msg.txt"), $utf8))[0]
   Write-Host "$(Get-Date -Format HH:mm:ss)  Claude принял правку: $msg1" -ForegroundColor Green
   Set-Content "git-log.txt" "" -Encoding UTF8
   cmd /c 'git add -A >> git-log.txt 2>&1'
-  $changed = cmd /c "git diff --cached --name-only"
+  if ($Step) {
+    cmd /c 'git commit -F commit-msg.txt >> git-log.txt 2>&1'
+    Set-Content "done.flag" "step"
+    Write-Host "$(Get-Date -Format HH:mm:ss)  Шаг сохранён на компьютере, на GitHub не отправлен."
+    return
+  }
+  # Сравнение с GitHub, а не с прошлым коммитом: в публикацию войдут и принятые ранее шаги.
+  $changed = cmd /c "git diff --cached --name-only origin/main"
   if ($changed -contains "index.html") {
     Archive-Version $msg1
     cmd /c 'git add versions versions.html >> git-log.txt 2>&1'
     Write-Host "$(Get-Date -Format HH:mm:ss)  Версия сохранена в историю."
   }
-  cmd /c 'git commit -F commit-msg.txt >> git-log.txt 2>&1'
+  cmd /c 'git diff --cached --quiet'
+  if ($LASTEXITCODE -ne 0) { cmd /c 'git commit -F commit-msg.txt >> git-log.txt 2>&1' }
+  # Коммита могло не быть (всё уже принято шагами), но отправить всё равно нужно. Не отправляем, только если коммит не удался.
+  cmd /c 'git diff --cached --quiet'
   if ($LASTEXITCODE -eq 0) { Push-Site }
   Set-Content "done.flag" "accept"
   Write-Host "$(Get-Date -Format HH:mm:ss)  Готово."
@@ -138,7 +149,8 @@ function Do-Reject {
 # ---------- Мост с облачной сессией Claude через GitHub ----------
 # Облачный Claude кладёт в свою ветку claude/* файлы bridge/cmd.txt («<id> <команда>»), bridge/task.md, bridge/commit.txt.
 # Команды: run — новое задание (index.html сначала возвращается к последней принятой версии),
-#          rerun — повтор с замечаниями (правки GPT сохраняются), accept — принять, reject — отклонить.
+#          rerun — повтор с замечаниями (правки GPT сохраняются), accept-step — принять шаг без публикации,
+#          accept — принять пункт целиком и опубликовать, reject — отклонить.
 # Наблюдатель раз в ~30 с проверяет ветки, выполняет новую команду и отвечает в ту же ветку:
 # bridge/result/status.txt («<id> <итог>») и файлы результата. Рабочую папку при ответе не трогает.
 $BridgeState = Join-Path $PSScriptRoot "bridge-state.txt"
@@ -219,6 +231,12 @@ function Bridge-Check {
         Do-Run
         Bridge-Reply $c.branch $c.id "done" @("index.html", "review.diff", "codex-log.txt")
       }
+      "accept-step" {
+        cmd /c "git show ${ref}:bridge/commit.txt > commit-msg.txt"
+        cmd /c "git checkout $ref -- notes >nul 2>&1"
+        Do-Accept -Step
+        Bridge-Reply $c.branch $c.id "accepted-step" @("index.html", "git-log.txt")
+      }
       "accept" {
         cmd /c "git show ${ref}:bridge/commit.txt > commit-msg.txt"
         cmd /c "git checkout $ref -- notes >nul 2>&1"   # заметки облачных сессий — в main
@@ -255,6 +273,7 @@ while ($true) {
     Show-Note $t.Trim()
   }
   if (Test-Path "go.flag") { Do-Run }
+  if (Test-Path "step.flag") { Do-Accept -Step }
   if (Test-Path "accept.flag") { Do-Accept }
   if (Test-Path "reject.flag") { Do-Reject }
   $script:bridgeTick++

@@ -1,0 +1,1059 @@
+OpenAI Codex v0.166.0
+--------
+workdir: C:\Users\pro10\refectory-app
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a1aacf-2511-77a3-b2de-13220afed736
+--------
+user
+Execute the task described in TASK.md. Follow the rules in AGENTS.md strictly.
+codex
+Прочитаю `TASK.md` и правила `AGENTS.md`, затем внесу изменения только в рамках задания.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -LiteralPath TASK.md; Get-Content -LiteralPath AGENTS.md' in C:\Users\pro10\refectory-app
+ succeeded in 379ms:
+# ÐŸÑƒÐ½ÐºÑ‚ Ð°ÑƒÐ´Ð¸Ñ‚Ð° 35: Ð´Ð»Ð¸Ð½Ð° ÑÑ‚Ð¾Ð»Ð°-Ð²ÑÑ‚Ð°Ð²ÐºÐ¸ â€” Ð²Ð½Ð¸Ð· Ð´Ð¾ 10 Ð¼Ð¼, Ð¾ÑÑ‚Ð°Ñ‚Ð¾Ðº Ð·Ð°Ð·Ð¾Ñ€Ð° Ð²Ð¸Ð´ÐµÐ½
+Ð˜ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒ: sol / medium
+
+## Ð¦ÐµÐ»ÑŒ
+Ð¡Ñ‚Ð¾Ð»Ñ‹-Ð²ÑÑ‚Ð°Ð²ÐºÐ¸ (`insC`) Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÑŽÑ‚ Ð´Ð»Ð¸Ð½Ñƒ Ñ€Ð¾Ð²Ð½Ð¾ Ð¿Ð¾ Ð¿Ñ€Ð¾Ð¼ÐµÐ¶ÑƒÑ‚ÐºÑƒ: `pl=(e-a)/n` Ð² `fillGaps` Ð¸ `rem=len-t0` Ð² `closeCorner` (Ð²Ð½ÑƒÑ‚Ñ€Ð¸ `packForward`). ÐŸÑ€Ð¾Ð¼ÐµÐ¶ÑƒÑ‚Ð¾Ðº Ð²Ñ€Ð¾Ð´Ðµ 999,6 Ð¼Ð¼ Ð´Ð°Ñ‘Ñ‚ ÑÑ‚Ð¾Ð» Â«999Â» Ð¸Ð»Ð¸ Â«1000Â» Ñ Ð½Ð°Ð»Ð¾Ð¶ÐµÐ½Ð¸ÐµÐ¼ Ð½Ð° ÑÐ¾ÑÐµÐ´Ð°. ÐÑƒÐ¶Ð½Ð¾: Ð´Ð»Ð¸Ð½Ð° ÑÑ‚Ð¾Ð»Ð° = Ð¿Ñ€Ð¾Ð¼ÐµÐ¶ÑƒÑ‚Ð¾Ðº, ÑÐ½Ð°Ñ‡Ð°Ð»Ð° Ð¾ÐºÑ€ÑƒÐ³Ð»Ñ‘Ð½Ð½Ñ‹Ð¹ Ð´Ð¾ Ñ†ÐµÐ»Ð¾Ð³Ð¾ Ð¼Ð¼ (ÑƒÐ±Ñ€Ð°Ñ‚ÑŒ Ð¿Ð¾Ð³Ñ€ÐµÑˆÐ½Ð¾ÑÑ‚ÑŒ Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ð¹), Ð·Ð°Ñ‚ÐµÐ¼ Ð²Ð½Ð¸Ð· Ð´Ð¾ 10 Ð¼Ð¼. ÐžÑÑ‚Ð°Ñ‚Ð¾Ðº Ð¾ÑÑ‚Ð°Ñ‘Ñ‚ÑÑ Ð¿ÑƒÑÑ‚Ñ‹Ð¼ Ð·Ð°Ð·Ð¾Ñ€Ð¾Ð¼ Ð¸ Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ÑÑ Ð² Â«ÐŸÐ¾Ð´Ð±Ð¾Ñ€ÐµÂ».
+
+## Ð§Ñ‚Ð¾ Ð¸Ð·Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ
+1. Ð¤ÑƒÐ½ÐºÑ†Ð¸Ñ Ñ€ÑÐ´Ð¾Ð¼ Ñ `insC`, Ð½Ð°Ð¿Ñ€Ð¸Ð¼ÐµÑ€ `insLen(len)`: `Math.floor(Math.round(len*1000)/10)*10/1000` â€” Ð¼ÐµÑ‚Ñ€Ñ‹, ÐºÑ€Ð°Ñ‚Ð½Ð¾ 10 Ð¼Ð¼.
+2. `fillGaps`: Ð¿Ñ€Ð¸ `n` ÑÑ‚Ð¾Ð»Ð°Ñ… Ð² Ð¿Ñ€Ð¾Ð¼ÐµÐ¶ÑƒÑ‚ÐºÐµ Ð´Ð»Ð¸Ð½Ð° ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ `pl=insLen((e-a)/n)`; ÑÑ‚Ð¾Ð»Ñ‹ ÑÑ‚Ð¾ÑÑ‚ Ð¿Ð¾Ð´Ñ€ÑÐ´ Ð¾Ñ‚ `a`, ÐºÐ°Ðº ÑÐµÐ¹Ñ‡Ð°Ñ (`a0=a+k*pl`), Ð²ÐµÑÑŒ Ð¾ÑÑ‚Ð°Ñ‚Ð¾Ðº `(e-a)-n*pl` â€” Ð² ÐºÐ¾Ð½Ñ†Ðµ Ð¿Ñ€Ð¾Ð¼ÐµÐ¶ÑƒÑ‚ÐºÐ°. Ð•ÑÐ»Ð¸ `pl<0.3` â€” ÑÑ‚Ð¾Ð»Ñ‹ Ð½Ðµ ÑÑ‚Ð°Ð²Ð¸Ñ‚ÑŒ.
+3. `closeCorner` Ð² `packForward`: Ð´Ð»Ð¸Ð½Ð° `insLen(rem)`, ÑÑ‚Ð¾Ð» ÑÑ‚Ð¾Ð¸Ñ‚ Ð¾Ñ‚ `t0` (Ð²Ð¿Ð»Ð¾Ñ‚Ð½ÑƒÑŽ Ðº ÑÐ¾ÑÐµÐ´Ñƒ), Ð¾ÑÑ‚Ð°Ñ‚Ð¾Ðº â€” Ñƒ ÑƒÐ³Ð»Ð°. Ð•ÑÐ»Ð¸ Ð¿Ð¾ÑÐ»Ðµ Ð¾ÐºÑ€ÑƒÐ³Ð»ÐµÐ½Ð¸Ñ Ð´Ð»Ð¸Ð½Ð° < 0.3 â€” Ð½Ðµ ÑÑ‚Ð°Ð²Ð¸Ñ‚ÑŒ.
+4. Ð—Ð°Ð·Ð¾Ñ€ Ð·Ð°Ð¿Ð¾Ð¼Ð½Ð¸Ñ‚ÑŒ Ñƒ ÑÑ‚Ð¾Ð»Ð°: Ð¿Ð¾Ð»Ðµ `gap` (Ð¼, Ð¾ÑÑ‚Ð°Ñ‚Ð¾Ðº Ð¿Ñ€Ð¾Ð¼ÐµÐ¶ÑƒÑ‚ÐºÐ°, `+x.toFixed(3)`) Ð² Ð¾Ð±ÑŠÐµÐºÑ‚Ðµ `c` Ð²ÑÑ‚Ð°Ð²ÐºÐ¸; Ð² `recompute` Ð¿Ñ€Ð¸ Ð·Ð°Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¸Ð¸ `S.inserts` ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÑ‚ÑŒ `gap`; `insertUnits` Ð¿ÐµÑ€ÐµÐ´Ð°Ñ‘Ñ‚ `gap` Ð² `c`. Ð’ ÑÑ‚Ð°Ñ€Ñ‹Ñ… Ð¿Ñ€Ð¾ÐµÐºÑ‚Ð°Ñ… `gap` Ð½ÐµÑ‚ â€” ÑÑ‡Ð¸Ñ‚Ð°Ñ‚ÑŒ 0.
+5. Â«ÐŸÐ¾Ð´Ð±Ð¾Ñ€Â», Ð±Ð»Ð¾Ðº Â«Ð¡Ñ‚Ð¾Ð»Ñ‹-Ð²ÑÑ‚Ð°Ð²ÐºÐ¸ Ð¿Ð¾ Ð¿Ð»Ð°Ð½ÑƒÂ» (`stepSelect`, `insHtml`): ÐµÑÐ»Ð¸ Ñƒ ÑÑ‚Ð¾Ð»Ð° Ð·Ð°Ð·Ð¾Ñ€ â‰¥ 1 Ð¼Ð¼, Ð¿Ð¾ÑÐ»Ðµ Â«Â· Ð·Ð°Ð¿Ð¾Ð»Ð½ÑÐµÑ‚ ÑƒÐ³Ð¾Ð» Ð¸Ð»Ð¸ Ð¿Ñ€Ð¾Ð¼ÐµÐ¶ÑƒÑ‚Ð¾Ðº Ð² Ð»Ð¸Ð½Ð¸Ð¸Â» Ð´Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ Â« Â· Ð·Ð°Ð·Ð¾Ñ€ N Ð¼Ð¼Â» (N â€” Ñ†ÐµÐ»Ñ‹Ðµ Ð¼Ð¼; Ñƒ Ð¾Ð´Ð¸Ð½Ð°ÐºÐ¾Ð²Ñ‹Ñ… ÑÑ‚Ð¾Ð»Ð¾Ð² Ñ Ñ€Ð°Ð·Ð½Ñ‹Ð¼Ð¸ Ð·Ð°Ð·Ð¾Ñ€Ð°Ð¼Ð¸ â€” Ð½Ð°Ð¸Ð±Ð¾Ð»ÑŒÑˆÐ¸Ð¹).
+
+## ÐÐµ Ñ‚Ñ€Ð¾Ð³Ð°Ñ‚ÑŒ
+Ð£ÑÐ»Ð¾Ð²Ð¸Ñ Ð¿Ð¾ÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ¸ Ð²ÑÑ‚Ð°Ð²Ð¾Ðº (`e-a<0.3 || e-a>1.6`, Ð³Ð»ÑƒÐ±Ð¸Ð½Ð° `dep`, Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ¸ `hits`, Ð¾ÐºÐ½Ð°, Ñ‰Ð¸Ñ‚), Ñ‡Ð¸ÑÐ»Ð¾ ÑÑ‚Ð¾Ð»Ð¾Ð² `n`, `id` Ð¸ Ñ†ÐµÐ½Ñƒ Ð² `insC`, Ñ€Ð°ÑÑÑ‚Ð°Ð½Ð¾Ð²ÐºÑƒ Ð¾ÑÑ‚Ð°Ð»ÑŒÐ½Ð¾Ð³Ð¾ Ð¾Ð±Ð¾Ñ€ÑƒÐ´Ð¾Ð²Ð°Ð½Ð¸Ñ, Ð¾ÑÑ‚Ð°Ð»ÑŒÐ½Ð¾Ð¹ Ñ„Ð°Ð¹Ð». Ð‘ÐµÐ· Ð¿ÐµÑ€ÐµÑ„Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ñ.
+
+## ÐšÑ€Ð¸Ñ‚ÐµÑ€Ð¸Ð¹ Ð³Ð¾Ñ‚Ð¾Ð²Ð½Ð¾ÑÑ‚Ð¸
+- `insLen(1.004)` = 1.0, `insLen(0.9996)` = 1.0, `insLen(0.9994)` = 0.99, `insLen(1.3)` = 1.3.
+- ÐŸÑ€Ð¸Ð¼ÐµÑ€ (Â«ÐžÑ‚ÐºÑ€Ñ‹Ñ‚ÑŒ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Â», ÑˆÐ°Ð³ Â«ÐŸÐ»Ð°Ð½Â»): Ð²ÑÑ‚Ð°Ð²ÐºÐ¸ 1300Ã—600 Ð¸ 950Ã—700, ÐºÐ°Ðº ÑÐµÐ¹Ñ‡Ð°Ñ, Ð±ÐµÐ· Ð¿Ñ€Ð¸Ð¿Ð¸ÑÐºÐ¸ Ð¾ Ð·Ð°Ð·Ð¾Ñ€Ðµ.
+- Ð¨Ð¸Ñ€Ð¸Ð½Ð° ÐºÑƒÑ…Ð½Ð¸ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð° 7204 Ð¼Ð¼ Ð²Ð¼ÐµÑÑ‚Ð¾ 7200: Ð²ÑÑ‚Ð°Ð²ÐºÐ° Ñƒ Ð¿Ñ€Ð°Ð²Ð¾Ð³Ð¾ ÑƒÐ³Ð»Ð° â€” 1300 Ð¼Ð¼, Ð² Â«ÐŸÐ¾Ð´Ð±Ð¾Ñ€ÐµÂ» Â«Â· Ð·Ð°Ð·Ð¾Ñ€ 4 Ð¼Ð¼Â».
+- Ð¡Ñ‚Ð¾Ð»-Ð²ÑÑ‚Ð°Ð²ÐºÐ° Ð½Ðµ Ð·Ð°Ñ…Ð¾Ð´Ð¸Ñ‚ Ð½Ð° ÑÐ¾ÑÐµÐ´ÐµÐ¹: `checkLayout` Ð±ÐµÐ· Ð½Ð¾Ð²Ñ‹Ñ… Ð½Ð°Ð»Ð¾Ð¶ÐµÐ½Ð¸Ð¹.
+# ÐŸÑ€Ð°Ð²Ð¸Ð»Ð° Ð´Ð»Ñ Ð¸ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»Ñ (Codex / GPT)
+
+Ð¢Ñ‹ â€” Ð¸ÑÐ¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒ. Ð—Ð°Ð´Ð°Ñ‡Ð¸ ÑÑ‚Ð°Ð²Ð¸Ñ‚ Ð¸ Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÐµÑ‚ Ð´Ñ€ÑƒÐ³Ð¾Ð¹ Ð°Ð³ÐµÐ½Ñ‚; Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ Ð²ÑÐµÐ³Ð´Ð° Ð»ÐµÐ¶Ð¸Ñ‚ Ð² `TASK.md`.
+
+1. Ð”ÐµÐ»Ð°Ð¹ **Ñ‚Ð¾Ð»ÑŒÐºÐ¾** Ñ‚Ð¾, Ñ‡Ñ‚Ð¾ Ð½Ð°Ð¿Ð¸ÑÐ°Ð½Ð¾ Ð² `TASK.md`. ÐÐ¸ÐºÐ°ÐºÐ¸Ñ… Â«Ð·Ð°Ð¾Ð´Ð½Ð¾ ÑƒÐ»ÑƒÑ‡ÑˆÑƒÂ».
+2. ÐÐµ Ð¿ÐµÑ€ÐµÑ„Ð¾Ñ€Ð¼Ð°Ñ‚Ð¸Ñ€ÑƒÐ¹ ÐºÐ¾Ð´, Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹ Ð¾Ñ‚ÑÑ‚ÑƒÐ¿Ñ‹, ÐºÐ°Ð²Ñ‹Ñ‡ÐºÐ¸, Ð¿Ð¾Ñ€ÑÐ´Ð¾Ðº ÑÑ‚Ñ€Ð¾Ðº Ð²Ð½Ðµ Ð·Ð¾Ð½Ñ‹ Ð·Ð°Ð´Ð°Ð½Ð¸Ñ.
+3. ÐÐµ Ñ‚Ñ€Ð¾Ð³Ð°Ð¹ ÑÐ¾ÑÐµÐ´Ð½Ð¸Ðµ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸, ÑÑ‚Ð¸Ð»Ð¸ Ð¸ Ñ‚ÐµÐºÑÑ‚Ñ‹, ÐµÑÐ»Ð¸ Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ ÑÑ‚Ð¾Ð³Ð¾ Ð½Ðµ Ñ‚Ñ€ÐµÐ±ÑƒÐµÑ‚.
+4. ÐÐµ ÑƒÐ´Ð°Ð»ÑÐ¹ ÐºÐ¾Ð´, ÐµÑÐ»Ð¸ ÑƒÐ´Ð°Ð»ÐµÐ½Ð¸Ðµ Ð¿Ñ€ÑÐ¼Ð¾ Ð½Ðµ ÑƒÐºÐ°Ð·Ð°Ð½Ð¾.
+5. ÐÐµ ÑÐ¾Ð·Ð´Ð°Ð²Ð°Ð¹ Ð½Ð¾Ð²Ñ‹Ðµ Ñ„Ð°Ð¹Ð»Ñ‹, ÐºÑ€Ð¾Ð¼Ðµ ÑƒÐ¿Ð¾Ð¼ÑÐ½ÑƒÑ‚Ñ‹Ñ… Ð² Ð·Ð°Ð´Ð°Ð½Ð¸Ð¸. ÐŸÑ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ðµ â€” Ð¾Ð´Ð¸Ð½ Ñ„Ð°Ð¹Ð» `index.html`, Ð²ÐµÑÑŒ ÐºÐ¾Ð´ Ð¾ÑÑ‚Ð°Ñ‘Ñ‚ÑÑ Ð² Ð½Ñ‘Ð¼.
+6. ÐÐµ Ð´ÐµÐ»Ð°Ð¹ `git commit`, `git reset`, `git checkout` â€” ÐºÐ¾Ð¼Ð¼Ð¸Ñ‚Ñ‹ Ð´ÐµÐ»Ð°ÐµÑ‚ Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÑŽÑ‰Ð¸Ð¹.
+7. Ð˜Ð½Ñ‚ÐµÑ€Ñ„ÐµÐ¹Ñ Ð¸ Ñ‚ÐµÐºÑÑ‚Ñ‹ â€” Ð½Ð° Ñ€ÑƒÑÑÐºÐ¾Ð¼, Ð² ÑÑ‚Ð¸Ð»Ðµ ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÑŽÑ‰Ð¸Ñ….
+8. Ð•ÑÐ»Ð¸ Ð·Ð°Ð´Ð°Ð½Ð¸Ðµ Ð½ÐµÑÑÐ½Ð¾ Ð¸Ð»Ð¸ Ð¿Ñ€Ð¾Ñ‚Ð¸Ð²Ð¾Ñ€ÐµÑ‡Ð¸Ñ‚ ÐºÐ¾Ð´Ñƒ â€” Ð½Ðµ ÑƒÐ³Ð°Ð´Ñ‹Ð²Ð°Ð¹: Ð½Ð¸Ñ‡ÐµÐ³Ð¾ Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹ Ð¸ Ð¾Ð¿Ð¸ÑˆÐ¸ Ð¿Ñ€Ð¾Ð±Ð»ÐµÐ¼Ñƒ Ð² ÐºÐ¾Ð½Ñ†Ðµ Ð¾Ñ‚Ð²ÐµÑ‚Ð°.
+9. Ð’ ÐºÐ¾Ð½Ñ†Ðµ Ð¾Ñ‚Ð²ÐµÑ‚Ð° ÐºÐ¾Ñ€Ð¾Ñ‚ÐºÐ¾ Ð¿ÐµÑ€ÐµÑ‡Ð¸ÑÐ»Ð¸: ÐºÐ°ÐºÐ¸Ðµ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸/Ñ„Ñ€Ð°Ð³Ð¼ÐµÐ½Ñ‚Ñ‹ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ñ‹ Ð¸ Ð·Ð°Ñ‡ÐµÐ¼.
+10. ÐŸÐ°Ð¿ÐºÑƒ `versions/` Ð¸ Ñ„Ð°Ð¹Ð» `versions.html` Ð½Ðµ Ð¾Ñ‚ÐºÑ€Ñ‹Ð²Ð°Ð¹, Ð½Ðµ Ð¸Ñ‰Ð¸ Ð² Ð½Ð¸Ñ… Ð¸ Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹ â€” ÑÑ‚Ð¾ Ð°Ñ€Ñ…Ð¸Ð² Ð¿Ñ€Ð¾ÑˆÐ»Ñ‹Ñ… Ð²ÐµÑ€ÑÐ¸Ð¹. Ð Ð°Ð±Ð¾Ñ‚Ð°Ð¹ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ñ `index.html`.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; Get-Content -Encoding UTF8 TASK.md; git status --short; rg -n 'function insC|function insertUnits|function fillGaps|closeCorner|S.inserts|insHtml|function recompute|function stepSelect|function packForward|function checkLayout' index.html" in C:\Users\pro10\refectory-app
+ succeeded in 334ms:
+# Пункт аудита 35: длина стола-вставки — вниз до 10 мм, остаток зазора виден
+Исполнитель: sol / medium
+
+## Цель
+Столы-вставки (`insC`) получают длину ровно по промежутку: `pl=(e-a)/n` в `fillGaps` и `rem=len-t0` в `closeCorner` (внутри `packForward`). Промежуток вроде 999,6 мм даёт стол «999» или «1000» с наложением на соседа. Нужно: длина стола = промежуток, сначала округлённый до целого мм (убрать погрешность вычислений), затем вниз до 10 мм. Остаток остаётся пустым зазором и показывается в «Подборе».
+
+## Что изменить
+1. Функция рядом с `insC`, например `insLen(len)`: `Math.floor(Math.round(len*1000)/10)*10/1000` — метры, кратно 10 мм.
+2. `fillGaps`: при `n` столах в промежутке длина каждого `pl=insLen((e-a)/n)`; столы стоят подряд от `a`, как сейчас (`a0=a+k*pl`), весь остаток `(e-a)-n*pl` — в конце промежутка. Если `pl<0.3` — столы не ставить.
+3. `closeCorner` в `packForward`: длина `insLen(rem)`, стол стоит от `t0` (вплотную к соседу), остаток — у угла. Если после округления длина < 0.3 — не ставить.
+4. Зазор запомнить у стола: поле `gap` (м, остаток промежутка, `+x.toFixed(3)`) в объекте `c` вставки; в `recompute` при заполнении `S.inserts` сохранять `gap`; `insertUnits` передаёт `gap` в `c`. В старых проектах `gap` нет — считать 0.
+5. «Подбор», блок «Столы-вставки по плану» (`stepSelect`, `insHtml`): если у стола зазор ≥ 1 мм, после «· заполняет угол или промежуток в линии» добавить « · зазор N мм» (N — целые мм; у одинаковых столов с разными зазорами — наибольший).
+
+## Не трогать
+Условия постановки вставок (`e-a<0.3 || e-a>1.6`, глубина `dep`, проверки `hits`, окна, щит), число столов `n`, `id` и цену в `insC`, расстановку остального оборудования, остальной файл. Без переформатирования.
+
+## Критерий готовности
+- `insLen(1.004)` = 1.0, `insLen(0.9996)` = 1.0, `insLen(0.9994)` = 0.99, `insLen(1.3)` = 1.3.
+- Пример («Открыть пример», шаг «План»): вставки 1300×600 и 950×700, как сейчас, без приписки о зазоре.
+- Ширина кухни примера 7204 мм вместо 7200: вставка у правого угла — 1300 мм, в «Подборе» «· зазор 4 мм».
+- Стол-вставка не заходит на соседей: `checkLayout` без новых наложений.
+warning: unable to access 'C:\Users\pro10/.config/git/ignore': Permission denied
+warning: unable to access 'C:\Users\pro10/.config/git/ignore': Permission denied
+?? .claude/
+1810:function insC(len,dep,z){ const lm=Math.round(len*1000), dm=Math.round(dep*1000);
+1812:function insertUnits(list){ return (list||[]).map(i=>({key:i.key, c:insC(i.w,i.d,i.z), src:'buy'})); }
+1863:function packForward(g, seq, startP, occ, out, reserve, runInit){
+1866:  const closeCorner=(sd,len,t0)=>{
+1887:      if(rest.every((u,k)=>k>=4 || t0+u.c.w>len-reserve+1e-6)){ const dep=closeCorner(sd,len,t0), jump=(len-t0)+dep+0.0005; p+=jump; trav+=jump; run={side:null,front:0,z:null}; }
+1899:function fillGaps(s, all, L, ins, cnt){
+2150:function checkLayout(s, units, L){ return checkUnit(s, units, L, null); }
+2337:function recompute(){
+2342:  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ const r=layoutAll(S,real); S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room; S.inserts=r.inserts.map(i=>({key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, room:i.room})); S.layoutSig=sig; }
+2343:  S.inserts=(S.inserts||[]).filter(i=>S.layout[i.key]||i.off);
+2344:  const ins=insertUnits(S.inserts); S.inserts.forEach(i=>{ P.roomOf[i.key]=i.room&&S.rooms.some(r=>r.id===i.room)?i.room:S.rooms[0].id; });
+2353:  P.foot+=S.inserts.reduce((a,i)=>a+i.w*i.d,0);
+3479:  if(u.c.insert){ const i=(S.inserts||[]).find(i=>i.key===key); if(i) i.room=rid; } else S.unitRoom[key]=rid; return true; }
+3919:function stepSelect(){
+3929:  const insHtml=ins.length?`<div class="zone-h"><span class="sw" style="background:var(--ink-2)"></span>Столы-вставки по плану</div><div class="rows">${ins.map(it=>`<div class="irow"><div class="nm">${esc(it.c.n)} <span class="muted">· заполняет угол или промежуток в линии</span></div><div class="meta"><span>${Math.round(it.c.w*1000)}×${Math.round(it.c.d*1000)}×870</span></div><div class="btns"><span class="tag buy">купить × ${it.qty}</span></div></div>`).join('')}</div>`:'';
+3936:  <section class="panel">${editsBar}${staleHtml}${list}${insHtml}
+4122:function toReserve(u,quiet){ delete S.layout[u.key]; (S.inserts||[]).forEach(i=>{ if(i.key===u.key) i.off=true; }); if(!quiet) toast(`«${shortName(u.c)}» — в резерве`); }
+4124:function placeFromReserve(u,pos){ (S.inserts||[]).forEach(i=>{ if(i.key===u.key) delete i.off; }); S.layoutRoom[u.key]=S.room.id; S.layout[u.key]=pos; S.layoutManual=true; sel=u.key; touch(); render(); }
+4201:  if(u.c.insert){ S.inserts=(S.inserts||[]).filter(i=>i.key!==u.key); delete S.layout[u.key]; delete S.layoutRoom[u.key]; toast(`«${nm}» удалено`); return; }
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $s=Get-Content -Encoding UTF8 index.html; $s[1799..1935]; $s[3918..3931]; rg -n '"'function .*example|function .*Example|7200|7.2|function layoutAll|<script|</script' index.html" in C:\Users\pro10\refectory-app
+ succeeded in 348ms:
+  const toDoor=(o,filt,w)=>{ if(!o) return; const dc=doorCenter(s,o);
+    for(const u of units){ if(!L[u.key]||!filt(u.c)) continue; sc+=w*gap(bbox(u.c,L[u.key]),dc); } };
+  toDoor(fd.hd, c=>c.z==='serve', 4); toDoor(fd.hd, c=>c.z==='wash', 1.5);
+  toDoor(fd.sd, c=>c.z==='store'||c.z==='cold', 1);
+  return sc;
+}
+/* ---------- расстановка по технологическому потоку ---------- */
+// приёмка → хранение → мытьё → чистка и разделка → нарезка → термообработка → сервировка → выдача; мойка посуды — после выдачи
+const ZFLOW=['san','store','cold','raw','hot','ready'];
+function subOrd(c){ const r=c.role||''; if(/^bath/.test(r)) return 0; if(/^table/.test(r)) return 1; return 2; }
+function insC(len,dep,z){ const lm=Math.round(len*1000), dm=Math.round(dep*1000);
+  return {id:'ins_'+lm+'x'+dm, n:`Стол-вставка ${lm}×${dm}`, lb:'Стол-вставка', lb2:'Вставка', s:'Вст', w:len, d:dep, h:0.87, z:z||'ready', mount:'floor', insert:1, kw:0, ph:1, role:'insert', p:Math.round((5000+len*9000)/500)*500}; }
+function insertUnits(list){ return (list||[]).map(i=>({key:i.key, c:insC(i.w,i.d,i.z), src:'buy'})); }
+function cwEdges(g,o){ return perimeterSpan(g.room,o.side,o.off,o.w); }
+function mirrorGeom(s){ return mirrorRoom(s); }
+function mirRect(W,r){ return {x:W-r.x-r.w, y:r.y, w:r.w, h:r.h}; }
+function mirPos(W,c,pos){ const b=bbox(c,pos); return {x:+(W-b.x-b.w).toFixed(3), y:pos.y, rot:pos.rot===90?270:pos.rot===270?90:pos.rot, ...(posAng(pos)?{ang:-posAng(pos), ...(pos.sw?{sw:pos.sw}:{})}:{})}; }
+const NOF={x:0,y:0,w:0,h:0};
+
+function geomHelpers(g, occ){
+  const W=g.room.w, D=g.room.d, P=perimLen(g.room), wg=g.wg==null?0.12:g.wg;
+  const blocks=g.openings.filter(o=>o.type==='door').map(o=>doorBlock(g,o)).concat(g.openings.filter(isProt).map(o=>protRect(g,o)));
+  // окно: под ним только низкое; высокое не ближе wg к краю проёма
+  const wins=g.openings.filter(o=>o.type==='window').map(o=>({r:bandOf(g,{side:o.side, off:o.off-wg, w:o.w+2*wg},0.35), sill:o.sill||0.9}));
+  const sideAt=pm=>{ const a=perimeterAt(g.room,pm); return [a.id,a.st,a.len]; };   // стена под точкой обхода: [id, начало по периметру, длина]
+  const posAt=(sd,t0,c,bo)=>wallPlace(g.room,sd,t0,c,bo);
+  const isCold=c=>c.z==='cold'||c.role==='coldtable';
+  const winBad=(b,c,u,pos,P)=> u&&u.parts ? partRects(g,u,pos,b).some(pr=>wins.some(w=>(P?polyHit(pr.P||rectPoly(pr.b),rectPoly(w.r)):ov(pr.b,w.r))&&pr.h>w.sill+0.01)) : wins.some(w=>(P?polyHit(P,rectPoly(w.r)):ov(b,w.r))&&c.h>w.sill+0.01);
+  const free=(b,f,c,u,pos)=>{ if(posAng(pos)===0 && !occ.some(q=>q.P)) return rectInRoom(g.room,b) && rectInRoom(g.room,f) && !blocks.some(d=>ov(b,d)) && !winBad(b,c,u,pos) && !elBad(g,b,c) && !occ.some(q=>ov(b,q.b)||ov(b,q.f)||ov(f,q.b)||(((c.hot&&q.cold)||(isCold(c)&&q.hot))&&gap(b,q.b)<0.3));
+    const P=posAng(pos)?unitPoly(c,pos):rectPoly(b), FP=posAng(pos)?frontPoly(c,pos,workDepth(g,c)):rectPoly(f);
+    return polyInRoom(g.room,P) && polyInRoom(g.room,FP) && !blocks.some(d=>polyHit(P,rectPoly(d))) && !winBad(b,c,u,pos,P) && !elBad(g,b,c,P) && !occ.some(q=>polyHit(P,q.P||rectPoly(q.b))||polyHit(P,q.FP||rectPoly(q.f))||polyHit(FP,q.P||rectPoly(q.b))||(((c.hot&&q.cold)||(isCold(c)&&q.hot))&&polyGap(P,q.P||rectPoly(q.b))<0.3)); };
+  return {W,D,P,sideAt,posAt,free,isCold};
+}
+function partRects(g, u, pos, b){
+  if(pos.sw){ const c=u.c, w=wallById(g.room,pos.sw), bb=bbox(c,pos), t0=(bb.x+bb.w/2-w.x1)*w.dir.x+(bb.y+bb.h/2-w.y1)*w.dir.y-c.w/2, res=[]; let t=0;
+    for(const part of u.parts){ const pc=part.c, back=g.norms.align?c.d-pc.d:0, q=skewWallPos(g.room,w,t0+t,pc,back);
+      res.push({b:bbox(pc,q), h:pc.h, P:unitPoly(pc,q)}); t+=pc.w; } return res; }
+  const c=u.c, rot=pos.rot, res=[], rw=wallForRot(g.room,rot,b); let t=0;
+  for(const part of u.parts){ const pc=part.c, back=g.norms.align?c.d-pc.d:0, pp=wallPerpPos(g.room,rw,pc.d,back); let q;
+    if(rot===0||rot===180) q={x:b.x+t,y:pp,rot}; else q={x:pp,y:b.y+t,rot};
+    res.push({b:bbox(pc,q), h:pc.h}); t+=pc.w; }
+  return res;
+}
+function putUnit(g, u, pos, b, out){
+  const c=u.c;
+  if(!u.parts){ out.L[u.key]=pos; return; }
+  if(pos.sw){ const w=wallById(g.room,pos.sw), bb=bbox(c,pos), t0=(bb.x+bb.w/2-w.x1)*w.dir.x+(bb.y+bb.h/2-w.y1)*w.dir.y-c.w/2; let t=0;
+    for(const part of u.parts){ const pc=part.c, back=g.norms.align?c.d-pc.d:0;
+      out.L[part.key]=skewWallPos(g.room,w,t0+t,pc,back); t+=pc.w; } return; }
+  let t=0; const rot=pos.rot, rw=wallForRot(g.room,rot,b);
+  for(const part of u.parts){ const pc=part.c, back=g.norms.align?c.d-pc.d:0, pp=wallPerpPos(g.room,rw,pc.d,back); let q;
+    if(rot===0||rot===180) q={x:b.x+t,y:pp,rot}; else q={x:pp,y:b.y+t,rot};
+    q.x=+q.x.toFixed(3); q.y=+q.y.toFixed(3); out.L[part.key]=q; t+=pc.w; }
+}
+// поставить один блок точно в заданную точку обхода (для тепловой линии)
+function placeAt(g, u, p, occ, out){
+  const H=geomHelpers(g,occ), pm=((p%H.P)+H.P)%H.P, [sd,st,len]=H.sideAt(pm), t0=pm-st, c=u.c;
+  if(t0+c.w>len+1e-6) return null;
+  const pos=H.posAt(sd,t0,c,0); if(pos===null) return null;
+  const b=bbox(c,pos), f=frontZone(b,pos.rot,workDepth(g,c));
+  if(!H.free(b,f,c,u,pos)) return null;
+  occ.push({b,f,hot:1,cold:false,...(posAng(pos)?{P:unitPoly(c,pos),FP:frontPoly(c,pos,workDepth(g,c))}:{})}); putUnit(g,u,pos,b,out); return {side:sd, end:p+c.w};
+}
+function packForward(g, seq, startP, occ, out, reserve, runInit){
+  const H=geomHelpers(g,occ), {P,sideAt,posAt,free,isCold}=H;
+  let p=startP, run=runInit?{...runInit}:{side:null, front:0, z:null};
+  const closeCorner=(sd,len,t0)=>{
+    if(wallById(g.room,sd).axis===null) return 0;
+    const rem=len-t0; if(run.side!==sd || rem<0.3) return 0;
+    const dep=Math.max(0.5,run.front), c=insC(rem,dep,run.z), pos=posAt(sd,t0,c,0); if(pos===null) return 0;
+    const b=bbox(c,pos);
+    if(!free(b,NOF,c)) return 0;
+    const key='ins:'+(out.n++); out.L[key]=pos; out.ins.push({key,c}); occ.push({b,f:NOF}); return dep; };
+  const rest=seq.slice(); let trav=0;
+  const zi=u=>{ const i=ZFLOW.indexOf(u.c.z); return i<0?(u.c.z==='serve'?6:7):i; };
+  while(rest.length && trav<P+1){
+    const pm=((p%P)+P)%P, [sd,st,len]=sideAt(pm), t0=pm-st;
+    if(posAt(sd,t0,rest[0].c,0)===null){ const jump=(len-t0)+0.0005; p+=jump; trav+=jump; run={side:null,front:0,z:null}; continue; }
+    let pick=-1, pos, b, f;
+    for(let k=0;k<Math.min(4,rest.length);k++){
+      const u=rest[k]; if(k>0 && zi(u)!==zi(rest[0])) break;
+      const c=u.c; if(t0+c.w>len-reserve+1e-6) continue;
+      const bo=u.parts?0:Math.max(0,(u.ld||c.d)-c.d);
+      pos=posAt(sd,t0,c,bo); b=bbox(c,pos); f=frontZone(b,pos.rot,workDepth(g,c));
+      if(free(b,f,c,u,pos)){ pick=k; break; }
+    }
+    if(pick<0){
+      if(rest.every((u,k)=>k>=4 || t0+u.c.w>len-reserve+1e-6)){ const dep=closeCorner(sd,len,t0), jump=(len-t0)+dep+0.0005; p+=jump; trav+=jump; run={side:null,front:0,z:null}; }
+      else { p+=0.05; trav+=0.05; }
+      continue;
+    }
+    const u=rest.splice(pick,1)[0], c=u.c, bo=u.parts?0:Math.max(0,(u.ld||c.d)-c.d);
+    occ.push({b,f,hot:!!c.hot,cold:isCold(c),...(posAng(pos)?{P:unitPoly(c,pos),FP:frontPoly(c,pos,workDepth(g,c))}:{})}); putUnit(g,u,pos,b,out);
+    run={side:sd, front:bo+c.d, z:c.z}; p+=c.w;
+  }
+  out.unplaced.push(...rest);
+}
+
+// заполнение промежутков вдоль стен столами-вставками
+function fillGaps(s, all, L, ins, cnt){
+  const R=s.room;
+  const occ=all.filter(u=>L[u.key]&&u.c.mount==='floor').map(u=>{ const b=bbox(u.c,L[u.key]); return {u,b,f:frontZone(b,L[u.key].rot,workDepth(s,u.c)),rot:L[u.key].rot,...(posAng(L[u.key])?{P:unitPoly(u.c,L[u.key]),FP:frontPoly(u.c,L[u.key],workDepth(s,u.c))}:{})}; });
+  const blocks=s.openings.filter(o=>o.type==='door').map(o=>doorBlock(s,o)).concat(s.openings.filter(isProt).map(o=>protRect(s,o)));
+  const wins=s.openings.filter(o=>o.type==='window').map(o=>({r:bandOf(s,o,0.35), sill:o.sill||0.9}));
+  for(const w of roomWalls(R)){ if(!w.axis) continue;   // косые стены (30.3) — без вставок
+    const side=w.id, rot=wallRot(w), horiz=w.axis==='h', Ls=w.len, O=horiz?w.offOrigin.x:w.offOrigin.y;
+    const front=b=>farDist(R,w,b);
+    const items=occ.filter(q=>q.rot===rot && wallOfRect(R,q.b,rot)===side).map(q=>{ const sp=spanOnWall(R,w,q.b); return {a:sp[0], e:sp[1], fr:front(q.b), z:q.u.c.z, it:1}; });
+    const bl=s.openings.filter(o=>o.side===side && o.type!=='window').map(o=>({a:o.off, e:o.off+o.w}));
+    const seq=[{a:0,e:0}, ...[...items,...bl].sort((x,y)=>x.a-y.a), {a:Ls,e:Ls}];
+    for(let i=0;i<seq.length-1;i++){
+      const x=seq[i], y=seq[i+1]; if(!x.it && !y.it) continue;
+      let a=x.e, e=y.a; if(e-a<0.3 || e-a>1.6) continue;
+      const dep=Math.max(0.5, Math.min(...[x,y].filter(q=>q.it).map(q=>q.fr))), z=(x.it?x:y).z;
+      const strip=(a,e)=>wallBand(R,side,a,e-a,dep);
+      const elZ=0.87>elN(s).h+1e-6?elPanels(s).map(p=>elZone(s,p)):[];   // стол-вставка 870 мм перед щитом допустим, пока он не выше elPanelLowH
+      const hits=r=>[...occ.flatMap(q=>[...(q.P?polyHit(rectPoly(r),q.P):ov(r,q.b))?[q.b]:[], ...(q.FP?polyHit(rectPoly(r),q.FP):ov(r,q.f))?[q.f]:[]]), ...[...blocks, ...elZ, ...ins.map(q=>bbox(q.c,L[q.key]))].filter(o=>ov(r,o))];
+      for(const o of hits(strip(a,e))){ const oa=(horiz?o.x:o.y)-O, oe=(horiz?o.x+o.w:o.y+o.h)-O; if(oa<=a+0.01) a=Math.max(a,oe); else if(oe>=e-0.01) e=Math.min(e,oa); }
+      if(e-a<0.3 || hits(strip(a,e)).length) continue;
+      if(wins.some(w=>ov(strip(a,e),w.r) && 0.87>w.sill+0.01)) continue;
+      const n=Math.ceil((e-a)/1.5-1e-6), pl=(e-a)/n;
+      for(let k=0;k<n;k++){ const a0=a+k*pl, c=insC(pl,dep,z), bd=wallBand(R,side,a0,pl,dep);
+        const pos={x:bd.x, y:bd.y, rot};
+        pos.x=+pos.x.toFixed(3); pos.y=+pos.y.toFixed(3);
+        if(!rectInRoom(R,bbox(c,pos))) continue;
+        const key='ins:'+(cnt.n++); L[key]=pos; ins.push({key,c}); }
+    }
+  }
+}
+
+function hotBlockOf(units, LD){
+  const hot=units.filter(u=>u.c.mount==='floor'&&u.c.hot).map(u=>({key:u.key,c:u.c,ld:LD[u.c.z]}));
+  if(!hot.length) return null;
+  const dMax=Math.max(...hot.map(u=>u.c.d));
+  return {key:'__hot', parts:hot.sort((a,b)=>b.c.d-a.c.d), c:{w:hot.reduce((a,u)=>a+u.c.w,0), d:dMax, h:Math.max(...hot.map(u=>u.c.h)), z:'hot', mount:'floor', hot:1}};
+}
+function flowDoors(g){ const doors=g.openings.filter(o=>o.type==='door'), st=g.stages||{}, me=g.stage==null?2:g.stage;
+function stepSelect(){
+  const byZ={}, push=(z,x)=>(byZ[z]=byZ[z]||[]).push(x);
+  P.items.forEach(it=>push(it.c.z, it));
+  (P.removed||[]).forEach(r=>push(r.c.z, {c:r.c, qty:r.qty, why:r.why, src:'buy', pale:'off'}));
+  (P.skipped||[]).forEach(h=>push(h.c.z, {c:h.c, qty:h.qty, src:'have', uid:h.uid, pale:'skip'}));
+  const list=ZORDER.filter(z=>byZ[z]).map(z=>{ const rows=byZ[z].slice().sort((a,b)=>(!!a.pale)-(!!b.pale));
+    return `<div class="zone-h"><span class="sw" style="background:var(--z-${z})"></span>${ZONES[z]}</div><div class="rows">${rows.map(selRow).join('')}</div>`; }).join('');
+  const q=addQuery.trim().toLowerCase();
+  const addOpts=ZORDER.map(z=>{ const cs=CAT.filter(c=>c.z===z && (!q || c.n.toLowerCase().includes(q))); return cs.length?`<optgroup label="${ZONES[z]}">${cs.map(c=>`<option value="${c.id}">${esc(c.n)}</option>`).join('')}</optgroup>`:''; }).join('');
+  const ins=insertItems();
+  const insHtml=ins.length?`<div class="zone-h"><span class="sw" style="background:var(--ink-2)"></span>Столы-вставки по плану</div><div class="rows">${ins.map(it=>`<div class="irow"><div class="nm">${esc(it.c.n)} <span class="muted">· заполняет угол или промежуток в линии</span></div><div class="meta"><span>${Math.round(it.c.w*1000)}×${Math.round(it.c.d*1000)}×870</span></div><div class="btns"><span class="tag buy">купить × ${it.qty}</span></div></div>`).join('')}</div>`:'';
+  const n=editCount(S), stale=P.stale||[];
+  const staleHtml=stale.length?`<ul class="notes" style="margin:0 0 12px">${stale.map(x=>`<li class="warn">${esc(shortName(x.c))}: правка «${x.d>0?'+':''}${x.d}» сделана, когда приложение ставило ${x.baseAt}; сейчас ставит ${x.now} — итог ${Math.max(0,x.now+x.d)}.
+      <div class="btns" style="margin-top:6px"><button class="btn small tap" type="button" data-stale-keep="${x.id}">Оставить</button><button class="btn small tap" type="button" data-stale-drop="${x.id}">Убрать правку</button></div></li>`).join('')}</ul>`:'';
+21:  --accent:#e5785f; --accent-soft:#3a2420; --steel:#86b7c2; --steel-soft:#1f3135;
+28:  --accent:#e5785f; --accent-soft:#3a2420; --steel:#86b7c2; --steel-soft:#1f3135;
+496:<script>
+605:function exampleState(){ return prepare(exampleData()); }
+617:function exampleData(){
+624:    rooms:[{id:'r1', name:'Кухня', x:0, y:0, w:7.2, d:4.8, roles:['store','prep','hot','serve','wash'],
+660:  if(!st.rooms){ const r0=st.room||{w:7.2,d:4.8}; st.rooms=[{id:'r1', name:'Кухня', x:0, y:0, w:r0.w, d:r0.d, roles:ROLES.map(r=>r[0]), openings:st.openings||[], points:st.points||[]}]; }
+710:function layoutAll(st, units){
+2217:</script>
+2219:<script>
+2316:function touch(){ S.example=false; commit(); }
+2432:function exampleBar(){ return S.example?`<div class="example">Заполнено примером. Замените данные своими — всё пересчитается сразу.</div>`:''; }
+4461:</script>
+4462:<script>
+4766:        legend:[{swatch:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 14" width="28" height="14"><line x1="2" y1="7" x2="22" y2="7" stroke="${mono?'#1a1a1a':'#a3301c'}" stroke-width="2"/><polygon points="26,7 20,3 20,11" fill="${mono?'#1a1a1a':'#a3301c'}"/></svg>`, text:'наружная дверь: куда ведёт'}]}; }
+5398:</script>
+5399:<script>
+5682:</script>
+5683:<script>
+5852:</script>
+5853:<script>
+6172:</script>
+6173:<script>
+6315:  const r=Math.max(9, String(no).length*3.7+2.5)/k;
+6532:</script>
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; rg -n 'insertItems|"'^let S|''^let P|''^const S|''^const P|DOMContentLoaded|recompute'"\\(\\);|render\\(\\);' index.html; "'$s=Get-Content -Encoding UTF8 index.html; $s[496..510]; $s[2330..2360]; $s[708..742]; $s[2195..2238]; node --version' in C:\Users\pro10\refectory-app
+ succeeded in 390ms:
+586:const PT = {
+593:const PT_PAL=[['cw','Холодная вода','Холодная'],['hw','Горячая вода','Горячая'],['sewer','Канализация','Канализация'],['vent','Вентканал','Вентканал'],['gas','Газ','Газ'],['el','Электрощит','Щит'],['sock','Электроподключение','Эл']];
+598:const SIDES = {t:'Верхняя', r:'Правая', b:'Нижняя', l:'Левая'};
+766:const PLATE_NAME={ind:'индукционная', ten:'электрическая (ТЭН)', gas:'газовая'};
+893:const STEPS = [
+1495:let PT_SH={t:0,r:0,b:0,l:0};
+1516:let PRINT_EL=false;
+1526:const SW_IN=0.05;   // отступ трассы от стены внутрь, м
+2227:const STORE=(()=>{
+2260:let S = (()=>{ const id=STORE.last()||((STORE.list()[0]||{}).id); const d=id&&STORE.load(id);
+2284:const STEP_NAMES=['Исходные','Помещения','Подключения','Имеющееся оборудование','Подбор','План','Инженерия','Смета','Справка'];
+2325:  sel=null; selRoom=null; addMode=null; editUid=null; draft=null; confirmReset=false; confirmRoomDel=false; rpOpen=rpOpen&&step===1&&S.rooms.some(r=>r.id===cur); confirmArrange=false; heatRecOpen=false; heatRecErr=false; save(); render(); updUndo(); }
+2411:function go(i){ layMenuOpen=false; fieldMsgs={}; heatRecOpen=false; heatRecErr=false; step=i; sel=null; selRoom=null; addMode=null; editUid=null; draft=null; rpOpen=false; confirmArrange=false; confirmRoomDel=false; render(); const cur=document.querySelector('[aria-current="page"]'); cur&&cur.scrollIntoView({inline:'center',block:'nearest'}); updNavFade(); window.scrollTo({top:0}); }
+2413:  recompute(); selSync(); stepIss(); nameInp.value=S.name;
+2454:function bindFit(){ main.querySelectorAll('[data-fit]').forEach(b=>b.addEventListener('click',()=>{ S.res.fit=b.dataset.fit==='1'; touch(); render();
+2458:  const buy=[...P.items,...insertItems()].filter(i=>i.src==='buy').reduce((s,i)=>s+priceOf(i.c)*i.qty,0);
+2463:    <div class="meter"><div class="top"><span class="lbl">Закупка оборудования</span><span class="v">${fmt0(buy/1000)}<small> тыс. ₽</small></span></div><span class="state muted">${[...P.items,...insertItems()].filter(i=>i.src==='buy').reduce((s,i)=>s+i.qty,0)} ед. купить · ${P.items.filter(i=>i.src==='have').reduce((s,i)=>s+i.qty,0)} ед. имеется</span></div>
+2558:  touch(); render(); toast('Старая плита не учитывается, индукционная добавлена в закупку'); }
+2646:  segBind(main,(k,v)=>{ if(k==='meals') S.meals=+v; if(k==='ph'){ S.res.ph=+v; touch(); render(); return; } if(k==='phMax'){ S.res.phMax=+v; touch(); render(); return; }
+2647:    if(k==='gas-src'){ S.gas.src=v; touch(); render(); return; }
+2648:    if(k.startsWith('fuel-')){ const hk=k.slice(5); S.heat[hk].fuel=v; const m=fixGasHeat(); touch(); render(); toast(m.length?m.join('. '):(v==='gas'?`${HEATI[hk].n}: газовое исполнение`:`${HEATI[hk].n}: электрическое исполнение`)); return; }
+2649:    if(k.startsWith('h-')){ S.heat[k.slice(2)].v=v; touch(); render(); return; } touch(); recompute(); });
+2650:  const el=document.getElementById('people'); el.addEventListener('input',()=>{ const v=parseFloat(el.value); if(isFinite(v)&&v>=1){ S.people=Math.round(v); touch(); recompute(); } }); el.addEventListener('change',()=>render());
+2651:  const dw=document.getElementById('dishware'); dw.addEventListener('input',()=>{ const v=parseFloat(dw.value); if(isFinite(v)&&v>=1){ S.dishware=Math.round(v); touch(); recompute(); } });
+2656:    if(S.res.fit && resEff(S).lim==null) S.res.fit=false; touch(); recompute(); chkMax(); });
+2657:    el.addEventListener('change',()=>{ const had=!!mx.closest('.fields').querySelector('[data-seg="phMax"]'); if(had!==!!S.res.max) render(); }); };
+2660:  main.querySelectorAll('[data-hunskip]').forEach(b=>b.addEventListener('click',()=>{ if(S.edits.skipHave) delete S.edits.skipHave[b.dataset.hunskip]; touch(); render(); toast('Снова учитывается в подборе'); }));
+2664:    S.heat[k].on=cb.checked; touch(); render(); }));
+2665:  main.querySelectorAll('[data-hq]').forEach(b=>b.addEventListener('click',()=>{ const st=S.heat[b.dataset.hq]; st.q=Math.min(4,Math.max(1,(st.q||1)+ +b.dataset.d)); touch(); render(); }));
+2668:    if(!d.length){ heatRecOpen=false; render(); toast(`Выбор уже совпадает с типовым для ${S.people} ${plural(S.people,'человека','человек','человек')}`); return; }
+2669:    heatRecOpen=true; heatRecOff=new Set(); heatRecErr=false; render(); const p=document.querySelector('.hrec'); p&&p.scrollIntoView({block:'nearest'}); const f=document.querySelector('[data-hrec]'); f&&f.focus({preventScroll:true}); });
+2671:  const hno=document.getElementById('hrec-no'); hno&&hno.addEventListener('click',()=>{ heatRecOpen=false; heatRecErr=false; render(); const b=document.getElementById('heat-rec'); b&&b.focus({preventScroll:true}); });
+2674:    if(!HEAT.some(h=>h.main&&next[h.k]&&next[h.k].on)){ heatRecErr=true; render(); return; }   // основное тепловое обязательно
+2676:    S.heat=next; heatRecOpen=false; heatRecErr=false; touch(); render(); toast('Тепловое подобрано по числу человек'+(onlyMine.length?'. '+onlyMine.join('. '):'')); });
+2677:  document.getElementById('gas-on').addEventListener('change',e=>{ S.gas=S.gas||{on:false,src:'main'}; S.gas.on=e.target.checked; const m=S.gas.on?fixGasHeat():[]; touch(); render();
+2679:  document.getElementById('cold-on').addEventListener('change',e=>{ S.coldOn=e.target.checked; touch(); recompute(); });
+2680:  ['fish','meat'].forEach(k=>document.getElementById('f-'+k).addEventListener('change',e=>{ S.feats[k]=e.target.checked; touch(); recompute(); }));
+2719:  touch(); render(); toast(`Помещение «${r.name}» удалено`+(back.length?`. ${back.length>1?'Назначения':'Назначение'} ${back.map(x=>'«'+x+'»').join(', ')} ${back.length>1?'вернулись':'вернулось'} помещению «${heir.name}»`:''));
+2728:function bindRoomTabs(){ const t=document.getElementById('room-tabs'); t&&segBind(t,(k,v)=>{ S.cur=v; sel=null; selRoom=null; addMode=null; touch(); render(); }); }
+2861:  lastPush=0; touch(); recompute(); render(); if(result.moved.length) toast(result.moved.join('. ')); return true; }
+2864:  const stepWall=sec.querySelector('[data-step-wall]'); stepWall&&stepWall.addEventListener('change',()=>{ stepWallSel=stepWall.value; render(); });
+2865:  const tiltWall=sec.querySelector('[data-tilt-wall]'); tiltWall&&tiltWall.addEventListener('change',()=>{ tiltWallSel=tiltWall.value; render(); });
+2885:    lastPush=0; touch(); recompute(); render(); toast('Уступ добавлен'+(result.moved.length?'. '+result.moved.join('. '):'')); });
+2890:    lastPush=0; touch(); recompute(); render(); toast('Стена наклонена'+(result.moved.length?'. '+result.moved.join('. '):'')); });
+2933:  if(changed) touch(); render(); }
+2934:function closeRoomPanel(){ rpOpen=false; selRoom=null; confirmRoomDel=false; render(); }
+2962:    if(moved){ S.cur=r.id; touch(); render(); } else if(!held) openRoomPanel(r.id); else render(); };
+3004:  lastPush=0; touch(); recompute(); render(); if(result.moved.length) toast(result.moved.join('. '));
+3087:  touch(); render();
+3119:      S.room[k]=v/1000; if(asM) fieldMsgs['#'+id]=`Понял как ${fmt0(v)} мм`; clampRoom(S); touch(); recompute(); refreshPlan(); }); el.addEventListener('change',()=>render()); };
+3123:    if(r.autoName && r.roles.length===1) r.name=roomRoleName(r.roles[0]); touch(); render(); }));
+3124:  main.querySelectorAll('[data-link]').forEach(b=>b.addEventListener('click',()=>{ const [a,t]=b.dataset.link.split('|'); setLink(a,t,!hasLink(a,t)); touch(); render(); }));
+3126:  const ra=document.getElementById('room-arrange'); ra&&ra.addEventListener('click',()=>{ confirmArrange=!confirmArrange; render(); });
+3127:  const rok=document.getElementById('arrange-ok'); rok&&rok.addEventListener('click',()=>{ confirmArrange=false; const miss=arrangeRooms(); touch(); render();
+3129:  const rno=document.getElementById('arrange-no'); rno&&rno.addEventListener('click',()=>{ confirmArrange=false; render(); });
+3130:  const rd=document.getElementById('room-del'); rd&&rd.addEventListener('click',()=>{ confirmRoomDel=true; render(); const y=document.getElementById('room-del-no'); y&&y.focus(); });
+3131:  const rn=document.getElementById('room-del-no'); rn&&rn.addEventListener('click',()=>{ confirmRoomDel=false; render(); });
+3236:  main.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>{ const a=b.dataset.add; const v=a; /* тип точки — в самой кнопке палитры: data-add="pt:<тип>" */ if(a==='prot'){ addMode=null; const ws=roomWalls(S.room).slice().sort((x,y)=>y.len-x.len); let side=null, off=null; for(const w of ws){ const q=freeSpot(S,w.id,w.len/2,0.6,null); if(q!==null){ side=w.id; off=q; break; } } if(side===null){ toast('Нет свободного места на стенах'); render(); return; } const o={id:uid('o'),type:'prot',side,off,w:0.6,depth:0.6}; S.openings.push(o); clampRoom(S); selRoom={k:'op',id:o.id}; if(step===1){ rpOpen=true; rpFocus=o.id; } touch(); render(); return; } addMode = addMode===v?null:v; selRoom=null; render(); }));
+3237:  const ac=document.getElementById('add-cancel'); ac&&ac.addEventListener('click',()=>{ addMode=null; render(); });
+3238:  main.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{ const [k,id]=b.dataset.pick.split(':'); selRoom={k,id}; addMode=null; render(); document.getElementById('rpanel')&&document.getElementById('rpanel').scrollIntoView({block:'nearest'}); }));
+3239:  const del=document.getElementById('del-room'); del&&del.addEventListener('click',()=>{ if(selRoom.k==='op') S.openings=S.openings.filter(o=>o.id!==selRoom.id); else S.points=S.points.filter(p=>p.id!==selRoom.id); selRoom=null; touch(); render(); toast('Удалено'); });
+3240:  const ds=document.getElementById('desel'); ds&&ds.addEventListener('click',()=>{ selRoom=null; render(); });
+3245:      if(k==='o-swing') o.swing=v; if(k==='o-hinge') o.hinge=v; clampRoom(S); touch(); render(); });
+3252:      clampRoom(S); touch(); render(); }));
+3256:      if(f==='spec'){ p.spec=el.value.trim(); touch(); render(); return; }
+3260:      const want=JSON.stringify([p.w,p.d]); clampRoom(S); if((f==='wmm'||f==='dmm') && JSON.stringify([p.w,p.d])!==want) fieldMsg(el,`Значение урезано до ${fmt0((f==='wmm'?p.w:p.d)*1000)} мм — больше не помещается в помещение`); touch(); render(); }));
+3269:    selRoom={k:'op', id:o.id}; clampRoom(S); if(note) fieldMsg(el,note); touch(); render(); }));
+3271:    const raw=el.value.trim(); if(f==='h'){ p.hgt = raw===''?null:Math.max(0,parseFloat(raw)/1000); touch(); render(); return; }
+3277:    if(JSON.stringify([p.off,p.w,p.d,p.x,p.y])!==want) fieldMsg(el,'Значение урезано: точка не может выйти за стены помещения'); touch(); render(); }));
+3295:  segBind(main,(k,v)=>{ if(k!=='utilities') return; S.utilities=v==='design'?'design':'existing'; touch(); render(); toast(v==='design'?'Сети проектируются — точки не обязательны':'Сети уже есть — отметьте их на плане'); }); };
+3474:function focusNote(key){ const rid=P.roomOf[key]; if(planUnified() && rid){ S.cur=rid; selOne(key); render(); const p=S.layout[key], u=P.units.find(x=>x.key===key), r=S.rooms.find(x=>x.id===rid);
+3476:  selOne(key); render(); document.getElementById('pbox').scrollIntoView({block:'nearest'}); }
+3562:        G(e,g,()=>startEquipDrag(e,g),()=>{ selOne(k); render(); }); }
+3563:      else if(tch) G(e,null,null,()=>{ if(!planEdit&&sel){ sel=null; render(); } });
+3569:    if(op){ G(e,op,()=>{ e.preventDefault(); startRoomDrag(e,'op',op.dataset.op); },()=>{ if(step===1){ openRoomPanel(S.cur, op.dataset.op); return; } selRoom={k:'op',id:op.dataset.op}; addMode=null; render(); }); return; }
+3570:    if(pt){ G(e,pt,()=>{ e.preventDefault(); startRoomDrag(e,'pt',pt.dataset.pt); },()=>{ selRoom={k:'pt',id:pt.dataset.pt}; addMode=null; render(); }); return; }
+3582:    if(off===null){ toast('На этой стене нет свободного места'); addMode=null; render(); return; }
+3595:  addMode=null; touch(); render();
+3626:  const up=()=>{ window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); window.removeEventListener('pointercancel',up); if(!moved && o && step===1){ openRoomPanel(S.cur, id); return; } touch(); render(); };
+3631:const SNAP_NEAR=0.5;   // выравнивание краёв — только с соседом ближе 0,5 м по другой оси
+3737:      sel=null; S.layoutManual=true; touch(); render(); return; }
+3738:    if(moved && !T){ back(); toast('Ставить можно только внутри помещения'); render(); return; }   // вне помещений — вернуть на место
+3743:    if(moved) S.layoutManual=true; touch(); render(); };
+3839:  main.querySelectorAll('[data-ex]').forEach(b=>b.addEventListener('click',()=>{ const e=recOf(b.dataset.ex); e.qty=Math.max(1,e.qty+ +b.dataset.d); touch(); render(); }));
+3840:  main.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{ const id=b.dataset.del; S.existing=S.existing.filter(x=>x.uid!==id); if(S.edits.skipHave) delete S.edits.skipHave[id]; touch(); render(); toast('Убрано'); }));
+3841:  main.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>{ editUid=b.dataset.edit; draft={...recOf(editUid), src:'own'}; draft.cap=draft.cap??''; formErr=false; render(); const r=document.getElementById('it-role'); r&&r.focus(); }));
+3842:  main.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',()=>{ const e=recOf(b.dataset.copy); editUid='new'; draft={...e, uid:uid('e'), src:'own', cq:''}; draft.cap=draft.cap??''; formErr=false; render(); const r=document.getElementById('it-role'); r&&r.focus(); }));
+3843:  main.querySelectorAll('[data-unskip]').forEach(b=>b.addEventListener('click',()=>{ delete S.edits.skipHave[b.dataset.unskip]; touch(); render(); toast('Снова учитывается в подборе'); }));
+3845:  const nb=document.getElementById('ex-new'); nb&&nb.addEventListener('click',()=>{ editUid='new'; draft=blankItem(); formErr=false; render(); const q=document.getElementById('it-cq'); q&&q.focus(); });
+3859:    render(); const n2=document.querySelector('#it-plate button, #it-cap')||v('it-role'); n2&&n2.focus(); });
+3860:  v('it-gas')&&v('it-gas').addEventListener('change',()=>{ pull(); render(); const g=v('it-gkw'); g&&g.focus(); });
+3866:  const cs=v('it-cat'); cs&&cs.addEventListener('change',()=>{ const c=CATI[cs.value]; if(!c) return; pull(); fillFromCat(draft,c); formErr=false; render(); toast('Поля заполнены по каталогу — проверьте под свой экземпляр'); const n2=v('it-n'); n2&&n2.focus(); });
+3868:  v('it-room')&&v('it-room').addEventListener('change',()=>{ pull(); render(); });
+3872:    if(k==='it-src'){ draft.src=val; render(); }
+3873:    if(k==='it-plate'){ const was=draft.plate; draft.plate=val; if(val==='gas') draft.gas=true; else if(was==='gas') draft.gas=false; render(); } });
+3874:  v('it-cancel').addEventListener('click',()=>{ editUid=null; draft=null; formErr=false; render(); });
+3876:    const er=itemErrs(draft); if(Object.keys(er).length){ formErr=true; render();
+3885:    editUid=null; draft=null; formErr=false; touch(); render(); toast('Сохранено'); });
+3928:  const ins=insertItems();
+3958:  main.querySelectorAll('[data-q]').forEach(b=>b.addEventListener('click',()=>{ const r=editStep(b.dataset.q, +b.dataset.d); touch(); render(); if(r==='off') toast('Убрано вами — строка осталась бледной, её можно вернуть'); }));
+3959:  main.querySelectorAll('[data-revert]').forEach(b=>b.addEventListener('click',()=>{ revertEdit(b.dataset.revert); touch(); render(); toast('Вернули как было по расчёту'); }));
+3960:  main.querySelectorAll('[data-skip]').forEach(b=>b.addEventListener('click',()=>{ E.skipHave[b.dataset.skip]=true; touch(); render(); toast('Имеющееся не используется — подбор докупит недостающее'); }));
+3962:    E.pref[role]=to; if(E.delta[from] && from!==to){ E.delta[to]=E.delta[from]; delete E.delta[from]; } touch(); render(); }));
+3963:  main.querySelectorAll('[data-heatv]').forEach(sel=>sel.addEventListener('change',()=>{ S.heat[sel.dataset.heatv].v=sel.value; if(typeof fixGasHeat==='function') fixGasHeat(); touch(); render(); toast('Исполнение изменено и на шаге «Исходные»'); }));
+3964:  main.querySelectorAll('[data-stale-keep]').forEach(b=>b.addEventListener('click',()=>{ const id=b.dataset.staleKeep, d=E.delta[id]; if(d){ const bb=P.base.get(id); d.baseAt=bb?bb.qty:0; } touch(); render(); }));
+3965:  main.querySelectorAll('[data-stale-drop]').forEach(b=>b.addEventListener('click',()=>{ delete E.delta[b.dataset.staleDrop]; touch(); render(); }));
+3966:  const rs=document.getElementById('edits-reset'); rs&&rs.addEventListener('click',()=>{ confirmEditsReset=true; render(); });
+3967:  const ry=document.getElementById('edits-reset-yes'); ry&&ry.addEventListener('click',()=>{ confirmEditsReset=false; S.edits={delta:{}, off:{}, pref:{}, skipHave:{}}; touch(); render(); toast('Все правки сняты'); });
+3968:  const rn=document.getElementById('edits-reset-no'); rn&&rn.addEventListener('click',()=>{ confirmEditsReset=false; render(); });
+3969:  const aq=document.getElementById('add-q'); aq.addEventListener('input',()=>{ addQuery=aq.value; const pos=aq.selectionStart; render(); const a2=document.getElementById('add-q'); a2.focus(); a2.setSelectionRange(pos,pos); });
+3970:  document.getElementById('add-go').addEventListener('click',()=>{ const id=document.getElementById('add-cat').value; if(!id) return; editStep(id, +1); addQuery=''; touch(); render(); toast('Добавлено к закупке'); });
+3983:function selToggle(k){ if(selSet.has(k)){ selSet.delete(k); sel=selSet.size?[...selSet].pop():null; } else { if(sel!=null&&!selSet.size) selSet.add(sel); selSet.add(k); sel=k; } render(); }
+4006:  if(a==='desel'){ sel=null; render(); return; }
+4011:  S.layoutManual=true; touch(); render(); }
+4029:    if(on){ const all=new Set([...base, ...hits]); selSet=all; sel=all.size?(hits.length?hits[hits.length-1]:[...all].pop()):null; render(); }
+4030:    else if(!add && sel!=null){ sel=null; render(); } };
+4092:  S.layoutManual=true; touch(); render(); toast(`Линия из ${run.length} ${plural(run.length,'позиции','позиций','позиций')} выровнена по глубине ${fmt0(maxD*1000)} мм`);
+4096:  const mvr=document.getElementById('mv-room'); mvr&&mvr.addEventListener('change',()=>{ S.unitRoom[sel]=mvr.value; if(S.layoutManual) delete S.layout[sel]; else S.layoutSig=''; const nm=roomName(S,mvr.value); sel=null; touch(); render(); toast(S.layoutManual?`Перенесено в «${nm}» — ищите в резерве этого помещения`:`Перенесено в «${nm}»`); });
+4098:  document.getElementById('auto-lay').addEventListener('click',()=>{ S.layoutManual=false; S.layoutSig=''; sel=null; touch(); render(); toast('Расставлено'); });
+4111:function planAct(a){ const keys=selKeys(); if(keys.length>1) return groupAct(a,keys); if(a==='desel'){ sel=null; render(); return; }
+4118:  else if(a==='del'){ deleteUnit(u); sel=null; S.layoutManual=true; touch(); render(); return; }
+4120:  S.layoutManual=true; touch(); render(); }
+4124:function placeFromReserve(u,pos){ (S.inserts||[]).forEach(i=>{ if(i.key===u.key) delete i.off; }); S.layoutRoom[u.key]=S.room.id; S.layout[u.key]=pos; S.layoutManual=true; sel=u.key; touch(); render(); }
+4224:  S.layoutManual=true; touch(); render(); toast('Тепловое собрано в одну линию под один зонт');
+4287:function insertItems(){ const m=new Map(); P.units.filter(u=>u.c.insert).forEach(u=>{ const x=m.get(u.c.id); if(x) x.qty++; else m.set(u.c.id,{c:u.c, qty:1, src:'buy'}); }); return [...m.values()]; }
+4290:  const map=new Map(); [...P.items,...insertItems()].forEach(it=>{ const k=it.c.id+':'+it.src; const m=map.get(k); if(m) m.qty+=it.qty; else map.set(k,{...it}); });
+4322:  main.querySelectorAll('[data-price]').forEach(i=>i.addEventListener('change',()=>{ const v=parseFloat(i.value); if(isFinite(v)&&v>=0){ S.prices[i.dataset.price]=v; touch(); render(); } }));
+4323:  const hp=document.getElementById('hood-price'); hp.addEventListener('change',()=>{ const v=parseFloat(hp.value); if(isFinite(v)&&v>=0){ S.hoodPrice=v; touch(); render(); } });
+4324:  const mo=document.getElementById('montage'); mo.addEventListener('change',()=>{ const v=parseFloat(mo.value); if(isFinite(v)&&v>=0){ S.montage=v; touch(); render(); } });
+4339:const SET_GROUPS=[
+4352:const SET_FIELDS=SET_GROUPS.flatMap(g=>g[1]);
+4353:const SET_KEYS=[...SET_FIELDS.map(f=>f[1]),'strict'];
+4388:function setApplied(){ touch(); recompute(); updRec(); updSetUi(); render(); }   // цифры и план на текущем шаге под панелью обновляются
+4401:  const ry=document.getElementById('set-reset-yes'); ry&&ry.addEventListener('click',()=>{ const d=setDef(); for(const k of SET_KEYS) S.norms[k]=d[k]; S.layoutSig=''; setConfirmReset=false; touch(); recompute(); render(); setRebuild('set-reset'); toast('Значения по умолчанию возвращены'); });
+4459:render();
+4522:  for(const it of insertItems()) add(it.c, 'buy', it.qty);
+4536:const PRINT_PALETTE = {'--paper':'#ffffff','--sheet':'#ffffff','--ink':'#1d282d','--ink-2':'#56646a','--rule':'#c9d0cb','--grid':'#eef1ee','--grid-2':'#dfe5e0',
+4541:const PRINT_MONO = Object.fromEntries(Object.keys(PRINT_PALETTE).map(k=>[k,
+4587:const PRINT_SCALES=[25,50,75,100,150,200];
+4588:const PLAN_BOX={w:265, h:150};   // поле под план на альбомном листе, мм
+4732:const SIDE_RU={t:'верхняя', r:'правая', b:'нижняя', l:'левая', floor:'пол'};
+4733:const SIDE_FROM={t:'от левого угла', b:'от левого угла', l:'от верхнего угла', r:'от верхнего угла'};
+4734:function ensureLayoutForReport(){ const st=step; if(st<4){ step=5; try{ recompute(); } finally{ step=st; } } else recompute(); }
+5069:const PAGE_MM={portrait:{w:210,h:297}, landscape:{w:297,h:210}}, PAGE_M={l:16, r:16, t:18, b:16};
+5164:const PDF_LIBS=['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.4/dist/svg2pdf.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'];
+5165:const PDF_FONTS=[['fonts/IBMPlexSans-Regular.ttf','IBMPlexSans','normal'],['fonts/IBMPlexSans-SemiBold.ttf','IBMPlexSans','bold'],['fonts/IBMPlexMono-Regular.ttf','IBMPlexMono','normal']];
+5403:const PJ_CSS=`
+5463:const PJ_FORMAT=1, PJ_APP='kuhnya-trapeznoy';
+5495:  render(); lastSnap=snap(); updUndo();
+5833:    if(planKeysOn(e) && step===5 && planMode==='equip' && sel && !document.getElementById('psheet')){ e.preventDefault(); sel=null; render(); }
+5863:const SIDE_LEN=(room,s)=>wallLen(room,s);
+6099:  const seg2=document.getElementById('pdims-bar'); seg2&&segBind(seg2,(k,v)=>{ if(k==='pdims'){ S.planDims=v; touch(); render(); } });
+6110:      touch(); render(); }));
+6112:      setAlong(u,pl.s,b.dataset.press==='lo'?rg.lo:rg.hi-rg.size,null,'start'); touch(); render(); toast(`Прижато к ${b.dataset.press==='lo'?(rg.loN?'«'+unitShort(rg.loN)+'»':'углу'):(rg.hiN?'«'+unitShort(rg.hiN)+'»':'углу')}`); }));
+6147:  S.layoutManual=true; touch(); render();
+6169:function nudgeSel(dx,dy){ if(typeof selKeys==='function' && selKeys().length>1){ groupShift(dx,dy,selKeys()); S.layoutManual=true; touch(); render(); return true; }   // группа — целиком, в пределах стен
+6170:  const u=sel&&curUnits().find(x=>x.key===sel), p=u&&S.layout[sel]; if(!p) return false; p.x=r3(p.x+dx); p.y=r3(p.y+dy); clampPos(u,p); p.x=r3(p.x); p.y=r3(p.y); S.layoutManual=true; touch(); render(); return true; }
+6448:  if(P.roomOf[key]&&S.rooms.some(r=>r.id===P.roomOf[key])) S.cur=P.roomOf[key]; selOne(key); render();
+6463:function fsOpen(f){ fsField=f; render(); requestAnimationFrame(()=>fitZoom(f)); }
+6464:function fsClose(){ fsField=null; document.documentElement.classList.remove('pfs-lock'); render(); }
+6511:  if(t.hasAttribute('data-mpick')){ multiPick=!multiPick; render(); toast(multiPick?'Касание аппарата добавляет его к выделению или убирает':'Касание выбирает один аппарат'); return; }
+6514:  if(t.hasAttribute('data-pedit')){ planEdit=!planEdit; if(!planEdit) multiPick=false; render(); toast(planEdit?'Правка: удерживайте палец на элементе и ведите':'Просмотр: касания ничего не сдвигают'); return; }
+6519:    saveView(); render(); return; }
+6520:  if(t.dataset.sheet){ if(t.dataset.sheet==='close'){ sel=null; render(); } else if(t.dataset.sheet==='edit'){ planEdit=true; render(); } return; }
+6526:  if(document.getElementById('psheet')){ e.preventDefault(); sel=null; render(); return; }
+/* ===================== ДАННЫЕ И РАСЧЁТЫ ===================== */
+// w, d, h — ширина по фронту, глубина, высота, м; kw — кВт; ph — фазы; cw/hw/dr — холодная, горячая вода, слив; hot — под зонт
+// mount: floor — напольное, wall — настенное, table — настольное, under — под мойкой, none — ручной инструмент
+const CAT = [
+  {id:'combi4', n:'Пароконвектомат 4 GN 1/1, 220 В, на подставке', s:'ПКА 4', role:'combi', cap:4, w:.75, d:.75, h:1.5, kw:6.3, ph:1, cw:1, dr:1, hot:1, z:'hot', p:330000},
+  {id:'combi6', n:'Пароконвектомат 6 GN 1/1, на подставке', s:'ПКА 6', role:'combi', cap:6, w:.85, d:.8, h:1.7, kw:10.5, ph:3, cw:1, dr:1, hot:1, z:'hot', p:420000},
+  {id:'combi10', n:'Пароконвектомат 10 GN 1/1, на подставке', s:'ПКА 10', role:'combi', cap:10, w:.85, d:.8, h:1.95, kw:17.5, ph:3, cw:1, dr:1, hot:1, z:'hot', p:560000},
+  {id:'ind4', n:'Плита индукционная 4 конф., напольная', s:'Инд 4', role:'burners', cap:4, w:.8, d:.8, h:.9, kw:14, ph:3, hot:1, z:'hot', p:340000},
+  {id:'combi20', n:'Пароконвектомат 20 GN 1/1, напольный', s:'ПКА 20', role:'combi', cap:20, w:.95, d:.85, h:1.85, kw:36, ph:3, cw:1, dr:1, hot:1, z:'hot', p:1200000, heatOnly:1},
+  {id:'ind6', n:'Плита индукционная 6 конф., напольная', s:'Инд 6', role:'burners', cap:6, w:1.2, d:.8, h:.9, kw:21, ph:3, hot:1, z:'hot', p:480000, heatOnly:1},
+  {id:'kettle160', n:'Котёл пищеварочный 160 л', s:'Котёл', role:'kettle', cap:160, w:1.05, d:.95, h:.95, kw:18, ph:3, cw:1, dr:1, hot:1, z:'hot', p:480000},
+  {id:'pan40', n:'Сковорода электрическая опрокидывающаяся 40 л', s:'Сков', role:'pan', cap:40, w:.8, d:.8, h:.9, kw:6, ph:3, cw:1, dr:1, hot:1, z:'hot', p:380000},
+  {id:'pan80', n:'Сковорода электрическая опрокидывающаяся 80 л', s:'Сков', role:'pan', cap:80, w:1.1, d:.85, h:.9, kw:12, ph:3, cw:1, dr:1, hot:1, z:'hot', p:520000},
+  {id:'rice5', n:'Рисоварка профессиональная 5 л', s:'Рис', role:'rice', cap:5, w:.4, d:.4, h:.4, kw:1.6, ph:1, z:'hot', p:25000, mount:'table'},
+  {id:'rice10', n:'Рисоварка профессиональная 10 л', s:'Рис', role:'rice', cap:10, w:.5, d:.5, h:.45, kw:2.8, ph:1, z:'hot', p:45000, mount:'table'},
+document.getElementById('undo').addEventListener('click',doUndo);
+document.getElementById('redo').addEventListener('click',doRedo);
+document.addEventListener('keydown',e=>{ const t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')) return;
+  if(!(e.ctrlKey||e.metaKey)) return; const k=e.key.toLowerCase();
+  if((k==='z'||k==='я')&&!e.shiftKey){ e.preventDefault(); doUndo(); }
+  else if(((k==='z'||k==='я')&&e.shiftKey)||k==='y'||k==='н'){ e.preventDefault(); doRedo(); } });
+function recompute(){
+  P=computeProject(S); const real=unitsOf(P.items);
+  if(P.manualConverted){ setTimeout(()=>toast('Ручной режим заменён правками — расчёт снова обновляется'),50); save(); }
+  P.roomOf=assignRooms(S, real);
+  const sig=JSON.stringify([real.map(u=>u.key+u.c.w+u.c.d+u.c.h+u.c.mount+(u.c.roomId||'')), S.rooms, S.unitRoom, S.norms.align, S.norms.work, [S.norms.elPanelDepth,S.norms.elPanelWidth,S.norms.elPanelLowH,S.norms.elWaterDist], S.norms.sewerMax, 'flow3']);
+  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ const r=layoutAll(S,real); S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room; S.inserts=r.inserts.map(i=>({key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, room:i.room})); S.layoutSig=sig; }
+  S.inserts=(S.inserts||[]).filter(i=>S.layout[i.key]||i.off);
+  const ins=insertUnits(S.inserts); S.inserts.forEach(i=>{ P.roomOf[i.key]=i.room&&S.rooms.some(r=>r.id===i.room)?i.room:S.rooms[0].id; });
+  P.units=[...real, ...ins];
+  // позиция на плане действительна только в том помещении, где её поставили
+  S.layoutRoom=S.layoutRoom||{};
+  for(const u of P.units){ const pos=S.layout[u.key]; if(!pos) continue; const rid=P.roomOf[u.key], lr=S.layoutRoom[u.key], room=rById(rid);
+    if(lr && lr!==rid){ delete S.layout[u.key]; delete S.layoutRoom[u.key]; continue; }
+    const b=bbox(u.c,pos);
+    if(!room || b.x<-0.05 || b.y<-0.05 || b.x+b.w>room.w+0.05 || b.y+b.h>room.d+0.05){ delete S.layout[u.key]; delete S.layoutRoom[u.key]; continue; }
+    S.layoutRoom[u.key]=rid; }
+  P.foot+=S.inserts.reduce((a,i)=>a+i.w*i.d,0);
+  P.iss=null;   // замечания по шагам пересобираются при следующей отрисовке (stepIss)
+  navDirty=true; if(!navRaf) navRaf=requestAnimationFrame(()=>{ navRaf=0; if(navDirty) renderNav(); });   // пересчёт без перерисовки шага — значки обновятся в следующем кадре
+}
+let navDirty=false, navRaf=0;
+// замечания по шагам: [{bad, warn, list:[{t,m,room?}]}] по индексам STEP_NAMES; info не считается. Источники — те же, что выводятся на шагах
+// повторная отрисовка без изменений проекта (переход по шагам, выбор на плане) берёт прежний результат: ключ — снимок проекта и расстановка
+let issCache={key:null, val:null};
+function stepIss(){ if(P.iss) return P.iss;
+}
+function layoutAll(st, units){
+  const asg=assignRooms(st,units), L={}, inserts=[];
+  for(const room of st.rooms){
+    const ru=units.filter(u=>asg[u.key]===room.id); if(!ru.length) continue;
+    const r=autoLayout(roomGeom(st,room), ru);
+    for(const k in r.L) if(!k.startsWith('ins:')) L[k]=r.L[k];
+    for(const i of r.inserts){ const nk='ins:'+room.id+':'+i.key.slice(4); L[nk]=r.L[i.key]; inserts.push({key:nk, c:i.c, room:room.id}); }
+  }
+  return {L, inserts, asg};
+}
+
+
+/* --- имеющееся оборудование: «что это» выбирает пользователь, по названию ничего не угадывается --- */
+// cap — ёмкость, от которой зависит подбор; у остальных ролей считается штуками
+const ROLE_GROUPS=['Тепловое','Холод','Мойка и вода','Столы и стеллажи','Раздача','Прочее'];
+const ROLE_LIST=[
+  ['combi','Пароконвектомат','Тепловое',{unit:'GN', options:[[4,'4 уровня GN'],[6,'6 уровней GN'],[10,'10 уровней GN'],[20,'20 уровней GN']]}],
+  ['burners','Плита','Тепловое',{unit:'конфорок', min:1, max:12, step:1}],
+  ['kettle','Котёл пищеварочный','Тепловое',{unit:'л', min:10, max:500, step:10}],
+  ['pan','Сковорода опрокидывающаяся','Тепловое',{unit:'л', min:5, max:200, step:5}],
+  ['rice','Рисоварка','Тепловое',{unit:'л', min:1, max:40, step:1}],
+  ['crepe','Блинница','Тепловое',{unit:'постов', min:1, max:6, step:1}],
+  ['tea','Кипятильник для чая','Тепловое',null],
+  ['fridge','Холодильный шкаф','Холод',{unit:'л', min:50, max:5000, step:10}],
+  ['freezer','Морозильник — шкаф или ларь','Холод',{unit:'л', min:50, max:3000, step:10}],
+  ['coldtable','Холодильный стол','Холод',null],
+  ['blast','Шкаф шоковой заморозки / охлаждения','Холод',null],
+  ['bathRaw','Ванна для овощей и сырой продукции','Мойка и вода',null],
+  ['bathMeat','Ванна для мяса и птицы','Мойка и вода',null],
+  ['bathFish','Ванна для рыбы','Мойка и вода',null],
+  ['bathKitchen','Ванна для кухонной посуды','Мойка и вода',null],
+  ['bathTable','Ванна для столовой посуды','Мойка и вода',null],
+  ['prewash','Ванна для ополаскивания перед посудомоечной машиной','Мойка и вода',null],
+  ['dish','Посудомоечная машина','Мойка и вода',{unit:'тип', options:[[1,'фронтальная 220 В'],[1.5,'фронтальная 380 В'],[3,'купольная']]}],
+    {ok:(r('dish')+r('bathTable')+r('bathKitchen'))>=1, m:'Место для мытья посуды'}];
+  if(s.feats.fish) list.push({ok:r('tableFish')>=1 && r('bathFish')>=1, m:'Отдельные стол и мойка для рыбы, чтобы запах не переходил на остальное'});
+  if(s.feats.meat) list.push({ok:r('tableMeat')>=1 && r('bathMeat')>=1, m:'Отдельные стол и мойка для мяса и птицы'});
+  if(st) list.push(
+    {ok:r('tableRaw')>=1 && (r('tableReady')+r('coldtable'))>=1, m:'Раздельные столы для сырой и готовой продукции'},
+    {ok:r('bathKitchen')>=1 && (r('dish')+r('bathTable'))>=1, m:'Раздельная мойка кухонной и столовой посуды'},
+    {ok:r('fridge')+r('coldtable')>=2, m:'Раздельное холодильное хранение сырья и готовой продукции'},
+    {ok:r('thermo')>=1, m:'Термометр для контроля температуры блюд на раздаче'});
+  list.push({ok:null, m:'Сырое, готовое и грязная посуда по возможности не пересекаются — посмотрите на плане'});
+  return list;
+}
+
+/* ---- формат ---- */
+function fmt1(n){ return (Math.round(n*10)/10).toLocaleString('ru-RU'); }
+function fmt2(n){ return (Math.round(n*100)/100).toLocaleString('ru-RU'); }
+function fmt0(n){ return Math.round(n).toLocaleString('ru-RU'); }
+function fmtM(n){ return fmt2(n)+' м'; }
+function rub(n){ return Math.round(n).toLocaleString('ru-RU')+' ₽'; }
+function plural(n,a,b,c){ n=Math.abs(n)%100; const n1=n%10; if(n>10&&n<20) return c; if(n1>1&&n1<5) return b; if(n1===1) return a; return c; }
+function esc(t){ return String(t).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function uid(p){ return p+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+</script>
+
+<script>
+/* ===================== ИНТЕРФЕЙС ===================== */
+/* ======================================================================
+   STORE — хранилище проектов. Один интерфейс: list / load / save / remove.
+   Сейчас — localStorage этого браузера; чтобы перейти на облако, достаточно заменить этот блок.
+   Индекс 'trapeznaya:index' хранит сводку для карточек, проекты — 'trapeznaya:p:<id>', последний открытый — 'trapeznaya:last'.
+   ====================================================================== */
+const KEY='trapeznaya-v1';   // прежний единственный проект: читается один раз при переносе, не удаляется
+const STORE=(()=>{
+  const IX='trapeznaya:index', PK='trapeznaya:p:', LAST='trapeznaya:last';
+  const get=k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } };
+  const isQuota=e=>!!e && (e.name==='QuotaExceededError' || e.name==='NS_ERROR_DOM_QUOTA_REACHED' || e.code===22 || e.code===1014);
+  const readIx=()=>{ try{ const a=JSON.parse(get(IX)||'null'); return Array.isArray(a)?a:null; }catch(e){ return null; } };
+  const st={ error:null, PK, IX,
+    list(){ return (readIx()||[]).slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))); },
+    load(id){ try{ const t=get(PK+id); return t?JSON.parse(t):null; }catch(e){ return null; } },
+    raw(id){ return get(PK+id); },
+    save(id, data, summary){
+      try{ const txt=typeof data==='string'?data:JSON.stringify(data); localStorage.setItem(PK+id, txt);
+        const ix=readIx()||[], i=ix.findIndex(x=>x.id===id), row=Object.assign({}, i>=0?ix[i]:{}, summary||{}, {id});
+        if(i>=0) ix[i]=row; else ix.push(row); localStorage.setItem(IX, JSON.stringify(ix)); st.error=null; return true; }
+v26.13.0
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; rg -n -A 5 -B 2 '"'^function insertItems|''^function recompute|''^function compute|''^function autoLayout'"' index.html; "'$s=Get-Content -Encoding UTF8 index.html; $s[2337..2361]; $s[2258..2278]' in C:\Users\pro10\refectory-app
+ succeeded in 356ms:
+1015-  return {t:'bad', st:'bad', m:`Не хватает даже после увеличения: нужно ${f(X)} кВт, можно до ${f(B)}.`, short:`Не хватает: нужно ${f(X)} кВт, можно до ${f(B)}`, fitTo:B};
+1016-}
+1017:function computeProject(s){
+1018-  const notes=[];
+1019-  s.edits=normEdits(s.edits);
+1020-  const E=s.edits, allHave=s.existing.map(e=>({c:itemOf(e), qty:Math.max(0,e.qty|0), uid:e.uid})).filter(h=>h.qty>0);
+1021-  const have=allHave.filter(h=>!E.skipHave[h.uid]), skipped=allHave.filter(h=>E.skipHave[h.uid]);
+1022-  let manualConverted=false;
+--
+2021-  return inv*30+dp;
+2022-}
+2023:function autoLayout(s, units){
+2024-  let best=null, bs=Infinity;
+2025-  const all=r=>[...units, ...r.inserts.map(i=>({key:i.key,c:i.c}))];
+2026-  const unpl=r=>units.filter(u=>!r.L[u.key]).length;
+2027-  const hotMiss=r=>units.filter(u=>u.c.hot&&u.c.mount==='floor'&&!r.L[u.key]).length;
+2028-  // тепловая линия в углу (самый высокий аппарат в углу) экономит угловую вставку; мелкие вставки нежелательны
+--
+2335-  if((k==='z'||k==='я')&&!e.shiftKey){ e.preventDefault(); doUndo(); }
+2336-  else if(((k==='z'||k==='я')&&e.shiftKey)||k==='y'||k==='н'){ e.preventDefault(); doRedo(); } });
+2337:function recompute(){
+2338-  P=computeProject(S); const real=unitsOf(P.items);
+2339-  if(P.manualConverted){ setTimeout(()=>toast('Ручной режим заменён правками — расчёт снова обновляется'),50); save(); }
+2340-  P.roomOf=assignRooms(S, real);
+2341-  const sig=JSON.stringify([real.map(u=>u.key+u.c.w+u.c.d+u.c.h+u.c.mount+(u.c.roomId||'')), S.rooms, S.unitRoom, S.norms.align, S.norms.work, [S.norms.elPanelDepth,S.norms.elPanelWidth,S.norms.elPanelLowH,S.norms.elWaterDist], S.norms.sewerMax, 'flow3']);
+2342-  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ const r=layoutAll(S,real); S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room; S.inserts=r.inserts.map(i=>({key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, room:i.room})); S.layoutSig=sig; }
+--
+4285-
+4286-/* ---------- 7. Смета ---------- */
+4287:function insertItems(){ const m=new Map(); P.units.filter(u=>u.c.insert).forEach(u=>{ const x=m.get(u.c.id); if(x) x.qty++; else m.set(u.c.id,{c:u.c, qty:1, src:'buy'}); }); return [...m.values()]; }
+4288-function costCalc(){
+4289-  const H=hoodsAll();
+4290-  const map=new Map(); [...P.items,...insertItems()].forEach(it=>{ const k=it.c.id+':'+it.src; const m=map.get(k); if(m) m.qty+=it.qty; else map.set(k,{...it}); });
+4291-  const rows=[...map.values()].sort((a,b)=>ZORDER.indexOf(a.c.z)-ZORDER.indexOf(b.c.z));
+4292-  const eq=rows.filter(r=>r.src==='buy').reduce((s,r)=>s+priceOf(r.c)*r.qty,0);
+  P=computeProject(S); const real=unitsOf(P.items);
+  if(P.manualConverted){ setTimeout(()=>toast('Ручной режим заменён правками — расчёт снова обновляется'),50); save(); }
+  P.roomOf=assignRooms(S, real);
+  const sig=JSON.stringify([real.map(u=>u.key+u.c.w+u.c.d+u.c.h+u.c.mount+(u.c.roomId||'')), S.rooms, S.unitRoom, S.norms.align, S.norms.work, [S.norms.elPanelDepth,S.norms.elPanelWidth,S.norms.elPanelLowH,S.norms.elWaterDist], S.norms.sewerMax, 'flow3']);
+  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ const r=layoutAll(S,real); S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room; S.inserts=r.inserts.map(i=>({key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, room:i.room})); S.layoutSig=sig; }
+  S.inserts=(S.inserts||[]).filter(i=>S.layout[i.key]||i.off);
+  const ins=insertUnits(S.inserts); S.inserts.forEach(i=>{ P.roomOf[i.key]=i.room&&S.rooms.some(r=>r.id===i.room)?i.room:S.rooms[0].id; });
+  P.units=[...real, ...ins];
+  // позиция на плане действительна только в том помещении, где её поставили
+  S.layoutRoom=S.layoutRoom||{};
+  for(const u of P.units){ const pos=S.layout[u.key]; if(!pos) continue; const rid=P.roomOf[u.key], lr=S.layoutRoom[u.key], room=rById(rid);
+    if(lr && lr!==rid){ delete S.layout[u.key]; delete S.layoutRoom[u.key]; continue; }
+    const b=bbox(u.c,pos);
+    if(!room || b.x<-0.05 || b.y<-0.05 || b.x+b.w>room.w+0.05 || b.y+b.h>room.d+0.05){ delete S.layout[u.key]; delete S.layoutRoom[u.key]; continue; }
+    S.layoutRoom[u.key]=rid; }
+  P.foot+=S.inserts.reduce((a,i)=>a+i.w*i.d,0);
+  P.iss=null;   // замечания по шагам пересобираются при следующей отрисовке (stepIss)
+  navDirty=true; if(!navRaf) navRaf=requestAnimationFrame(()=>{ navRaf=0; if(navDirty) renderNav(); });   // пересчёт без перерисовки шага — значки обновятся в следующем кадре
+}
+let navDirty=false, navRaf=0;
+// замечания по шагам: [{bad, warn, list:[{t,m,room?}]}] по индексам STEP_NAMES; info не считается. Источники — те же, что выводятся на шагах
+// повторная отрисовка без изменений проекта (переход по шагам, выбор на плане) берёт прежний результат: ключ — снимок проекта и расстановка
+let issCache={key:null, val:null};
+function stepIss(){ if(P.iss) return P.iss;
+  const key=lastSnap!=null?lastSnap+'|'+S.layoutSig+'|'+JSON.stringify(S.layout):null;
+STORE.migrateOld();
+let S = (()=>{ const id=STORE.last()||((STORE.list()[0]||{}).id); const d=id&&STORE.load(id);
+  if(d){ try{ const m=migrate(d); if(m){ ensureIds(m,id); return m; } }catch(e){} }
+  const e=exampleState(); e.pid=''; return e; })();   // pid пустой — проект не выбран, ничего не сохраняется
+let step=0, sel=null, zoom=1, showZones=false, P=null, confirmReset=false;
+let selSet=new Set();   // выделенное оборудование на «Плане» (режим «Оборудование»); sel — главный, последний добавленный
+let heatRecOpen=false, heatRecOff=new Set(), heatRecErr=false;   // панель «Типовой набор изменит»: снятые галочки, предупреждение
+let planMode='equip', selRoom=null, addMode=null, editUid=null, formErr=false, draft=null;
+/* ---- вид плана у зрителя (не проект, хранится в браузере): масштаб полей, слои, режим правки на телефоне ---- */
+const VIEW_KEY='trapeznaya:view', ZSTEPS=[0.1,0.25,0.5,0.75,1,1.5,2,3,4];
+const VIEW=(()=>{ const d={zp:1, zo:1, layers:{dims:true, zones:false, pts:true, labels:true}, list:null}; let v=null;
+  try{ v=JSON.parse(localStorage.getItem(VIEW_KEY)||'null'); }catch(e){}
+  if(!v||typeof v!=='object') return d;
+  return {zp:+v.zp||1, zo:+v.zo||1, layers:Object.assign({}, d.layers, v.layers&&typeof v.layers==='object'?v.layers:{}), list:typeof v.list==='boolean'?v.list:null}; })();
+function saveView(){ try{ localStorage.setItem(VIEW_KEY, JSON.stringify(VIEW)); }catch(e){} }
+let scrK=null, planEdit=false, fsField=null, posCache=null;   // scrK — пикселей экрана на единицу плана (1 см) у текущей отрисовки; null — печать
+const layerOn=k=>VIEW.layers[k]!==false;
+const isTouch=()=>{ try{ return matchMedia('(pointer: coarse)').matches; }catch(e){ return false; } };
+function VZ(f){ const z=+VIEW.zp; return isFinite(z)&&z>0?Math.min(4,Math.max(0.1,z)):1; }
+const lastCW={};
+function fieldCW(f){ const b=document.getElementById('pbox'); if(b&&b.isConnected&&b.clientWidth>40) return lastCW[f]=b.clientWidth;
+
+codex
+Нашёл оба места создания вставок и группировку столов в «Подборе». Добавлю округление длины, сохранение зазора и вывод максимального зазора для одинаковых столов. Затем проверю обычный пример и ширину кухни 7204 мм.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+const fs=require('fs');
+const p='index.html'; let s=fs.readFileSync(p,'utf8');
+function replace(a,b){ if(s.split(a).length"'!==2) throw Error('"'Expected one match: '+a); s=s.replace(a,b); }
+replace('function insC(len,dep,z){','function insLen(len){ return Math.floor(Math.round(len*1000)/10)*10/1000; }\\r\\nfunction insC(len,dep,z){');
+replace('c:insC(i.w,i.d,i.z), src:', 'c:{...insC(i.w,i.d,i.z), gap:i.gap||0}, src:');
+replace('const dep=Math.max(0.5,run.front), c=insC(rem,dep,run.z), pos=posAt(sd,t0,c,0);', 'const pl=insLen(rem); if(pl<0.3) return 0;\\r\\n    const dep=Math.max(0.5,run.front), c={...insC(pl,dep,run.z), gap:+(rem-pl).toFixed(3)}, pos=posAt(sd,t0,c,0);');
+replace('const n=Math.ceil((e-a)/1.5-1e-6), pl=(e-a)/n;', 'const n=Math.ceil((e-a)/1.5-1e-6), pl=insLen((e-a)/n); if(pl<0.3) continue;');
+replace('c=insC(pl,dep,z), bd=', 'c={...insC(pl,dep,z), gap:+((e-a)-n*pl).toFixed(3)}, bd=');
+replace('d:+i.c.d.toFixed(3), z:i.c.z, room:i.room', 'd:+i.c.d.toFixed(3), z:i.c.z, gap:i.c.gap||0, room:i.room');
+replace('· заполняет угол или промежуток в линии</span>', '· заполняет угол или промежуток в линии"'${it.c.gap>=0.001?` · зазор ${Math.round(it.c.gap*1000)} мм`:'"\\'\\'}</span>');
+replace('if(x) x.qty++; else m.set(u.c.id,{c:u.c, qty:1, src:\\'buy\\'});', 'if(x){ x.qty++; x.c.gap=Math.max(x.c.gap||0,u.c.gap||0); } else m.set(u.c.id,{c:{...u.c}, qty:1, src:\\'buy\\'});');
+fs.writeFileSync(p,s);
+'@ | node" in C:\Users\pro10\refectory-app
+ exited 1 in 342ms:
+[stdin]:3
+function replace(a,b){ if(s.split(a).length!==2) throw Error('Expected one match: '+a); s=s.replace(a,b); }
+                                                 ^
+
+Error: Expected one match: ? ????????? ???? ??? ?????????? ? ?????</span>
+    at replace ([stdin]:3:56)
+    at [stdin]:10:1
+    at runScriptInThisContext (node:internal/vm:219:10)
+    at node:internal/process/execution:485:12
+    at [stdin]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:483:60)
+    at evalFunction (node:internal/process/execution:317:30)
+    at evalTypeScript (node:internal/process/execution:329:3)
+    at node:internal/main/eval_stdin:51:5
+    at Socket.<anonymous> (node:internal/process/execution:239:5)
+
+Node.js v26.13.0
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$OutputEncoding=[System.Text.UTF8Encoding]::new($false); @'"'
+const fs=require('fs');
+const p='index.html'; let s=fs.readFileSync(p,'utf8');
+function replace(a,b){ if(s.split(a).length"'!==2) throw Error('"'Expected one match: '+a); s=s.replace(a,b); }
+replace('function insC(len,dep,z){','function insLen(len){ return Math.floor(Math.round(len*1000)/10)*10/1000; }\\r\\nfunction insC(len,dep,z){');
+replace('c:insC(i.w,i.d,i.z), src:', 'c:{...insC(i.w,i.d,i.z), gap:i.gap||0}, src:');
+replace('const dep=Math.max(0.5,run.front), c=insC(rem,dep,run.z), pos=posAt(sd,t0,c,0);', 'const pl=insLen(rem); if(pl<0.3) return 0;\\r\\n    const dep=Math.max(0.5,run.front), c={...insC(pl,dep,run.z), gap:+(rem-pl).toFixed(3)}, pos=posAt(sd,t0,c,0);');
+replace('const n=Math.ceil((e-a)/1.5-1e-6), pl=(e-a)/n;', 'const n=Math.ceil((e-a)/1.5-1e-6), pl=insLen((e-a)/n); if(pl<0.3) continue;');
+replace('c=insC(pl,dep,z), bd=', 'c={...insC(pl,dep,z), gap:+((e-a)-n*pl).toFixed(3)}, bd=');
+replace('d:+i.c.d.toFixed(3), z:i.c.z, room:i.room', 'd:+i.c.d.toFixed(3), z:i.c.z, gap:i.c.gap||0, room:i.room');
+replace('· заполняет угол или промежуток в линии</span>', '· заполняет угол или промежуток в линии"'${it.c.gap>=0.001?` · зазор ${Math.round(it.c.gap*1000)} мм`:'"\\'\\'}</span>');
+replace('if(x) x.qty++; else m.set(u.c.id,{c:u.c, qty:1, src:\\'buy\\'});', 'if(x){ x.qty++; x.c.gap=Math.max(x.c.gap||0,u.c.gap||0); } else m.set(u.c.id,{c:{...u.c}, qty:1, src:\\'buy\\'});');
+fs.writeFileSync(p,s);
+'@ | node" in C:\Users\pro10\refectory-app
+ succeeded in 323ms:
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $s=Get-Content -Encoding UTF8 index.html; $s[496..500]; $s[2130..2153]; $s[3930..3945]; git diff --check; git diff --stat; git diff -- index.html' in C:\Users\pro10\refectory-app
+ succeeded in 1250ms:
+/* ===================== ДАННЫЕ И РАСЧЁТЫ ===================== */
+// w, d, h — ширина по фронту, глубина, высота, м; kw — кВт; ph — фазы; cw/hw/dr — холодная, горячая вода, слив; hot — под зонт
+// mount: floor — напольное, wall — настенное, table — настольное, under — под мойкой, none — ручной инструмент
+const CAT = [
+  {id:'combi4', n:'Пароконвектомат 4 GN 1/1, 220 В, на подставке', s:'ПКА 4', role:'combi', cap:4, w:.75, d:.75, h:1.5, kw:6.3, ph:1, cw:1, dr:1, hot:1, z:'hot', p:330000},
+    if(!at.length || (one && !at.some(x=>x.u.key===key))) continue;
+    const wallU=gasQ?null:at.find(x=>x.u.c.mount==='wall'), fl2=at.filter(x=>x.u.c.mount==='floor').sort((a,b)=>b.u.c.h-a.u.c.h);
+    const hi=q.hgt!=null?fl2.find(x=>x.u.c.h>q.hgt+1e-6):null;
+    const mine=x=>!one||x.u.key===key;
+    if(wallU){ if(mine(wallU)) iss.push({t:'warn', key:wallU.u.key, pt:true, lbl:'Закрывает розетку', m:`Розетка закрыта «${nm(wallU.u)}» — настенное оборудование висит на месте розетки.`}); }
+    else if(hi){ if(mine(hi)) iss.push({t:'warn', key:hi.u.key, pt:true, lbl:gasQ?'Закрывает газовый кран':'Закрывает розетку', m:gasQ?`Газовый кран закрыт «${nm(hi.u)}» — его нужно перекрывать быстро; поставьте кран выше или сдвиньте аппарат.`:`Розетка закрыта «${nm(hi.u)}» — оборудование выше розетки.`}); }
+    else if(q.hgt==null && fl2.length){ if(mine(fl2[0])) iss.push({t:'info', key:fl2[0].u.key, pt:true, m:gasQ?`Газовый кран за «${nm(fl2[0].u)}» — укажите высоту крана, чтобы проверить доступ.`:`Розетка за «${nm(fl2[0].u)}» — укажите высоту, чтобы проверить.`}); }
+  }
+  // слив до выпуска канализации: вдоль стен, двери не пересекаются; выпуск в полу — по прямой
+  { const dl=pl.filter(x=>hasDrain(x.u.c)&&me(x));
+    if(dl.length){ const outs=s.points.filter(p=>p.type==='sewer'), mx=swMax(s);
+      if(!outs.length){ if(!one && typeof S!=='undefined' && S && S.rooms && !netsDesign(S) && hasPt(S,'sewer')) iss.push({t:'warn', sw:true, m:`В «${roomName(S,s.id)}» нет выпуска канализации — отметьте его на шаге «Подключения».`}); }
+      else for(const x of dl){ const r=sewerRoute(s,x.u,L); if(!r) continue; const nmS=swName(x.u.c);
+        if(r.blocked) iss.push({t:'bad', key:x.u.key, sw:true, lbl:'Слив не провести', m:`${nmS}: до выпуска канализации не провести слив — путь вдоль стен перекрывают двери.`});
+        else if(r.len>mx+1e-6) iss.push({t:'warn', key:x.u.key, sw:true, lbl:`Слив ${fmt1(r.len)} м`, m:`${nmS}: слив до канализации ${fmt1(r.len)} м ${r.via==='floor'?'по полу':'по стенам'} — больше ${fmtM(mx)}; придвиньте ${swWash(x.u.c)?'мойку':'аппарат'} к выпуску или добавьте выпуск.`}); } } }
+  const hg=one?0:hotGroups(s,units,L);
+  if(hg>1) iss.push({t:'warn', m:`Тепловое оборудование разнесено на ${hg} ${plural(hg,'группу','группы','групп')} — понадобится ${hg} ${plural(hg,'зонт','зонта','зонтов')}. Поставьте пароконвектомат, плиту и котёл в одну линию, чтобы закрыть их одним зонтом.`});
+  const un=one?0:units.filter(u=>!L[u.key]).length;
+  if(un) iss.push({t:'info', m:`${un} ${plural(un,'позиция','позиции','позиций')} пока не на плане — они в резерве, под планом.`});
+  const seen=new Set(); return iss.filter(x=>{ if(seen.has(x.m)) return false; seen.add(x.m); return true; });
+}
+function checkLayout(s, units, L){ return checkUnit(s, units, L, null); }
+
+function hotGroups(s,units,L){
+  const insHtml=ins.length?`<div class="zone-h"><span class="sw" style="background:var(--ink-2)"></span>Столы-вставки по плану</div><div class="rows">${ins.map(it=>`<div class="irow"><div class="nm">${esc(it.c.n)} <span class="muted">· заполняет угол или промежуток в линии${it.c.gap>=0.001?` · зазор ${Math.round(it.c.gap*1000)} мм`:''}</span></div><div class="meta"><span>${Math.round(it.c.w*1000)}×${Math.round(it.c.d*1000)}×870</span></div><div class="btns"><span class="tag buy">купить × ${it.qty}</span></div></div>`).join('')}</div>`:'';
+  const n=editCount(S), stale=P.stale||[];
+  const staleHtml=stale.length?`<ul class="notes" style="margin:0 0 12px">${stale.map(x=>`<li class="warn">${esc(shortName(x.c))}: правка «${x.d>0?'+':''}${x.d}» сделана, когда приложение ставило ${x.baseAt}; сейчас ставит ${x.now} — итог ${Math.max(0,x.now+x.d)}.
+      <div class="btns" style="margin-top:6px"><button class="btn small tap" type="button" data-stale-keep="${x.id}">Оставить</button><button class="btn small tap" type="button" data-stale-drop="${x.id}">Убрать правку</button></div></li>`).join('')}</ul>`:'';
+  const editsBar=n?`<div class="edits-bar"><span>Ваших правок: <b>${n}</b></span>${confirmEditsReset?`<span class="muted">Все правки будут сняты, подбор вернётся к расчёту.</span><button class="btn small danger tap" type="button" id="edits-reset-yes">Сбросить</button><button class="btn small tap" type="button" id="edits-reset-no">Отмена</button>`:`<button class="btn small tap" type="button" id="edits-reset">Сбросить все правки</button>`}</div>`:'';
+  return `${stepHead('Подбор оборудования', `Набор на ${S.people} ${plural(S.people,'человека','человек','человек')} за трапезой под выбранное тепловое оборудование, с учётом того, что уже есть. Под каждой позицией — почему она в наборе. Количество и исполнение можно править: правки хранятся отдельно и накладываются на свежий расчёт, если поменяется число людей или помещения.`)}
+  ${meters()}${notesHtml(P.notes.map(n=>n.step!=null&&n.step!==4&&n.go==null?{...n, go:n.step}:n))}
+  <section class="panel">${editsBar}${staleHtml}${list}${insHtml}
+    <div class="add-row"><input type="search" id="add-q" placeholder="Найти позицию по названию" aria-label="Поиск позиции для добавления" value="${esc(addQuery)}">
+      <div class="add-pick"><select id="add-cat" aria-label="Добавить позицию">${addOpts||'<option value="">Ничего не нашлось</option>'}</select><button class="btn tap" type="button" id="add-go" ${addOpts?'':'disabled'}>Добавить</button></div></div>
+  </section>
+  <p class="hint" style="margin-top:12px;max-width:72ch">Как считается занятость пола: площадь, которую напольное оборудование занимает своими габаритами, делится на площадь кухни. Остальное место уходит на проходы и рабочие зоны, поэтому оборудование обычно занимает не больше ${fmt0(S.norms.kArea*100)} % пола — это ориентир из практики проектирования пищеблоков, его можно поменять в <button type="button" class="linkish" data-set="n-ka">«Настройках расчёта»</button>. Точную проверку проходов делает план.</p>
+  ${pager()}`;
+}
+// «+» и «−» — добавка к расчёту; «−» до нуля у позиции из расчёта — «убрано вами»
+function editStep(id, d){
+ index.html | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
+diff --git a/index.html b/index.html
+index 02c4ae6..42f9468 100644
+--- a/index.html
++++ b/index.html
+@@ -1807,9 +1807,10 @@ function layoutScore(s, units, L){
+ // приёмка → хранение → мытьё → чистка и разделка → нарезка → термообработка → сервировка → выдача; мойка посуды — после выдачи
+ const ZFLOW=['san','store','cold','raw','hot','ready'];
+ function subOrd(c){ const r=c.role||''; if(/^bath/.test(r)) return 0; if(/^table/.test(r)) return 1; return 2; }
++function insLen(len){ return Math.floor(Math.round(len*1000)/10)*10/1000; }
+ function insC(len,dep,z){ const lm=Math.round(len*1000), dm=Math.round(dep*1000);
+   return {id:'ins_'+lm+'x'+dm, n:`Стол-вставка ${lm}×${dm}`, lb:'Стол-вставка', lb2:'Вставка', s:'Вст', w:len, d:dep, h:0.87, z:z||'ready', mount:'floor', insert:1, kw:0, ph:1, role:'insert', p:Math.round((5000+len*9000)/500)*500}; }
+-function insertUnits(list){ return (list||[]).map(i=>({key:i.key, c:insC(i.w,i.d,i.z), src:'buy'})); }
++function insertUnits(list){ return (list||[]).map(i=>({key:i.key, c:{...insC(i.w,i.d,i.z), gap:i.gap||0}, src:'buy'})); }
+ function cwEdges(g,o){ return perimeterSpan(g.room,o.side,o.off,o.w); }
+ function mirrorGeom(s){ return mirrorRoom(s); }
+ function mirRect(W,r){ return {x:W-r.x-r.w, y:r.y, w:r.w, h:r.h}; }
+@@ -1866,7 +1867,8 @@ function packForward(g, seq, startP, occ, out, reserve, runInit){
+   const closeCorner=(sd,len,t0)=>{
+     if(wallById(g.room,sd).axis===null) return 0;
+     const rem=len-t0; if(run.side!==sd || rem<0.3) return 0;
+-    const dep=Math.max(0.5,run.front), c=insC(rem,dep,run.z), pos=posAt(sd,t0,c,0); if(pos===null) return 0;
++    const pl=insLen(rem); if(pl<0.3) return 0;
++    const dep=Math.max(0.5,run.front), c={...insC(pl,dep,run.z), gap:+(rem-pl).toFixed(3)}, pos=posAt(sd,t0,c,0); if(pos===null) return 0;
+     const b=bbox(c,pos);
+     if(!free(b,NOF,c)) return 0;
+     const key='ins:'+(out.n++); out.L[key]=pos; out.ins.push({key,c}); occ.push({b,f:NOF}); return dep; };
+@@ -1917,8 +1919,8 @@ function fillGaps(s, all, L, ins, cnt){
+       for(const o of hits(strip(a,e))){ const oa=(horiz?o.x:o.y)-O, oe=(horiz?o.x+o.w:o.y+o.h)-O; if(oa<=a+0.01) a=Math.max(a,oe); else if(oe>=e-0.01) e=Math.min(e,oa); }
+       if(e-a<0.3 || hits(strip(a,e)).length) continue;
+       if(wins.some(w=>ov(strip(a,e),w.r) && 0.87>w.sill+0.01)) continue;
+-      const n=Math.ceil((e-a)/1.5-1e-6), pl=(e-a)/n;
+-      for(let k=0;k<n;k++){ const a0=a+k*pl, c=insC(pl,dep,z), bd=wallBand(R,side,a0,pl,dep);
++      const n=Math.ceil((e-a)/1.5-1e-6), pl=insLen((e-a)/n); if(pl<0.3) continue;
++      for(let k=0;k<n;k++){ const a0=a+k*pl, c={...insC(pl,dep,z), gap:+((e-a)-n*pl).toFixed(3)}, bd=wallBand(R,side,a0,pl,dep);
+         const pos={x:bd.x, y:bd.y, rot};
+         pos.x=+pos.x.toFixed(3); pos.y=+pos.y.toFixed(3);
+         if(!rectInRoom(R,bbox(c,pos))) continue;
+@@ -2339,7 +2341,7 @@ function recompute(){
+   if(P.manualConverted){ setTimeout(()=>toast('Ручной режим заменён правками — расчёт снова обновляется'),50); save(); }
+   P.roomOf=assignRooms(S, real);
+   const sig=JSON.stringify([real.map(u=>u.key+u.c.w+u.c.d+u.c.h+u.c.mount+(u.c.roomId||'')), S.rooms, S.unitRoom, S.norms.align, S.norms.work, [S.norms.elPanelDepth,S.norms.elPanelWidth,S.norms.elPanelLowH,S.norms.elWaterDist], S.norms.sewerMax, 'flow3']);
+-  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ const r=layoutAll(S,real); S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room; S.inserts=r.inserts.map(i=>({key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, room:i.room})); S.layoutSig=sig; }
++  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ const r=layoutAll(S,real); S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room; S.inserts=r.inserts.map(i=>({key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, gap:i.c.gap||0, room:i.room})); S.layoutSig=sig; }
+   S.inserts=(S.inserts||[]).filter(i=>S.layout[i.key]||i.off);
+   const ins=insertUnits(S.inserts); S.inserts.forEach(i=>{ P.roomOf[i.key]=i.room&&S.rooms.some(r=>r.id===i.room)?i.room:S.rooms[0].id; });
+   P.units=[...real, ...ins];
+@@ -3926,7 +3928,7 @@ function stepSelect(){
+   const q=addQuery.trim().toLowerCase();
+   const addOpts=ZORDER.map(z=>{ const cs=CAT.filter(c=>c.z===z && (!q || c.n.toLowerCase().includes(q))); return cs.length?`<optgroup label="${ZONES[z]}">${cs.map(c=>`<option value="${c.id}">${esc(c.n)}</option>`).join('')}</optgroup>`:''; }).join('');
+   const ins=insertItems();
+-  const insHtml=ins.length?`<div class="zone-h"><span class="sw" style="background:var(--ink-2)"></span>Столы-вставки по плану</div><div class="rows">${ins.map(it=>`<div class="irow"><div class="nm">${esc(it.c.n)} <span class="muted">· заполняет угол или промежуток в линии</span></div><div class="meta"><span>${Math.round(it.c.w*1000)}×${Math.round(it.c.d*1000)}×870</span></div><div class="btns"><span class="tag buy">купить × ${it.qty}</span></div></div>`).join('')}</div>`:'';
++  const insHtml=ins.length?`<div class="zone-h"><span class="sw" style="background:var(--ink-2)"></span>Столы-вставки по плану</div><div class="rows">${ins.map(it=>`<div class="irow"><div class="nm">${esc(it.c.n)} <span class="muted">· заполняет угол или промежуток в линии${it.c.gap>=0.001?` · зазор ${Math.round(it.c.gap*1000)} мм`:''}</span></div><div class="meta"><span>${Math.round(it.c.w*1000)}×${Math.round(it.c.d*1000)}×870</span></div><div class="btns"><span class="tag buy">купить × ${it.qty}</span></div></div>`).join('')}</div>`:'';
+   const n=editCount(S), stale=P.stale||[];
+   const staleHtml=stale.length?`<ul class="notes" style="margin:0 0 12px">${stale.map(x=>`<li class="warn">${esc(shortName(x.c))}: правка «${x.d>0?'+':''}${x.d}» сделана, когда приложение ставило ${x.baseAt}; сейчас ставит ${x.now} — итог ${Math.max(0,x.now+x.d)}.
+       <div class="btns" style="margin-top:6px"><button class="btn small tap" type="button" data-stale-keep="${x.id}">Оставить</button><button class="btn small tap" type="button" data-stale-drop="${x.id}">Убрать правку</button></div></li>`).join('')}</ul>`:'';
+@@ -4284,7 +4286,7 @@ function stepEng(){
+ }
+ 
+ /* ---------- 7. Смета ---------- */
+-function insertItems(){ const m=new Map(); P.units.filter(u=>u.c.insert).forEach(u=>{ const x=m.get(u.c.id); if(x) x.qty++; else m.set(u.c.id,{c:u.c, qty:1, src:'buy'}); }); return [...m.values()]; }
++function insertItems(){ const m=new Map(); P.units.filter(u=>u.c.insert).forEach(u=>{ const x=m.get(u.c.id); if(x){ x.qty++; x.c.gap=Math.max(x.c.gap||0,u.c.gap||0); } else m.set(u.c.id,{c:{...u.c}, qty:1, src:'buy'}); }); return [...m.values()]; }
+ function costCalc(){
+   const H=hoodsAll();
+   const map=new Map(); [...P.items,...insertItems()].forEach(it=>{ const k=it.c.id+':'+it.src; const m=map.get(k); if(m) m.qty+=it.qty; else map.set(k,{...it}); });
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$OutputEncoding=[System.Text.UTF8Encoding]::new($false); @'"'
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync('index.html','utf8'), scripts=[...html.matchAll(/<script\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/g)].map(m=>m[1]);
+scripts.forEach(s=>new vm.Script(s));
+const ctx=vm.createContext({console});vm.runInContext(scripts[0],ctx);
+const recompute=html.match(/function recompute\\(\\)\\{[\\s\\S]*?\\r?\\n\\}/)[0];
+const items=html.match(/function insertItems\\(\\)["'^'"\\r\\n]*/)[0];
+vm.runInContext('let S, P, step=5, navDirty=false, navRaf=1; function rById(id){return S.rooms.find(r=>r.id===id);} '+recompute+'\\n'+items,ctx);
+vm.runInContext("'`
+for(const [v,w] of [[1.004,1],[.9996,1],[.9994,.99],[1.3,1.3]]) if(insLen(v)!==w) throw Error('"'insLen '+v);
+for(const width of [7.2,7.204]){
+ S=exampleState(); S.rooms[0].w=width; S.layoutSig=null; recompute();
+ const expected=width===7.2?0:.004;
+ if("'!S.inserts.some(i=>i.w===1.3&&i.d===.6&&i.gap===expected)) throw Error('"'Missing 1300 insert or wrong gap');
+ if(width===7.2&&"'!S.inserts.some(i=>i.w===.95&&i.d===.7)) throw Error('"'Missing 950 insert');
+ if(width===7.2&&S.inserts.some(i=>i.gap>=.001)) throw Error('Unexpected gap');
+ const room=S.rooms[0], units=P.units.filter(u=>P.roomOf[u.key]===room.id), issues=checkLayout(roomGeom(S,room),units,S.layout);
+ console.log(JSON.stringify({width,inserts:S.inserts,overlaps:issues.filter(i=>/налож|перекрыва|пересека/.test(i.m))}));
+ const ins=insertItems();
+ const line="'${JSON.stringify(html.split(/'"\\r?\\n/).find(l=>l.includes('const insHtml=')))};
+ const markup=eval(line.replace('const insHtml=','').replace(/;"'$/,'"''));
+ if(width===7.204&&"'!markup.includes('"'· зазор 4 мм')) throw Error('Missing gap text');
+ if(width===7.2&&markup.includes('· зазор')) throw Error('Unexpected gap text');
+}
+const old=insertUnits([{key:'old',w:1,d:.6}]); if(old[0].c.gap"'!==0) throw Error('"'Legacy gap');
+P.units=insertUnits([{key:'a',w:1,d:.6,gap:.002},{key:'b',w:1,d:.6,gap:.007}]);
+if(insertItems()[0].c.gap"'!==.007||insertItems()[0].qty!==2||P.units[0].c.gap!==.002) throw Error('"'Grouping');
+console.log('PASS: syntax, rounding, example layouts, gap persistence/rendering, legacy data and max-gap grouping');
+"'`,ctx);
+'"'@ | node" in C:\Users\pro10\refectory-app
+ exited 1 in 522ms:
+evalmachine.<anonymous>:1146
+function unitWallDist(room,s,c,pos){ if(!posAng(pos)) return sideDist(bbox(c,pos),s,room); return Math.min(...unitPoly(c,pos).map(p=>projectToWall(room,s,p.x,p.y).dist)); }
+                                                      ^
+
+ReferenceError: sideDist is not defined
+    at unitWallDist (evalmachine.<anonymous>:1146:55)
+    at evalmachine.<anonymous>:1633:40
+    at Array.filter (<anonymous>)
+    at checkUnit (evalmachine.<anonymous>:1633:17)
+    at checkLayout (evalmachine.<anonymous>:1657:43)
+    at layoutScore (evalmachine.<anonymous>:1293:13)
+    at tryOne (evalmachine.<anonymous>:1541:94)
+    at autoLayout (evalmachine.<anonymous>:1553:91)
+    at layoutAll (evalmachine.<anonymous>:219:13)
+    at recompute (evalmachine.<anonymous>:6:64)
+
+Node.js v26.13.0
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'function sideDist|function wallForRot|function shortName|function posAng' index.html" in C:\Users\pro10\refectory-app
+ succeeded in 92ms:
+1194:function wallForRot(room,rot,b){ let best=null, bd=Infinity; for(const w of roomWalls(room)){ if(wallRot(w)!==rot) continue; const d=b?Math.abs(backDist(room,w,b)):0; if(d<bd){ bd=d; best=w; } } return best; }
+1635:function posAng(pos){ return Number(pos&&pos.ang)||0; }
+1703:function shortName(c){ return c.n.split(' — ')[0].split(',')[0]; }
+5866:function sideDist(b,s,room){ return backDist(room,s,b); }
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$OutputEncoding=[System.Text.UTF8Encoding]::new($false); @'"'
+const fs=require('fs'),vm=require('vm'),cp=require('child_process');
+const html=fs.readFileSync('index.html','utf8');
+function run(html,verify){
+ const scripts=[...html.matchAll(/<script\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/g)].map(m=>m[1]);scripts.forEach(s=>new vm.Script(s));
+ const ctx=vm.createContext({console});vm.runInContext(scripts[0],ctx);
+ vm.runInContext('let S,P,step=5,navDirty=false,navRaf=1; function rById(id){return S.rooms.find(r=>r.id===id);} '+html.match(/function sideDist["'^'"\\r\\n]*/)[0]+'\\n'+html.match(/function recompute\\(\\)\\{[\\s\\S]*?\\r?\\n\\}/)[0]+'\\n'+html.match(/function insertItems\\(\\)["'^'"\\r\\n]*/)[0],ctx);
+ let results=[];
+ for(const width of [7.2,7.204]){
+  const r=vm.runInContext("'`S=exampleState(); S.rooms[0].w=${width}; S.layoutSig=null; recompute(); ({inserts:S.inserts,issues:checkLayout(roomGeom(S,S.rooms[0]),P.units,S.layout)})`,ctx);results.push(r);
+  if(verify){
+   const expected=width===7.2?0:.004;
+   if(!r.inserts.some(i=>i.w===1.3&&i.d===.6&&i.gap===expected))throw Error('"'1300 gap');
+   if(width===7.2&&("'!r.inserts.some(i=>i.w===.95&&i.d===.7)||r.inserts.some(i=>i.gap>=.001)))throw Error('"'example');
+   const line=html.split(/\\r?\\n/).find(l=>l.includes('const insHtml='));
+   const markup=vm.runInContext('const ins=insertItems(); '+line+' insHtml',vm.createContext({...ctx,ins:undefined}));
+   if(width===7.204&&"'!markup.includes('"'· зазор 4 мм'))throw Error('gap text');
+  }
+ }
+ return {ctx,results};
+}
+const current=run(html,false),baseline=run(cp.execFileSync('git',['show','HEAD:index.html'],{encoding:'utf8',maxBuffer:10000000}),false);
+vm.runInContext("'`for(const [a,b] of [[1.004,1],[.9996,1],[.9994,.99],[1.3,1.3]])if(insLen(a)!==b)throw Error('"'rounding');if(insertUnits([{w:1,d:.6}])[0].c.gap"'!==0)throw Error('"'legacy');P.units=insertUnits([{w:1,d:.6,gap:.002},{w:1,d:.6,gap:.007}]);if(insertItems()[0].c.gap"'!==.007||insertItems()[0].qty!==2||P.units[0].c.gap!==.002)throw Error('"'grouping');"'`,current.ctx);
+for(let i=0;i<2;i++){
+ const r=current.results[i],expected=i?.004:0;
+ if(!r.inserts.some(x=>x.w===1.3&&x.d===.6&&x.gap===expected))throw Error('"'1300 gap');
+ if("'!i&&(!r.inserts.some(x=>x.w===.95&&x.d===.7)||r.inserts.some(x=>x.gap>=.001)))throw Error('"'example');
+ const newIssues=r.issues.filter(x=>"'!baseline.results[i].issues.some(y=>y.m===x.m));if(newIssues.length)throw Error('"'new issues '+JSON.stringify(newIssues));
+ console.log(JSON.stringify({width:i?7.204:7.2,inserts:r.inserts,newLayoutIssues:newIssues.length}));
+}
+const line=html.split(/\\r?\\n/).find(l=>l.includes('const insHtml='));
+vm.runInContext('P.units=insertUnits([{w:1.3,d:.6,gap:.004}]);const ins=insertItems();'+line+'if("'!insHtml.includes("· зазор 4 мм"))throw Error("render");'"',current.ctx);
+console.log('PASS: syntax, rounding, example sizes, 4 mm gap persistence/rendering, legacy and max-gap grouping; no new checkLayout issues.');
+'@ | node" in C:\Users\pro10\refectory-app
+ exited 1 in 412ms:
+evalmachine.<anonymous>:1147
+function unitWallSpan(room,s,c,pos){ if(!posAng(pos)) return sideSpan(bbox(c,pos),s,room); const a=unitPoly(c,pos).map(p=>projectToWall(room,s,p.x,p.y).off); return [Math.min(...a),Math.max(...a)]; }
+                                                      ^
+
+ReferenceError: sideSpan is not defined
+    at unitWallSpan (evalmachine.<anonymous>:1147:55)
+    at evalmachine.<anonymous>:1634:53
+    at Array.filter (<anonymous>)
+    at checkUnit (evalmachine.<anonymous>:1633:17)
+    at checkLayout (evalmachine.<anonymous>:1657:43)
+    at layoutScore (evalmachine.<anonymous>:1293:13)
+    at tryOne (evalmachine.<anonymous>:1541:94)
+    at autoLayout (evalmachine.<anonymous>:1553:91)
+    at layoutAll (evalmachine.<anonymous>:219:13)
+    at recompute (evalmachine.<anonymous>:7:64)
+
+Node.js v26.13.0
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'function sideSpan' index.html" in C:\Users\pro10\refectory-app
+ succeeded in 99ms:
+5867:function sideSpan(b,s,room){ return spanOnWall(room,s,b); }
+
+codex
+Изменения внесены. Проверяю расчётные сценарии и передачу зазора в «Подбор», а замечания `checkLayout` сравню с исходной версией.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$OutputEncoding=[System.Text.UTF8Encoding]::new($false); @'"'
+
+const fs=require('fs'),vm=require('vm'),cp=require('child_process'),assert=require('assert');
+const html=fs.readFileSync('index.html','utf8');
+function run(h){
+ const scripts=[...h.matchAll(/<script\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/g)].map(m=>m[1]); scripts.forEach(s=>new vm.Script(s));
+ const c=vm.createContext({console});vm.runInContext(scripts[0],c);
+ const funcs=['sideDist','sideSpan','insertItems'].map(n=>h.match(new RegExp('function '+n+'["'^'"\\\\r\\\\n]*'))[0]).join('\\n');
+ vm.runInContext('let S,P,step=5,navDirty=false,navRaf=1; function rById(id){return S.rooms.find(r=>r.id===id);} '+funcs+'\\n'+h.match(/function recompute\\(\\)\\{[\\s\\S]*?\\r?\\n\\}/)[0],c);
+ const results=[7.2,7.204].map(w=>vm.runInContext('S=exampleState(); S.rooms[0].w='+w+'; S.layoutSig=null; recompute(); ({inserts:S.inserts,issues:checkLayout(roomGeom(S,S.rooms[0]),P.units,S.layout)})',c));
+ return {c,results};
+}
+const cur=run(html),base=run(cp.execFileSync('git',['show','HEAD:index.html'],{encoding:'utf8',maxBuffer:10000000}));
+vm.runInContext(\"for(const [a,b] of [[1.004,1],[.9996,1],[.9994,.99],[1.3,1.3]])if(insLen(a)"'!==b)throw Error('"'rounding');if(insertUnits([{w:1,d:.6}])[0].c.gap"'!==0)throw Error('"'legacy');P.units=insertUnits([{w:1,d:.6,gap:.002},{w:1,d:.6,gap:.007}]);if(insertItems()[0].c.gap"'!==.007||insertItems()[0].qty!==2||P.units[0].c.gap!==.002)throw Error('"'grouping');\",cur.c);
+const line=html.split(/\\r?\\n/).find(l=>l.includes('const insHtml='));
+for(let i=0;i<2;i++){
+ const r=cur.results[i];assert(r.inserts.some(x=>x.w===1.3&&x.d===.6&&x.gap===(i?.004:0)));
+ if("'!i){assert(r.inserts.some(x=>x.w===.95&&x.d===.7));assert(!r.inserts.some(x=>x.gap>=.001));}
+ const newIssues=r.issues.filter(x=>!base.results[i].issues.some(y=>y.m===x.m));assert.deepStrictEqual(newIssues,[]);
+ cur.c.testInserts=r.inserts;
+ const markup=vm.runInContext('"'(()=>{P.units=insertUnits(testInserts);const ins=insertItems();'+line+'return insHtml;})()',cur.c);
+ assert(i?markup.includes('· зазор 4 мм'):"'!markup.includes('"'· зазор'));
+ console.log(JSON.stringify({width:i?7.204:7.2,inserts:r.inserts,newLayoutIssues:newIssues.length}));
+}
+console.log('PASS: script syntax, rounding, example sizes, gap persistence and rendering, legacy projects, maximum-gap grouping, no new checkLayout issues.');
+
+'@ | node" in C:\Users\pro10\refectory-app
+ exited 1 in 2825ms:
+node:internal/assert/utils:146
+  throw error;
+  ^
+
+AssertionError [ERR_ASSERTION]: Values have same structure but are not reference-equal:
+
+[]
+
+    at [stdin]:18:88
+    at runScriptInThisContext (node:internal/vm:219:10)
+    at node:internal/process/execution:485:12
+    at [stdin]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:483:60)
+    at evalFunction (node:internal/process/execution:317:30)
+    at evalTypeScript (node:internal/process/execution:329:3)
+    at node:internal/main/eval_stdin:51:5
+    at Socket.<anonymous> (node:internal/process/execution:239:5)
+    at Socket.emit (node:events:526:24) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [],
+  expected: [],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v26.13.0
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$OutputEncoding=[System.Text.UTF8Encoding]::new($false); @'"'
+
+const fs=require('fs'),vm=require('vm'),cp=require('child_process'),assert=require('assert');
+const html=fs.readFileSync('index.html','utf8');
+function run(h){
+ const scripts=[...h.matchAll(/<script\\b["'^>]*>(['"\\s\\S]*?)<\\/script>/g)].map(m=>m[1]); scripts.forEach(s=>new vm.Script(s));
+ const c=vm.createContext({console});vm.runInContext(scripts[0],c);
+ const funcs=['sideDist','sideSpan','insertItems'].map(n=>h.match(new RegExp('function '+n+'["'^'"\\\\r\\\\n]*'))[0]).join('\\n');
+ vm.runInContext('let S,P,step=5,navDirty=false,navRaf=1; function rById(id){return S.rooms.find(r=>r.id===id);} '+funcs+'\\n'+h.match(/function recompute\\(\\)\\{[\\s\\S]*?\\r?\\n\\}/)[0],c);
+ const results=[7.2,7.204].map(w=>vm.runInContext('S=exampleState(); S.rooms[0].w='+w+'; S.layoutSig=null; recompute(); ({inserts:S.inserts,issues:checkLayout(roomGeom(S,S.rooms[0]),P.units,S.layout)})',c));
+ return {c,results};
+}
+const cur=run(html),base=run(cp.execFileSync('git',['show','HEAD:index.html'],{encoding:'utf8',maxBuffer:10000000}));
+vm.runInContext(\"for(const [a,b] of [[1.004,1],[.9996,1],[.9994,.99],[1.3,1.3]])if(insLen(a)"'!==b)throw Error('"'rounding');if(insertUnits([{w:1,d:.6}])[0].c.gap"'!==0)throw Error('"'legacy');P.units=insertUnits([{w:1,d:.6,gap:.002},{w:1,d:.6,gap:.007}]);if(insertItems()[0].c.gap"'!==.007||insertItems()[0].qty!==2||P.units[0].c.gap!==.002)throw Error('"'grouping');\",cur.c);
+const line=html.split(/\\r?\\n/).find(l=>l.includes('const insHtml='));
+for(let i=0;i<2;i++){
+ const r=cur.results[i];assert(r.inserts.some(x=>x.w===1.3&&x.d===.6&&x.gap===(i?.004:0)));
+ if("'!i){assert(r.inserts.some(x=>x.w===.95&&x.d===.7));assert(!r.inserts.some(x=>x.gap>=.001));}
+ const newIssues=r.issues.filter(x=>!base.results[i].issues.some(y=>y.m===x.m));assert.strictEqual(newIssues.length,0);
+ cur.c.testInserts=r.inserts;
+ const markup=vm.runInContext('"'(()=>{P.units=insertUnits(testInserts);const ins=insertItems();'+line+'return insHtml;})()',cur.c);
+ assert(i?markup.includes('· зазор 4 мм'):"'!markup.includes('"'· зазор'));
+ console.log(JSON.stringify({width:i?7.204:7.2,inserts:r.inserts,newLayoutIssues:newIssues.length}));
+}
+console.log('PASS: script syntax, rounding, example sizes, gap persistence and rendering, legacy projects, maximum-gap grouping, no new checkLayout issues.');
+
+'@ | node" in C:\Users\pro10\refectory-app
+ succeeded in 2805ms:
+{"width":7.2,"inserts":[{"key":"ins:r1:0","w":1.3,"d":0.6,"z":"raw","gap":0,"room":"r1"},{"key":"ins:r1:1","w":0.95,"d":0.7,"z":"serve","gap":0,"room":"r1"}],"newLayoutIssues":0}
+{"width":7.204,"inserts":[{"key":"ins:r1:0","w":1.3,"d":0.6,"z":"raw","gap":0.004,"room":"r1"},{"key":"ins:r1:1","w":0.95,"d":0.7,"z":"serve","gap":0.008,"room":"r1"},{"key":"ins:r1:2","w":0.79,"d":0.8,"z":"hot","gap":0.016,"room":"r1"},{"key":"ins:r1:3","w":0.79,"d":0.8,"z":"hot","gap":0.016,"room":"r1"}],"newLayoutIssues":0}
+PASS: script syntax, rounding, example sizes, gap persistence and rendering, legacy projects, maximum-gap grouping, no new checkLayout issues.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git diff --check; git diff --numstat -- index.html' in C:\Users\pro10\refectory-app
+ succeeded in 195ms:
+9	7	index.html
+
+codex
+Выполнено в `index.html`:
+
+- `insLen`, `fillGaps`, `closeCorner`: округление длины вставок по заданной формуле.
+- `recompute`, `insertUnits`: сохранение зазора, для старых проектов — 0.
+- `insertItems`, `stepSelect`: вывод максимального зазора у одинаковых столов.
+
+Проверки пройдены: исходный пример сохранил размеры, при ширине 7204 мм отображается «зазор 4 мм», новых замечаний `checkLayout` нет. `git diff --check` прошёл.
+tokens used
+51 514
+Выполнено в `index.html`:
+
+- `insLen`, `fillGaps`, `closeCorner`: округление длины вставок по заданной формуле.
+- `recompute`, `insertUnits`: сохранение зазора, для старых проектов — 0.
+- `insertItems`, `stepSelect`: вывод максимального зазора у одинаковых столов.
+
+Проверки пройдены: исходный пример сохранил размеры, при ширине 7204 мм отображается «зазор 4 мм», новых замечаний `checkLayout` нет. `git diff --check` прошёл.

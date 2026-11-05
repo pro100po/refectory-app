@@ -1858,6 +1858,30 @@ function unitsOf(items){
     for(let i=0;i<it.qty;i++) u.push({key:(it.src==='have'?'h:':'b:')+it.c.id+':'+i, c:it.c, src:it.src}); }
   return u;
 }
+function unitNote(u){
+  const e=u.c.insert?(S.inserts||[]).find(i=>i.key===u.key):(S.unitEdits||{})[u.key];
+  return e&&typeof e.note==='string'?e.note.trim().slice(0,500):'';
+}
+function setUnitNote(u,text){
+  const note=String(text).trim().slice(0,500);
+  if(u.c.insert){ const i=(S.inserts||[]).find(i=>i.key===u.key); if(i){ if(note) i.note=note; else delete i.note; } return; }
+  if(note){ if(!S.unitEdits) S.unitEdits={}; S.unitEdits[u.key]={note,nm:shortName(u.c)}; }
+  else if(S.unitEdits){ delete S.unitEdits[u.key]; if(!Object.keys(S.unitEdits).length) delete S.unitEdits; }
+}
+function notesFor(c,src,room){
+  const us=P.units.filter(u=>u.c.id===c.id&&u.src===src&&(!room||P.roomOf[u.key]===room)), texts=new Map();
+  for(const u of us){ const text=unitNote(u); if(text) texts.set(text,(texts.get(text)||0)+1); }
+  return [...texts].map(([text,n])=>(n<us.length?`${n} шт.: `:'')+text).join('; ');
+}
+function unitNotes(){
+  const pos=positions();
+  return P.units.filter(u=>unitNote(u)).map(u=>({key:u.key,no:(pos.unit(u)||{}).no,name:shortName(u.c),room:roomName(S,P.roomOf[u.key]),text:unitNote(u)}));
+}
+function orphanNotesHtml(){
+  const keys=new Set(P.units.map(u=>u.key)), entries=Object.entries(S.unitEdits||{}).filter(([key])=>!keys.has(key));
+  if(!entries.length) return '';
+  return `<section class="panel" style="margin-top:18px"><h3>Комментарии без элемента</h3><p class="hint">Элемент заменён или убран. Текст сохранён, пока вы его не удалите.</p>${entries.map(([key,e])=>`<div class="unit-orphan"><b>${esc(e.nm||'Оборудование')}</b><p>${esc(e.note)}</p><button class="btn small danger" type="button" data-note-del="${esc(key)}">Удалить</button></div>`).join('')}</section>`;
+}
 function posAng(pos){ return Number(pos&&pos.ang)||0; }
 function baseSize(c,pos){ const r=pos.rot%180===0; return {w:r?c.w:c.d, h:r?c.d:c.w}; }
 function bbox(c,pos){ if(posAng(pos)!==0){ const b=baseSize(c,pos), a=posAng(pos)*Math.PI/180, co=Math.cos(a), si=Math.sin(a); return {x:pos.x, y:pos.y, w:Math.abs(b.w*co)+Math.abs(b.h*si), h:Math.abs(b.w*si)+Math.abs(b.h*co)}; } const r=pos.rot%180===0; return {x:pos.x, y:pos.y, w:r?c.w:c.d, h:r?c.d:c.w}; }
@@ -2592,7 +2616,11 @@ function recompute(){
   if(P.manualConverted){ setTimeout(()=>toast('Ручной режим заменён правками — расчёт снова обновляется'),50); save(); }
   P.roomOf=assignRooms(S, real);
   const sig=JSON.stringify([real.map(u=>u.key+u.c.w+u.c.d+u.c.h+u.c.mount+(u.c.roomId||'')), S.rooms, S.unitRoom, S.norms.align, S.norms.work, [S.norms.elPanelDepth,S.norms.elPanelWidth,S.norms.elPanelLowH,S.norms.elWaterDist], S.norms.sewerMax, 'flow3']);
-  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ if(S.layoutSig) planRebuilt=true; const r=layoutAll(S,real); S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room; S.inserts=r.inserts.map(i=>({key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, gap:i.c.gap||0, room:i.room})); S.layoutSig=sig; }
+  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ if(S.layoutSig) planRebuilt=true; const r=layoutAll(S,real), old=S.inserts||[]; S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room;
+    S.inserts=r.inserts.map(i=>{ const n={key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, gap:i.c.gap||0, room:i.room}, prev=old.find(o=>o.key===n.key&&o.w===n.w&&o.d===n.d);
+      if(prev&&typeof prev.note==='string'&&prev.note.trim()) n.note=prev.note.trim().slice(0,500); return n; });
+    for(const i of old) if(typeof i.note==='string'&&i.note.trim()&&!S.inserts.some(n=>n.key===i.key&&n.w===i.w&&n.d===i.d)){ if(!S.unitEdits) S.unitEdits={}; S.unitEdits['lost:'+uid('n')]={note:i.note.trim().slice(0,500),nm:'Вставка'}; }
+    S.layoutSig=sig; }
   S.inserts=(S.inserts||[]).filter(i=>S.layout[i.key]||i.off);
   const ins=insertUnits(S.inserts); S.inserts.forEach(i=>{ P.roomOf[i.key]=i.room&&S.rooms.some(r=>r.id===i.room)?i.room:S.rooms[0].id; });
   P.units=[...real, ...ins];
@@ -4483,6 +4511,7 @@ function stepPlan(){
     <button class="btn small" type="button" data-act="off" title="Убрать в резерв (Del). ${KH}">В резерв</button>
     <button class="btn small danger" type="button" data-act="del">Удалить</button>
     ${typeof selDimsHtml==='function'?selDimsHtml(su):''}
+    ${unitCardHtml(su)}
     ${S.rooms.length>1&&!su.c.insert?`<label class="btns" style="gap:6px"><span class="muted" style="font-size:13px">В помещение</span><select id="mv-room" style="width:auto">${S.rooms.map(r=>`<option value="${r.id}" ${r.id===S.room.id?'selected':''}>${esc(r.name)}</option>`).join('')}</select></label>`:''}
     ${finePointer()?`<span class="kbd-hint">${KH}<br>${MH()}</span>`:''}</div>`:''}
   ${many?`<div class="sel-bar grp-bar" data-fs="plan" role="group" aria-label="Выбранная группа"><span class="nm">Выбрано: ${selKeys().length}</span>
@@ -4493,6 +4522,7 @@ function stepPlan(){
     ${finePointer()?`<span class="kbd-hint">${KH}<br>${MH()}</span>`:''}</div>`:''}
   <div class="legend">${zs.map(z=>`<span><i class="sw" style="background:var(--z-${z})"></i>${ZONES[z]}</span>`).join('')}<span><i class="ln"></i>имеется / настенное</span></div>
   ${typeof planListHtml==='function'?planListHtml(ALL):''}
+  ${orphanNotesHtml()}
   <div class="stack" style="margin-top:18px">
   ${un.length?`<section class="panel rsv-panel"><h3>Резерв — не на плане</h3><p class="hint" style="margin:-4px 0 10px">${isTouch()?'Коснитесь — аппарат встанет в центр помещения; удерживайте и ведите — поставите в нужное место.':'Нажмите — аппарат встанет в центр помещения; перетащите на план — поставите в нужное место.'}</p><div class="tray">${un.map(u=>`<button type="button" class="chip" data-put="${esc(u.key)}">+ ${esc(shortName(u.c))}${S.rooms.length>1?` <span class="rsv-room">· ${esc(roomName(S,P.roomOf[u.key]))}</span>`:''}</button>`).join('')}</div></section>`:''}
   <section class="panel"><h3>Проверка плана</h3>${UNI?S.rooms.map(r=>`<h4 class="iss-room">${esc(r.name)}</h4>${planCheckList((P.iss&&P.iss.lay&&P.iss.lay[r.id])||[])}`).join(''):planCheckList(iss)}
@@ -4525,6 +4555,7 @@ bind[5]=()=>{
   main.querySelectorAll('[data-put]').forEach(b=>{ b.addEventListener('click',e=>{ if(b.__dragged){ b.__dragged=false; e.preventDefault(); return; } const u=P.units.find(x=>x.key===b.dataset.put); if(P.roomOf[u.key]&&S.rooms.some(r=>r.id===P.roomOf[u.key])) S.cur=P.roomOf[u.key]; placeFromReserve(u,{x:Math.max(0,+(S.room.w/2-u.c.w/2).toFixed(2)), y:Math.max(0,+(S.room.d/2-u.c.d/2).toFixed(2)), rot:0}); });
     b.addEventListener('pointerdown',e=>startChipDrag(e,b)); });
   main.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>planAct(b.dataset.act)));
+  main.querySelectorAll('[data-note-del]').forEach(b=>b.addEventListener('click',()=>{ delete S.unitEdits[b.dataset.noteDel]; if(!Object.keys(S.unitEdits).length) delete S.unitEdits; touch(); render(); }));
   main.querySelectorAll('.notes li[data-key]').forEach(li=>li.addEventListener('click',()=>focusNote(li.dataset.key)));
   main.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.goto)));
   bindPlanPointer();
@@ -4626,6 +4657,7 @@ function deleteUnit(u){
   // ключи единиц одного вида идут по порядку: убирается последняя, её место на плане занимает та, что осталась
   const pre=u.key.slice(0,u.key.lastIndexOf(':')+1), same=P.units.filter(x=>x.key.startsWith(pre)).map(x=>x.key).sort((a,b)=>+a.slice(pre.length)-+b.slice(pre.length)), last=same[same.length-1];
   delete S.layout[u.key]; delete S.layoutRoom[u.key];
+  if(S.unitEdits){ delete S.unitEdits[u.key]; if(last!==u.key){ if(S.unitEdits[last]) S.unitEdits[u.key]=S.unitEdits[last]; delete S.unitEdits[last]; } if(!Object.keys(S.unitEdits).length) delete S.unitEdits; }
   if(last!==u.key){ if(S.layout[last]){ S.layout[u.key]=S.layout[last]; S.layoutRoom[u.key]=S.layoutRoom[last]; } else delete S.layout[u.key]; delete S.layout[last]; delete S.layoutRoom[last];
     if(S.unitRoom&&S.unitRoom[last]){ S.unitRoom[u.key]=S.unitRoom[last]; delete S.unitRoom[last]; } }
   if(u.src==='have'){ const uidE=u.c.id.slice(2), e=S.existing.find(x=>x.uid===uidE); if(e){ if(e.qty>1) e.qty--; else S.existing=S.existing.filter(x=>x!==e); }
@@ -4757,8 +4789,9 @@ bind[7]=()=>{
   const mo=document.getElementById('montage'); mo.addEventListener('change',()=>{ const v=parseFloat(mo.value); if(isFinite(v)&&v>=0){ S.montage=v; touch(); render(); } });
   document.getElementById('cp-tbl').addEventListener('click',()=>{ const C=costCalc();
     const hasGas=C.rows.some(r=>r.c.gas);
-    const lines=[['Наименование','Модель','Кол-во','Ед.','Цена, ₽','Сумма, ₽','Статус','Мощность, кВт',...(hasGas?['Газ, кВт тепл.']:[]),'Габариты Ш×Г×В, мм'].join('\t')];
-    C.rows.forEach(r=>lines.push([r.c.n, r.c.model||'', r.qty, 'шт', r.src==='have'?0:priceOf(r.c), r.src==='have'?0:priceOf(r.c)*r.qty, r.src==='have'?'имеется':'закупка', fmt1(r.c.kw*r.qty), ...(hasGas?[r.c.gas&&r.c.gkw>0?fmt1(r.c.gkw*r.qty):'']:[]), Math.round(r.c.w*1000)+'×'+Math.round(r.c.d*1000)+'×'+Math.round(r.c.h*1000)].join('\t')));
+    const hasNotes=C.rows.some(r=>notesFor(r.c,r.src));
+    const lines=[['Наименование','Модель','Кол-во','Ед.','Цена, ₽','Сумма, ₽','Статус','Мощность, кВт',...(hasGas?['Газ, кВт тепл.']:[]),'Габариты Ш×Г×В, мм',...(hasNotes?['Комментарий']:[])].join('\t')];
+    C.rows.forEach(r=>lines.push([r.c.n, r.c.model||'', r.qty, 'шт', r.src==='have'?0:priceOf(r.c), r.src==='have'?0:priceOf(r.c)*r.qty, r.src==='have'?'имеется':'закупка', fmt1(r.c.kw*r.qty), ...(hasGas?[r.c.gas&&r.c.gkw>0?fmt1(r.c.gkw*r.qty):'']:[]), Math.round(r.c.w*1000)+'×'+Math.round(r.c.d*1000)+'×'+Math.round(r.c.h*1000), ...(hasNotes?[notesFor(r.c,r.src).replace(/[\t\r\n]+/g,' ')]:[])].join('\t')));
     lines.push(['Зонт вытяжной пристенный','',String(C.hoodLen).replace('.',','),'м',S.hoodPrice,Math.round(C.hoodSum),'закупка','',''].join('\t'));
     C.extraRows.forEach(r=>lines.push([r.name.trim()||'Без названия','',r.qty,'шт',r.price,r.qty*r.price,'закупка','',...(hasGas?['']:[]),''].join('\t')));
     lines.push(['Монтаж и пусконаладка, '+S.montage+' %','','','','',Math.round(C.mont),'','',''].join('\t'));
@@ -5333,10 +5366,11 @@ REPORT.register({ id:'room-equip', title:'Расстановка оборудо�
   available: ()=>P.items.length>0,
   build(ctx){ const r=ctx.room, us=roomUnitsOf(r.id), pos=ctx.pos;
     const m=new Map(); for(const u of us){ const p=pos.unit(u); if(!p) continue; const x=m.get(p.no)||{p, n:0, off:0}; x.n++; if(!S.layout[u.key]) x.off++; m.set(p.no,x); }
-    const rows=[...m.values()].sort((a,b)=>a.p.no-b.p.no).map(x=>[String(x.p.no), posLabel(x.p), String(x.n), dimsOf(x.p.c), x.p.src==='have'?'имеется':'купить']);
+    const hasNotes=us.some(u=>unitNote(u));
+    const rows=[...m.values()].sort((a,b)=>a.p.no-b.p.no).map(x=>[String(x.p.no), posLabel(x.p), String(x.n), dimsOf(x.p.c), x.p.src==='have'?'имеется':'купить', ...(hasNotes?[notesFor(x.p.c,x.p.src,r.id)]:[])]);
     const tableItems=pos.list.filter(p=>p.c.mount==='table'&&p.rooms.includes(r.id));
     const out=[{t:'h2', text:`«${r.name}»: расстановка оборудования`}];
-    out.push(rows.length?{t:'table', cols:[{title:'Поз.',w:.6,align:'r'},{title:'Наименование',w:5},{title:'Шт',w:.6,align:'r'},{title:'Ш×Г×В, мм',w:1.8},{title:'',w:1}], rows}:{t:'p', text:'Оборудования в этом помещении нет.', muted:true});
+    out.push(rows.length?{t:'table', cols:[{title:'Поз.',w:.6,align:'r'},{title:'Наименование',w:hasNotes?3:5},{title:'Шт',w:.6,align:'r'},{title:'Ш×Г×В, мм',w:1.8},{title:'',w:1}, ...(hasNotes?[{title:'Комментарий',w:2}]:[])], rows}:{t:'p', text:'Оборудования в этом помещении нет.', muted:true});
     if(tableItems.length){ const hostTables=us.filter(u=>S.layout[u.key]&&/^table|^serveTable|insert/.test(u.c.role||'')).map(u=>pos.unit(u)).filter(Boolean);
       const host=z=>{ const same=hostTables.find(t=>t.c.z===z); return same||hostTables[0]; };
       const grp=new Map(); tableItems.forEach(p=>{ const h=host(p.c.z); const k=h?h.no:0; (grp.get(k)||grp.set(k,[]).get(k)).push(p); });
@@ -5375,15 +5409,15 @@ Object.defineProperty(REPORT.get('room-need'),'title',{get(){ return netsOpen(S)
 
 REPORT.register({ id:'spec', title:'Спецификация оборудования', group:'Оборудование', order:900, audience:['full','electric','cost'],
   available: ()=>P.items.length>0,
-  build(ctx){ const L=ctx.pos.list;
+  build(ctx){ const L=ctx.pos.list, hasNotes=L.some(p=>notesFor(p.c,p.src));
     const E=S.edits||{}, edited=p=>p.src==='buy' && !!((E.delta&&E.delta[p.c.id]) || (E.pref&&E.pref[p.c.role]===p.c.id)), anyEd=L.some(edited);
     const rows=L.map(p=>{ const c=p.c, price=p.src==='have'?0:priceOf(c);
-      return [String(p.no), c.n+(p.src==='have'&&c.what&&!c.n.toLowerCase().includes(c.what.toLowerCase())?` (${lc1(c.what)})`:'')+(edited(p)?' ✎':''), p.src==='have'?(c.model||'—'):'—', p.rooms.map(id=>roomName(S,id)).join(', '), String(p.qty), dimsOf(c), (c.kw||0)>0?fmt1(c.kw*p.qty):'—', volts(c), waterOf(c), c.gas?(c.gkw?fmt1(c.gkw*p.qty)+' тепл.':'да'):'—', p.src==='have'?'имеется':'купить', p.src==='have'?'—':fmt0(price), p.src==='have'?'—':fmt0(price*p.qty)]; });
+      return [String(p.no), c.n+(p.src==='have'&&c.what&&!c.n.toLowerCase().includes(c.what.toLowerCase())?` (${lc1(c.what)})`:'')+(edited(p)?' ✎':''), p.src==='have'?(c.model||'—'):'—', p.rooms.map(id=>roomName(S,id)).join(', '), String(p.qty), dimsOf(c), (c.kw||0)>0?fmt1(c.kw*p.qty):'—', volts(c), waterOf(c), c.gas?(c.gkw?fmt1(c.gkw*p.qty)+' тепл.':'да'):'—', p.src==='have'?'имеется':'купить', p.src==='have'?'—':fmt0(price), p.src==='have'?'—':fmt0(price*p.qty), ...(hasNotes?[notesFor(c,p.src)]:[])]; });
     const sum=L.filter(p=>p.src==='buy').reduce((a,p)=>a+priceOf(p.c)*p.qty,0), kw=L.reduce((a,p)=>a+(p.c.kw||0)*p.qty,0);
     return [{t:'pagebreak', orient:'landscape'}, {t:'h1', text:'Спецификация оборудования'},
       {t:'p', muted:true, text:'кВт — электрическая мощность (у газовых — только электрическая часть). Столы-вставки заполняют углы и промежутки в линиях оборудования. Цены ориентировочные.'+(anyEd?' ✎ — изменено вручную: количество или исполнение поправлено на шаге «Подбор».':'')},
-      {t:'table', cols:[{title:'Поз.',w:.5,align:'r'},{title:'Наименование',w:4.2},{title:'Модель',w:1.4},{title:'Помещение',w:1.4},{title:'Шт',w:.5,align:'r'},{title:'Ш×Г×В, мм',w:1.5},{title:'кВт',w:.7,align:'r'},{title:'В',w:.5,align:'r'},{title:'Вода',w:1},{title:'Газ',w:.9},{title:'',w:.9},{title:'Цена, ₽',w:1,align:'r'},{title:'Сумма, ₽',w:1.1,align:'r'}],
-        rows, foot:[['','Всего позиций: '+L.length,'','',String(L.reduce((a,p)=>a+p.qty,0)),'',fmt1(kw),'','','','','',''],['','К закупке','','',String(L.filter(p=>p.src==='buy').reduce((a,p)=>a+p.qty,0)),'','','','','','','',fmt0(sum)]],
+      {t:'table', cols:[{title:'Поз.',w:.5,align:'r'},{title:'Наименование',w:hasNotes?2.4:4.2},{title:'Модель',w:1.4},{title:'Помещение',w:1.4},{title:'Шт',w:.5,align:'r'},{title:'Ш×Г×В, мм',w:1.5},{title:'кВт',w:.7,align:'r'},{title:'В',w:.5,align:'r'},{title:'Вода',w:1},{title:'Газ',w:.9},{title:'',w:.9},{title:'Цена, ₽',w:1,align:'r'},{title:'Сумма, ₽',w:1.1,align:'r'}, ...(hasNotes?[{title:'Комментарий',w:1.8}]:[])],
+        rows, foot:[['','Всего позиций: '+L.length,'','',String(L.reduce((a,p)=>a+p.qty,0)),'',fmt1(kw),'','','','','','', ...(hasNotes?['']:[])],['','К закупке','','',String(L.filter(p=>p.src==='buy').reduce((a,p)=>a+p.qty,0)),'','','','','','','',fmt0(sum), ...(hasNotes?['']:[])]],
 },
       {t:'pagebreak', orient:'portrait'}]; } });
 
@@ -6024,6 +6058,16 @@ function sanitizeProject(d){
   if(lostLayout){ d.layoutManual=false; d.layoutSig=''; }
   for(const k of ['layoutRoom','unitRoom']) if(own(d,k)&&!obj(d[k])){ d[k]={}; messages.push('Сброшено распределение оборудования по помещениям: '+k); }
   if(own(d,'inserts')&&!Array.isArray(d.inserts)){ d.inserts=[]; messages.push('Удалены повреждённые вставки'); }
+  if(own(d,'unitEdits')){
+    let damaged=false;
+    if(!obj(d.unitEdits)){ delete d.unitEdits; damaged=true; }
+    else { for(const k of Object.keys(d.unitEdits)){ const e=d.unitEdits[k];
+        if(!obj(e)||typeof e.note!=='string'){ delete d.unitEdits[k]; damaged=true; }
+        else { e.note=e.note.trim().slice(0,500); if(!e.note) delete d.unitEdits[k]; } }
+      if(!Object.keys(d.unitEdits).length) delete d.unitEdits; }
+    if(damaged) messages.push('Удалены повреждённые комментарии к оборудованию');
+  }
+  for(const i of d.inserts||[]) if(obj(i)&&own(i,'note')){ if(typeof i.note!=='string') delete i.note; else { i.note=i.note.trim().slice(0,500); if(!i.note) delete i.note; } }
   for(const k of ['heat','norms','feats','res','gas','report','edits','prices']) if(!obj(d[k])){ d[k]=defaults[k]; messages.push('Восстановлены настройки: '+k); }
   for(const k of Object.keys(defaults.heat)) if(!obj(d.heat[k])){ d.heat[k]=defaults.heat[k]; messages.push('Восстановлены настройки теплового оборудования: '+k); }
   if(!Array.isArray(d.existing)){ d.existing=[]; messages.push('Сброшен список имеющегося оборудования'); }
@@ -6589,6 +6633,9 @@ function selDimsHtml(u){
   return `<div class="pos-row">${fld('lo',`${A}, до ${rg.loN?unitShort(rg.loN):'угла'}, мм`,rg.a-rg.lo)}${fld('hi',`${B}, до ${rg.hiN?unitShort(rg.hiN):'угла'}, мм`,rg.hi-rg.a-rg.size)}${fld('start',`${C}, мм`,rg.a)}${fld('off','Отступ от стены, мм',pl.d)}
     <span class="pos-press"><button class="btn small tap" type="button" data-press="lo" title="Вплотную к ${esc(rg.loN?unitShort(rg.loN):'углу')}">${vert?'⤒ прижать':'⇤ прижать'}</button><button class="btn small tap" type="button" data-press="hi" title="Вплотную к ${esc(rg.hiN?unitShort(rg.hiN):'углу')}">${vert?'прижать ⤓':'прижать ⇥'}</button></span></div>`;
 }
+function unitCardHtml(u){
+  return `<label class="unit-note"><span>Комментарий</span><textarea id="unit-note" rows="2" maxlength="500">${esc(unitNote(u))}</textarea></label>`;
+}
 const fmt0r=v=>String(Math.round(v));
 // поставить начало аппарата вдоль стены; нельзя наложить на соседа и выйти за стену
 function setAlong(u, s, start, el, what){
@@ -6628,6 +6675,7 @@ function setIsland(u, axis, v, el){
 function bindEquipDims(){
   const seg2=document.getElementById('pdims-bar'); seg2&&segBind(seg2,(k,v)=>{ if(k==='pdims'){ S.planDims=v; touch(); render(); } });
   const u=sel&&curUnits().find(x=>x.key===sel);
+  const note=document.getElementById('unit-note'); note&&u&&note.addEventListener('change',()=>{ setUnitNote(u,note.value); touch(); });
   if(u&&S.layout[u.key]){ const room=S.room;
     main.querySelectorAll('[data-pos]').forEach(el=>el.addEventListener('change',()=>{ const pl=unitPlace(u,room), v=parseFloat(String(el.value).replace(',','.'))/1000; if(!pl||!isFinite(v)) return; const f=el.dataset.pos;
       if(f==='skt'&&pl.kind==='skew'){ const p=S.layout[u.key], w=wallById(room,p.sw), q=wallPoint(room,p.sw,v+u.c.w/2), b=bbox(u.c,p); p.x=q.x+w.nx*u.c.d/2-b.w/2; p.y=q.y+w.ny*u.c.d/2-b.h/2; skewPlace(room,u,p,p.sw); S.layoutManual=true; S.layoutRoom[u.key]=room.id; }
@@ -6682,6 +6730,10 @@ const DIMS_CSS=`
 .pos-row{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:flex-end;flex-basis:100%;margin-top:4px}
 .pos-f{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--ink-2);min-width:120px;flex:1 1 140px;max-width:220px}
 .pos-f input{min-height:44px}
+.unit-note{display:flex;flex-direction:column;gap:3px;flex-basis:100%;width:100%;min-width:0;font-size:13px;color:var(--ink-2)}
+.unit-note textarea{width:100%;min-height:44px;font-size:16px;font-family:inherit;resize:vertical}
+.unit-orphan{margin-top:12px;overflow-wrap:anywhere}
+.unit-orphan p{white-space:pre-wrap}
 .pos-press{display:flex;gap:6px;flex-wrap:wrap}
 .plan-box{position:relative}
 .gap-ed{position:absolute;z-index:5;transform:translate(-50%,8px);background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);box-shadow:0 6px 20px rgba(0,0,0,.18);padding:8px 10px;display:flex;flex-direction:column;gap:4px;min-width:170px}
@@ -6868,6 +6920,7 @@ function planSheetHtml(u){
       <dt>Помещение</dt><dd>${esc(S.room.name)}</dd>
       ${bindTxt?`<dt>Привязка</dt><dd>${bindTxt}</dd>`:''}
     </dl>
+    ${unitCardHtml(u)}
     <div class="btns"><button class="btn" type="button" data-act="rot">Повернуть ↻</button>${!u.parts&&roomWalls(S.room).some(w=>w.axis===null)?`<button class="btn" type="button" data-act="${S.layout[u.key].sw?'unskew':'skew'}">${S.layout[u.key].sw?'Снять с косой стены':'К косой стене'}</button>`:''}<button class="btn" type="button" data-act="off">В резерв</button><button class="btn primary" type="button" data-sheet="edit">Править положение</button></div>
   </div>`;
 }

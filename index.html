@@ -2926,9 +2926,10 @@ function shapeSecHtml(r){
     ${seg('tilt-dir',tiltDirSel,[['short','Соседняя стена короче'],['long','Соседняя стена длиннее']])}<button type="button" class="btn tap shp-action" data-tilt-apply>Наклонить стену</button></div>`;
   return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p,r)}${walls}${stepBlock}${tiltBlock}<div class="shp-error-slot"></div></div>`; }
 function shapeShowError(sec,el,msg){ if(el) el.setAttribute('aria-invalid','true'); const slot=sec.querySelector('.shp-error-slot'); if(slot) slot.innerHTML=`<p class="rmp-warn shp-warn" role="alert">${esc(msg)}</p>`; }
-function applyRoomShape(r,shape,sec,el){
+function applyRoomShape(r,shape,sec,el,note){
   const result=setRoomShape(r,shape); if(result.error){ shapeShowError(sec,el,result.error); return false; }
-  lastPush=0; touch(); recompute(); render(); if(result.moved.length) toast(result.moved.join('. ')); return true; }
+  const message=[typeof note==='function'?note():note,...result.moved].filter(Boolean).join('. ');
+  lastPush=0; touch(); recompute(); render(); if(message) toast(message); return true; }
 function bindShapeEditor(){
   const sec=document.querySelector('[data-rpsec="shape"]'); if(!sec) return;
   const stepWall=sec.querySelector('[data-step-wall]'); stepWall&&stepWall.addEventListener('change',()=>{ stepWallSel=stepWall.value; render(); });
@@ -2964,16 +2965,30 @@ function bindShapeEditor(){
     if(tpl==='quad'&&el.dataset.shpParam==='f'&&!el.value.trim()){ const p=shapeCurrentParams(r,tpl); delete p.f; applyRoomShape(r,{tpl,rot:r.shape&&r.shape.rot||0,p},sec,el); return; }
     if(!Number.isFinite(value)||value<300||value>(diagonal?45000:30000)){ shapeShowError(sec,el,diagonal?'Введите размер от 300 до 45 000 мм.':'Введите размер от 300 до 30 000 мм.'); return; }
     const p=shapeCurrentParams(r,tpl); p[el.dataset.shpParam]=value/1000; applyRoomShape(r,{tpl,rot:r.shape&&r.shape.rot||0,p},sec,el); }));
-  sec.querySelectorAll('[data-wall-len]').forEach(el=>el.addEventListener('change',()=>{ const r=S.room, value=Number(String(el.value).replace(/\s+/g,'').replace(',','.')); if(!Number.isFinite(value)||value<300||value>30000){ shapeShowError(sec,el,'Введите длину от 300 до 30 000 мм.'); return; }
-    const walls=roomWalls(r), w=walls.find(q=>q.id===el.dataset.wallLen); if(!w) return; const pts=r.poly.map(p=>({...p})), n=pts.length, delta=value/1000-w.len, dx=w.dir.x*delta, dy=w.dir.y*delta;
-    const tiltsStraight=()=>polyWalls(pts).some((q,i)=>walls[i].axis!==null&&q.axis!==walls[i].axis);
-    for(const i of [(w.i+1)%n,(w.i+2)%n]){ pts[i].x+=dx; pts[i].y+=dy; }
-    if(tiltsStraight()){
-      for(let i=0;i<n;i++){ pts[i].x=r.poly[i].x; pts[i].y=r.poly[i].y; }
-      for(const i of [w.i,(w.i+n-1)%n]){ pts[i].x-=dx; pts[i].y-=dy; }
-      if(tiltsStraight()){ shapeShowError(sec,el,'Эту стену не удлинить без наклона соседней прямой стены — перетащите соседнюю стену на плане'); return; }
-    }
-    applyRoomShape(r,{tpl:'custom',pts},sec,el); }));
+  const clearWallWarning=()=>{ const warning=sec.querySelector('[data-wall-warning]'); if(warning){ const input=warning.previousElementSibling.querySelector('[data-wall-len]'); if(input) input.removeAttribute('aria-invalid'); warning.remove(); } };
+  sec.querySelectorAll('[data-wall-len]').forEach(el=>el.addEventListener('change',()=>{ clearWallWarning(); const r=S.room, value=Number(String(el.value).replace(/\s+/g,'').replace(',','.')); if(!Number.isFinite(value)||value<300||value>30000){ shapeShowError(sec,el,'Введите длину от 300 до 30 000 мм.'); return; }
+    const walls=roomWalls(r), w=walls.find(q=>q.id===el.dataset.wallLen); if(!w) return; const n=r.poly.length, delta=value/1000-w.len, dx=w.dir.x*delta, dy=w.dir.y*delta;
+    r.wallEntered=r.wallEntered||{};
+    for(const id of Object.keys(r.wallEntered)){ const q=walls.find(q=>q.id===id); if(!q||!Number.isFinite(r.wallEntered[id])||Math.abs(q.len-r.wallEntered[id])>=0.001) delete r.wallEntered[id]; }
+    if(Math.abs(delta)<0.001){ r.wallEntered[w.id]=w.len; el.removeAttribute('aria-invalid'); lastPush=0; touch(); return; }
+    const variant=back=>{ const pts=r.poly.map(p=>({...p}));
+      for(const i of back?[w.i,(w.i+n-1)%n]:[(w.i+1)%n,(w.i+2)%n]){ pts[i].x+=back?-dx:dx; pts[i].y+=back?-dy:dy; }
+      const next=polyWalls(pts), tiltsStraight=next.some((q,i)=>walls[i].axis!==null&&q.axis!==walls[i].axis), error=shapeError(normPoly(pts,pts.map(p=>p.wid||null)).pts);
+      const changed=next.filter(q=>q.id!==w.id&&Math.abs(q.len-walls[q.i].len)>0.001).map(q=>({id:q.id,before:walls[q.i].len,after:q.len,entered:Object.prototype.hasOwnProperty.call(r.wallEntered,q.id)}));
+      return {pts,tiltsStraight,error,valid:!tiltsStraight&&!error,changed,entered:changed.filter(q=>q.entered)}; };
+    const variants=[variant(false),variant(true)], safe=variants.find(v=>v.valid&&!v.entered.length), chosen=safe||variants.find(v=>v.valid);
+    if(!chosen){ shapeShowError(sec,el,variants.every(v=>v.tiltsStraight)||!variants[0].error?'Эту стену не удлинить без наклона соседней прямой стены — перетащите соседнюю стену на плане':variants[0].error); return; }
+    const apply=()=>applyRoomShape(r,{tpl:'custom',pts:chosen.pts},sec,el,()=>{
+      for(const q of chosen.changed) delete r.wallEntered[q.id];
+      r.wallEntered[w.id]=roomWalls(r).find(q=>q.id===w.id).len;
+      return chosen.changed.filter(q=>!q.entered).map(q=>{ const title=wallName(r,q.id); return `${title.charAt(0).toUpperCase()+title.slice(1)} пересчитана: ${fmt0(q.before*1000)} → ${fmt0(q.after*1000)} мм`; }).join('. '); });
+    if(safe){ apply(); return; }
+    const warning=document.createElement('div'); warning.className='rmp-warn shp-warn'; warning.setAttribute('role','alert'); warning.setAttribute('data-wall-warning','');
+    warning.innerHTML=`<p>Размер не принят. Если ${esc(wallName(r,w.id))} будет ${fmt0(value)} мм, ${chosen.entered.map(q=>`${esc(wallName(r,q.id))} станет ${fmt0(q.after*1000)} мм вместо введённых ${fmt0(r.wallEntered[q.id]*1000)} мм`).join('; ')}. Проверьте размер и уточните его.</p><div class="btns"><button type="button" class="btn small tap" data-wall-restore>Вернуть ${fmt0(w.len*1000)} мм</button><button type="button" class="btn small tap" data-wall-apply>Всё равно применить</button></div>`;
+    el.setAttribute('aria-invalid','true'); el.closest('.shp-wall-row').after(warning);
+    warning.querySelector('[data-wall-restore]').addEventListener('click',()=>{ el.value=Math.round(w.len*1000); clearWallWarning(); });
+    warning.querySelector('[data-wall-apply]').addEventListener('click',apply);
+    const box=warning.getBoundingClientRect(), body=sec.closest('.rmp-body'), view=body?body.getBoundingClientRect():{top:0,bottom:window.innerHeight}; if(box.top<view.top||box.bottom>view.bottom) warning.scrollIntoView({block:'nearest'}); }));
 }
 addRoomSection({id:'room', title:'Помещение', html:r=>`<div class="fields rmp-fields">
     <label class="field rmp-wide"><span>Название</span><input id="rname" type="text" value="${esc(r.name)}" autocomplete="off"></label>

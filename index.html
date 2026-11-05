@@ -1189,7 +1189,9 @@ function spanOnWall(room,w,b){ w=W_OF(room,w); const O=w.offOrigin;
 // стены, к которым прямоугольник ближе tol (и с ним по одной линии)
 function rectWallHits(room,b,tol){ return roomWalls(room).filter(w=>{ if(backDist(room,w,b)>tol) return false; const s=spanOnWall(room,w,b); return s[1]>0 && s[0]<w.len; }).map(w=>w.id); }
 // у какой стены аппарат стоит спиной (вместо wallOf)
-function wallOfRect(room,b,rot,tol,openings){ tol=tol==null?0.35:tol; for(const w of roomWalls(room)) if(wallRot(w)===rot){ const d=backDist(room,w,b); if(d<=tol) return w.id;
+function wallOfRect(room,b,rot,tol,openings){ tol=tol==null?0.35:tol;
+  for(const o of openings||room.openings||[]) if(o.type==='prot' && o.niche && wallRot(wallById(room,o.side))===rot && nicheFit({room,openings:[o]},b)) return o.side;
+  for(const w of roomWalls(room)) if(wallRot(w)===rot){ const d=backDist(room,w,b); if(d<=tol) return w.id;
     if(w.axis){ const sp=spanOnWall(room,w,b), pm=perimeterSpan(room,w.id,sp[0],sp[1]-sp[0])[0], dep=protBack({room,openings:openings||room.openings||[]},w.id,pm,sp[1]-sp[0]); if(dep>0 && d>=dep-0.004 && d<=dep+tol) return w.id; } } return null; }
 // стена, к которой спиной стоит аппарат с поворотом rot (ближайшая из таких)
 function wallForRot(room,rot,b){ let best=null, bd=Infinity; for(const w of roomWalls(room)){ if(wallRot(w)!==rot) continue; const d=b?Math.abs(backDist(room,w,b)):0; if(d<bd){ bd=d; best=w; } } return best; }
@@ -1477,6 +1479,23 @@ function protRect(s,o){ return bandOf(s,o,o.depth||0.3); }
 let protBackOff=false;
 function protBack(g,sd,pm,w){ if(protBackOff || wallById(g.room,sd).axis===null) return 0;
   let back=0; for(const o of g.openings) if(isProt(o) && o.side===sd){ const [a,e]=cwEdges(g,o); if(pm>=a-0.001 && pm+w<=e+0.001) back=Math.max(back,o.depth||0.3); } return back; }
+function nicheRect(g,o){ if(o.type!=='prot'||!o.niche) return null; const w=wallById(g.room,o.side); if(!w.axis) return null;
+  const d=o.depth||0.3, b=wallBand(g.room,o.side,o.off,o.w,d); return {...b,x:b.x-w.nx*d,y:b.y-w.ny*d}; }
+function nicheFit(g,b){ return (g.openings||[]).some(o=>{ const n=nicheRect(g,o); return n && b.x>=n.x-0.004 && b.y>=n.y-0.004 && b.x+b.w<=n.x+n.w+0.004 && b.y+b.h<=n.y+n.h+0.004; }); }
+function inRoomOrNiche(g,b){ return rectInRoom(g.room,b)||nicheFit(g,b); }
+function frontOk(g,f){ if(rectInRoom(g.room,f)) return true;
+  return (g.openings||[]).some(o=>{ const n=nicheRect(g,o); if(!n) return false; const w=wallById(g.room,o.side), a={...f}, b={...f};
+    if(w.axis==='h'){ const y=Math.max(f.y,Math.min(f.y+f.h,w.y1)); if(w.ny>0){ a.h=y-f.y; b.y=y; b.h=f.y+f.h-y; } else { a.y=y; a.h=f.y+f.h-y; b.h=y-f.y; } }
+    else { const x=Math.max(f.x,Math.min(f.x+f.w,w.x1)); if(w.nx>0){ a.w=x-f.x; b.x=x; b.w=f.x+f.w-x; } else { a.x=x; a.w=f.x+f.w-x; b.w=x-f.x; } }
+    return a.w>0 && a.h>0 && a.x>=n.x-0.004 && a.y>=n.y-0.004 && a.x+a.w<=n.x+n.w+0.004 && a.y+a.h<=n.y+n.h+0.004 && (b.w===0||b.h===0||rectInRoom(g.room,b)); }); }
+function nicheSnap(g,u,p){ if(u.parts||posAng(p)) return null; const b=bbox(u.c,p), cx=b.x+b.w/2, cy=b.y+b.h/2;
+  for(const o of g.openings||[]){ const n=nicheRect(g,o); if(!n) continue; const w=wallById(g.room,o.side);
+    if(p.rot!==wallRot(w)||u.c.w>o.w+1e-9||u.c.d>(o.depth||0.3)+0.001||cx<n.x-0.004||cx>n.x+n.w+0.004||cy<n.y-0.004||cy>n.y+n.h+0.004) continue;
+    return {x:w.axis==='h'?Math.max(n.x,Math.min(p.x,n.x+n.w-b.w)):w.nx>0?n.x:n.x+n.w-b.w, y:w.axis==='v'?Math.max(n.y,Math.min(p.y,n.y+n.h-b.h)):w.ny>0?n.y:n.y+n.h-b.h, rot:p.rot}; } return null; }
+function nicheGroupPos(g,M,x,y,G){ if(!(g.openings||[]).some(o=>o.type==='prot'&&o.niche)) return null;
+  const ps=M.map(m=>({u:m.u,p:{...m.p,x:x+m.p.x-G.x,y:y+m.p.y-G.y}}));
+  for(const m of ps){ const n=nicheSnap(g,m.u,m.p); if(!n) continue; const dx=n.x-m.p.x, dy=n.y-m.p.y;
+    if(ps.every(v=>{ const p={...v.p,x:v.p.x+dx,y:v.p.y+dy}; if(rectInRoom(g.room,bbox(v.u.c,p))) return true; const q=nicheSnap(g,v.u,p); return q && Math.abs(q.x-p.x)<=0.004 && Math.abs(q.y-p.y)<=0.004; })) return {x:x+dx,y:y+dy}; } return null; }
 const OBS_NAMES={column:'колонну', stove:'печь', box:'короб', stair:'лестницу', other:'препятствие'};
 const OBS_NOM={column:'колонна', stove:'печь', box:'короб', stair:'лестница', other:'препятствие'};
 function roomObs(room){ return room.obstacles||[]; }
@@ -1556,7 +1575,7 @@ function swDrain(g,c,pos){ const b=bbox(c,pos), R=g.room, r=pos.rot;
   const onProt=dep>0 && dist(bw.id)>=dep-0.004 && dist(bw.id)<=dep+0.3+1e-6;
   const side= bw && (dist(bw.id)<=0.3+1e-6 || onProt) ? bw.id : nearestWall(R,p.x,p.y).id;
   const a=Math.min(Math.max(projectToWall(R,side,p.x,p.y).off,0),wallLen(R,side)), st=Math.max(0,dist(side));
-  return {p, side, t:swPerT(g,side,a), stub:st, cnt:!onProt && st>0.3+1e-6?st:0}; }
+  return {p, side, t:swPerT(g,side,a), stub:st, cnt:!f&&nicheFit(g,b)?Math.abs(dist(side)):!onProt && st>0.3+1e-6?st:0}; }
 // расстояние по обходу от a до x; dir = +1 — по часовой
 const swAlong=(P,a,x,dir)=>dir>0?swMod(x-a,P):swMod(a-x,P);
 // отрезок стены iv=[i0,i1] пересекает дугу от a длиной len (e — допуск по краям)
@@ -1855,7 +1874,8 @@ function geomHelpers(g, occ){
   const posAt=(sd,t0,c,bo)=>wallPlace(g.room,sd,t0,c,bo);
   const isCold=c=>c.z==='cold'||c.role==='coldtable';
   const winBad=(b,c,u,pos,P)=> u&&u.parts ? partRects(g,u,pos,b).some(pr=>wins.some(w=>(P?polyHit(pr.P||rectPoly(pr.b),rectPoly(w.r)):ov(pr.b,w.r))&&pr.h>w.sill+0.01)) : wins.some(w=>(P?polyHit(P,rectPoly(w.r)):ov(b,w.r))&&c.h>w.sill+0.01);
-  const free=(b,f,c,u,pos)=>{ if(posAng(pos)===0 && !occ.some(q=>q.P)) return rectInRoom(g.room,b) && rectInRoom(g.room,f) && !blocks.some(d=>ov(b,d)) && !winBad(b,c,u,pos) && !elBad(g,b,c) && !occ.some(q=>ov(b,q.b)||ov(b,q.f)||ov(f,q.b)||(((c.hot&&q.cold)||(isCold(c)&&q.hot))&&gap(b,q.b)<0.3));
+  const niches=g.openings.some(o=>o.type==='prot'&&o.niche);
+  const free=(b,f,c,u,pos)=>{ if(posAng(pos)===0 && !occ.some(q=>q.P)) return (niches && !(u&&u.parts)?inRoomOrNiche(g,b) && frontOk(g,f):rectInRoom(g.room,b) && rectInRoom(g.room,f)) && !blocks.some(d=>ov(b,d)) && !winBad(b,c,u,pos) && !elBad(g,b,c) && !occ.some(q=>ov(b,q.b)||ov(b,q.f)||ov(f,q.b)||(((c.hot&&q.cold)||(isCold(c)&&q.hot))&&gap(b,q.b)<0.3));
     const P=posAng(pos)?unitPoly(c,pos):rectPoly(b), FP=posAng(pos)?frontPoly(c,pos,workDepth(g,c)):rectPoly(f);
     return polyInRoom(g.room,P) && polyInRoom(g.room,FP) && !blocks.some(d=>polyHit(P,rectPoly(d))) && !winBad(b,c,u,pos,P) && !elBad(g,b,c,P) && !occ.some(q=>polyHit(P,q.P||rectPoly(q.b))||polyHit(P,q.FP||rectPoly(q.f))||polyHit(FP,q.P||rectPoly(q.b))||(((c.hot&&q.cold)||(isCold(c)&&q.hot))&&polyGap(P,q.P||rectPoly(q.b))<0.3)); };
   return {W,D,P,sideAt,posAt,free,isCold};
@@ -1892,6 +1912,8 @@ function placeAt(g, u, p, occ, out){
 }
 function packForward(g, seq, startP, occ, out, reserve, runInit){
   const H=geomHelpers(g,occ), {P,sideAt,posAt,free,isCold}=H;
+  const backOf=(u,sd,pm)=>{ const c=u.c; let bo=u.parts?0:Math.max(0,(u.ld||c.d)-c.d,protBack(g,sd,pm,c.w));
+    if(!u.parts && !protBackOff && wallById(g.room,sd).axis!==null) for(const o of g.openings) if(o.type==='prot' && o.niche && o.side===sd && c.d<=(o.depth||0.3)+0.001){ const [a,e]=cwEdges(g,o); if(pm>=a-0.001 && pm+c.w<=e+0.001){ bo=-(o.depth||0.3); break; } } return bo; };
   let p=startP, run=runInit?{...runInit}:{side:null, front:0, z:null};
   const closeCorner=(sd,len,t0)=>{
     if(wallById(g.room,sd).axis===null) return 0;
@@ -1910,16 +1932,16 @@ function packForward(g, seq, startP, occ, out, reserve, runInit){
     for(let k=0;k<Math.min(4,rest.length);k++){
       const u=rest[k]; if(k>0 && zi(u)!==zi(rest[0])) break;
       const c=u.c; if(t0+c.w>len-reserve+1e-6) continue;
-      const bo=u.parts?0:Math.max(0,(u.ld||c.d)-c.d,protBack(g,sd,pm,c.w));
+      const bo=backOf(u,sd,pm);
       pos=posAt(sd,t0,c,bo); b=bbox(c,pos); f=frontZone(b,pos.rot,workDepth(g,c));
       if(free(b,f,c,u,pos)){ pick=k; break; }
     }
     if(pick<0){
       if(rest.every((u,k)=>k>=4 || t0+u.c.w>len-reserve+1e-6)){ const dep=closeCorner(sd,len,t0), jump=(len-t0)+dep+0.0005; p+=jump; trav+=jump; run={side:null,front:0,z:null}; }
-      else { let step=0.05; if(!protBackOff && rest.slice(0,4).some(u=>!u.parts) && wallById(g.room,sd).axis!==null) for(const o of g.openings) if(isProt(o) && o.side===sd) for(const edge of cwEdges(g,o)){ const d=edge-pm; if(d>1e-9 && d<step) step=d; } p+=step; trav+=step; }
+      else { let step=0.05; if(!protBackOff && rest.slice(0,4).some(u=>!u.parts) && wallById(g.room,sd).axis!==null) for(const o of g.openings) if(o.type==='prot' && o.side===sd) for(const edge of cwEdges(g,o)){ const d=edge-pm; if(d>1e-9 && d<step) step=d; } p+=step; trav+=step; }
       continue;
     }
-    const u=rest.splice(pick,1)[0], c=u.c, bo=u.parts?0:Math.max(0,(u.ld||c.d)-c.d,protBack(g,sd,pm,c.w));
+    const u=rest.splice(pick,1)[0], c=u.c, bo=backOf(u,sd,pm);
     occ.push({b,f,hot:!!c.hot,cold:isCold(c),...(posAng(pos)?{P:unitPoly(c,pos),FP:frontPoly(c,pos,workDepth(g,c))}:{})}); putUnit(g,u,pos,b,out);
     run={side:sd, front:bo+c.d, z:c.z}; p+=c.w;
   }
@@ -2062,8 +2084,9 @@ function autoLayout(s, units){
   const cornerBonus=r=>{ const parts=units.filter(u=>u.c.hot&&r.L[u.key]); if(!parts.length) return 0; const top=parts.slice().sort((a,b)=>b.c.h-a.c.h)[0], q=bbox(top.c,r.L[top.key]);
     return rectInCorner(s.room,q,0.01) ? -60 : 0; };
   const tinyIns=r=>r.inserts.filter(i=>i.c.w<0.45).length*20;
+  const hasNiche=s.openings.some(o=>o.type==='prot'&&o.niche), nicheUse=r=>hasNiche?units.filter(u=>r.L[u.key]&&!posAng(r.L[u.key])&&nicheFit(s,bbox(u.c,r.L[u.key]))).length*60:0;   // занятая ниша — небольшое преимущество: иначе пустует при почти равной оценке
   const tried=[];
-  const tryOne=(dir,opt,pen)=>{ const r=flowLayout(s,units,dir,opt); if(!r) return; const sc=layoutScore(s,all(r),r.L)+flowPenalty(s,units,r.L,dir)+pen+hotMiss(r)*50000+cornerBonus(r)+tinyIns(r); tried.push({sc,dir,opt,pen}); if(sc<bs){ bs=sc; best=r; best.unpl=unpl(r); } };
+  const tryOne=(dir,opt,pen)=>{ const r=flowLayout(s,units,dir,opt); if(!r) return; const sc=layoutScore(s,all(r),r.L)+flowPenalty(s,units,r.L,dir)+pen+hotMiss(r)*50000+cornerBonus(r)+tinyIns(r)-nicheUse(r); tried.push({sc,dir,opt,pen}); if(sc<bs){ bs=sc; best=r; best.unpl=unpl(r); } };
   const hb=hotBlockOf(units,{});
   for(const wg of [0.12,0.08]){
     if(wg===0.08 && best && best.unpl===0) break;
@@ -2088,7 +2111,7 @@ function autoLayout(s, units){
         let tq; if(q.side&&q.side!=='floor') tq=swPerT(g,q.side,q.off); else { const nw=nearestWall(g.room,q.x,q.y); tq=swPerT(g,nw.id,nw.off); }
         for(let d=-Lw-1.2; d<=0.61; d+=0.3) for(const we of [false,true]) tryOne(t.dir,{...t.opt, washP:tq+d, washEarly:we},t.pen); } } }
   return {r:best||{L:{},inserts:[]}, sc:bs}; };
-  const withBack=search(); if(!s.openings.some(isProt)) return withBack.r;
+  const withBack=search(); if(!s.openings.some(o=>o.type==='prot')) return withBack.r;
   protBackOff=true; const withoutBack=search();
   const nb=x=>checkLayout(s,[...units,...x.r.inserts.map(i=>({key:i.key,c:i.c}))],x.r.L).filter(i=>i.t==='bad').length, b1=nb(withBack), b0=nb(withoutBack);   // выступ не должен добавлять ошибок
   return b0<b1||(b0===b1&&withoutBack.sc<withBack.sc)?withoutBack.r:withBack.r;
@@ -2108,7 +2131,7 @@ function checkUnit(s, units, L, key){
   const facingX=(p,q)=>{ if(!p.a&&!q.a) return Math.abs(p.rot-q.rot)===180; const a=frontDir(L[p.u.key]), b=frontDir(L[q.u.key]); return a.x*b.x+a.y*b.y< -0.9; };
   const nm=u=>shortName(u.c), sn=u=>u.c.lb2||u.c.s||shortName(u.c), me=p=>!one||p.u.key===key;
   const doors=s.openings.filter(o=>o.type==='door'), wins=s.openings.filter(o=>o.type==='window'), prots=s.openings.filter(isProt);
-  for(const p of pl) if(me(p) && !(posAng(L[p.u.key])?unitInRoom(s.room,p.u.c,L[p.u.key]):rectInRoom(s.room,p.b))) iss.push({t:'bad', key:p.u.key, lbl:'Выходит за стену', m:`«${nm(p.u)}» выходит за стены помещения.`});
+  for(const p of pl) if(me(p) && !(posAng(L[p.u.key])?unitInRoom(s.room,p.u.c,L[p.u.key]):p.u.parts?rectInRoom(s.room,p.b):inRoomOrNiche(s,p.b))) iss.push({t:'bad', key:p.u.key, lbl:'Выходит за стену', m:`«${nm(p.u)}» выходит за стены помещения.`});
   for(const q of obsShapes(s.room)) for(const p of pl){ if(!me(p)) continue;
     const name=OBS_NAMES[q.ob.kind]||OBS_NAMES.other, nom=OBS_NOM[q.ob.kind]||OBS_NOM.other;
     if(hitX(p,q)) iss.push({t:'bad', key:p.u.key, lbl:'Упирается в '+name, m:`«${nm(p.u)}» упирается в ${name}.`});
@@ -2122,7 +2145,7 @@ function checkUnit(s, units, L, key){
       else if(hitX(p,bandOf(s,{side:o.side,off:o.off-0.08,w:o.w+0.16},0.35))) iss.push({t:'bad', key:p.u.key, lbl:'Вплотную к окну', m:`«${nm(p.u)}» ближе 80 мм к краю окна — высокое оборудование не ставят вплотную к проёму.`});
       else if(hitX(p,bandOf(s,{side:o.side,off:o.off-0.12,w:o.w+0.24},0.35))) iss.push({t:'warn', key:p.u.key, lbl:'Близко к окну', m:`«${nm(p.u)}» ближе 120 мм к краю окна. Отступ до 80 мм допустим, только если иначе расстановка не помещается.`}); }
     if(p.a){ if(!polyInRoom(s.room,p.FP)) iss.push({t:'warn', key:p.u.key, lbl:'Мало места перед фронтом', m:`Перед «${nm(p.u)}» рабочая зона упирается в стену — отодвиньте соседнее оборудование или аппарат.`}); }
-    else if(rectInRoom(s.room,p.b) && !rectInRoom(s.room,p.f)){
+    else if((p.u.parts?rectInRoom(s.room,p.b):inRoomOrNiche(s,p.b)) && !(p.u.parts?rectInRoom(s.room,p.f):frontOk(s,p.f))){
       if(roomWalls(s.room).some(w=>!w.axis && segHitsRect(w.x1,w.y1,w.x2,w.y2,p.f))) iss.push({t:'warn', key:p.u.key, lbl:'Мало места перед фронтом', m:`Перед «${nm(p.u)}» рабочая зона упирается в косую стену — отодвиньте аппарат от неё.`});
       else iss.push({t:'warn', key:p.u.key, lbl:'Фронтом к стене', m:`«${nm(p.u)}» развёрнут фронтом к стене.`});
     }
@@ -2206,6 +2229,7 @@ function hoods(s, units){
   const skew=u=>posAng(L[u.key])!==0&&L[u.key].sw;
   const rects=hot.filter(u=>L[u.key]&&!covered(u)&&!skew(u)).map(u=>{ const b=bbox(u.c,L[u.key]);
     let x1=b.x-o, y1=b.y-o, x2=b.x+b.w+o, y2=b.y+b.h+o;
+    if(nicheFit(s,b)){ const n=s.openings.map(o=>nicheRect(s,o)).find(n=>n&&b.x>=n.x-0.004&&b.y>=n.y-0.004&&b.x+b.w<=n.x+n.w+0.004&&b.y+b.h<=n.y+n.h+0.004); x1=Math.max(n.x,x1); y1=Math.max(n.y,y1); x2=Math.min(n.x+n.w,x2); y2=Math.min(n.y+n.h,y2); return {x:x1,y:y1,w:x2-x1,h:y2-y1}; }
     for(const w of roomWalls(s.room)){ const sp=spanOnWall(s.room,w,b); if(w.axis && backDist(s.room,w,b)<=0.4 && sp[1]>0 && sp[0]<w.len){ if(w.axis==='h'){ if(w.ny>0) y1=w.y1; else y2=w.y1; } else { if(w.nx>0) x1=w.x1; else x2=w.x1; } } }   // зонт у стены — до стены
     x1=Math.max(0,x1); y1=Math.max(0,y1); x2=Math.min(W,x2); y2=Math.min(D,y2); return {x:x1,y:y1,w:x2-x1,h:y2-y1}; });
   let m=[...rects], ch=true;
@@ -2392,7 +2416,7 @@ function recompute(){
   for(const u of P.units){ const pos=S.layout[u.key]; if(!pos) continue; const rid=P.roomOf[u.key], lr=S.layoutRoom[u.key], room=rById(rid);
     if(lr && lr!==rid){ delete S.layout[u.key]; delete S.layoutRoom[u.key]; continue; }
     const b=bbox(u.c,pos);
-    if(!room || b.x<-0.05 || b.y<-0.05 || b.x+b.w>room.w+0.05 || b.y+b.h>room.d+0.05){ delete S.layout[u.key]; delete S.layoutRoom[u.key]; continue; }
+    if(!room || (b.x<-0.05 || b.y<-0.05 || b.x+b.w>room.w+0.05 || b.y+b.h>room.d+0.05) && (u.parts || posAng(pos) || !nicheFit(roomGeom(S,room),b))){ delete S.layout[u.key]; delete S.layoutRoom[u.key]; continue; }
     S.layoutRoom[u.key]=rid; }
   P.foot+=S.inserts.reduce((a,i)=>a+i.w*i.d,0);
   P.iss=null;   // замечания по шагам пересобираются при следующей отрисовке (stepIss)
@@ -3566,7 +3590,7 @@ function focusNote(key){ const rid=P.roomOf[key]; if(planUnified() && rid){ S.cu
 function moveToRoom(key,rid){ if(P.roomOf[key]===rid) return false; const u=P.units.find(x=>x.key===key); if(!u) return false;
   if(u.c.insert){ const i=(S.inserts||[]).find(i=>i.key===key); if(i) i.room=rid; } else S.unitRoom[key]=rid; return true; }
 // куда отпустить из резерва: помещение под указателем и координаты в нём
-function dropRoom(ev){ if(!planUnified()) return {room:S.room, p:svgPt(ev), off:{x:0,y:0}}; const g=svgPtG(ev), r=roomAt(g.x,g.y); return r?{room:r, p:{x:g.x-r.x, y:g.y-r.y}, off:{x:r.x,y:r.y}}:null; }
+function dropRoom(ev){ if(!planUnified()) return {room:S.room, p:svgPt(ev), off:{x:0,y:0}}; const g=svgPtG(ev), r=roomAt(g.x,g.y)||S.rooms.find(r=>nicheFit(roomGeom(S,r),{x:g.x-r.x,y:g.y-r.y,w:0,h:0})); return r?{room:r, p:{x:g.x-r.x, y:g.y-r.y}, off:{x:r.x,y:r.y}}:null; }
 // слой «Куда вывести сети»: по умолчанию включён, когда сети проектируются; выбор зрителя хранится в VIEW.layers.need
 function needOn(){ const v=VIEW.layers.need; return v==null ? netsDesign(S) : !!v; }
 function needLayerSvg(k){ if(typeof needMarks!=='function') return ''; k=k||1; const q=v=>+v.toFixed(2), mh=15/k, fs=9.5/k, gp=2/k; let out='';
@@ -3732,6 +3756,7 @@ function startRoomDrag(e,k,id){
 const SNAP_NEAR=0.5;   // выравнивание краёв — только с соседом ближе 0,5 м по другой оси
 function snapPos(g, u, x, y, bw, bh, thr, excl){
   const W=g.room.w, D=g.room.d, e=0.004, wallU=u.c.mount==='wall', rects=[];
+  const np=!(excl&&excl.size>1)&&nicheSnap(g,u,{...(g.layout&&g.layout[u.key]||{rot:0}),x,y}); if(np) return {x:np.x,y:np.y,guides:[]};
   for(const o of g.openings) if(isProt(o)) rects.push(protRect(g,o));
   rects.push(...obsShapes(g.room));
   for(const v of roomUnits(g.id)){ if(v.key===u.key||(excl&&excl.has(v.key))) continue; const p=g.layout[v.key]; if(!p) continue;
@@ -3804,12 +3829,13 @@ function startEquipDrag(e,g){
     ov=document.createElementNS('http://www.w3.org/2000/svg','g'); ov.setAttribute('id','drag-ov'); ov.setAttribute('style','pointer-events:none'); svg.appendChild(ov); rsvShow(); };
   const frame=()=>{ raf=0; const ev=last; if(!ev) return; const p=svgPt(ev);
     let gx=G0.x+p.x-s0.x, gy=G0.y+p.y-s0.y, guides=[];   // габарит в координатах исходного помещения
-    T=uni?roomAt(src.x+gx+G0.w/2, src.y+gy+G0.h/2):src;   // помещение под центром
+    T=uni?roomAt(src.x+gx+G0.w/2, src.y+gy+G0.h/2)||S.rooms.find(r=>nicheFit(geomOf(r),{x:src.x+gx+G0.w/2-r.x,y:src.y+gy+G0.h/2-r.y,w:0,h:0})):src;   // помещение под центром
     const dx0=T&&uni?T.x-src.x:0, dy0=T&&uni?T.y-src.y:0;
     let lx=gx-dx0, ly=gy-dy0;
-    if(T){ lx=Math.min(Math.max(0,lx),Math.max(0,T.w-G0.w)); ly=Math.min(Math.max(0,ly),Math.max(0,T.d-G0.h));
+    if(T){ const np=nicheGroupPos(geomOf(T),M.map(m=>({u:m.u,p:{...m.p,x:m.x0,y:m.y0}})),lx,ly,G0);
+      if(np){ lx=np.x; ly=np.y; } else { lx=Math.min(Math.max(0,lx),Math.max(0,T.w-G0.w)); ly=Math.min(Math.max(0,ly),Math.max(0,T.d-G0.h)); }
       const thr=+S.norms.snap||0, free=ev.pointerType==='mouse' && ev.shiftKey;   // Shift мышью — без прилипания; на сенсорных — всегда
-      if(thr>0 && !free){ const r=snapPos(geomOf(T),u,lx,ly,G0.w,G0.h,thr,excl); lx=r.x; ly=r.y; guides=r.guides; } }   // группа прилипает своим габаритом
+      if(!np && thr>0 && !free){ const r=snapPos(geomOf(T),u,lx,ly,G0.w,G0.h,thr,excl); lx=r.x; ly=r.y; guides=r.guides; } }   // группа прилипает своим габаритом
     const E=els();
     M.forEach((m,i)=>{ m.p.x=r3m(lx+(m.x0-G0.x)); m.p.y=r3m(ly+(m.y0-G0.y)); const gg=E[i]; gg&&gg.setAttribute('transform',posAng(m.p)?skewTransform(m.u.c,m.p,dx0,dy0):`translate(${+((m.p.x+dx0)*100).toFixed(2)},${+((m.p.y+dy0)*100).toFixed(2)})`); });
     if(!ov) return;
@@ -4094,7 +4120,8 @@ function groupBox(bs){ const x=Math.min(...bs.map(b=>b.x)), y=Math.min(...bs.map
 function groupUnits(keys){ return keys.map(k=>({k, u:P.units.find(x=>x.key===k), p:S.layout[k]})).filter(m=>m.u&&m.p); }
 // сдвиг группы: ограничен для всей группы целиком, чтобы габарит не выходил за стены
 function groupShift(dx,dy,keys){ const M=groupUnits(keys); if(!M.length) return; const G=groupBox(M.map(m=>bbox(m.u.c,m.p))), W=S.room.w, D=S.room.d;
-  dx=Math.min(Math.max(dx,-G.x),Math.max(0,W-(G.x+G.w))); dy=Math.min(Math.max(dy,-G.y),Math.max(0,D-(G.y+G.h)));
+  const np=nicheGroupPos(curGeom(),M,G.x+dx,G.y+dy,G);
+  if(np){ dx=np.x-G.x; dy=np.y-G.y; } else { dx=Math.min(Math.max(dx,-G.x),Math.max(0,W-(G.x+G.w))); dy=Math.min(Math.max(dy,-G.y),Math.max(0,D-(G.y+G.h))); }
   for(const m of M){ m.p.x=r3m(m.p.x+dx); m.p.y=r3m(m.p.y+dy); if(m.p.sw) skewPlace(S.room,m.u,m.p,m.p.sw); } }
 // поворот группы на 90° вокруг центра габарита (dir 1 — по часовой, как «Повернуть ↻»; −1 — обратно); не помещается — false
 function groupRotate(keys,dir){ const M=groupUnits(keys); if(!M.length) return true; for(const m of M) if(posAng(m.p)){ m.rp={...m.p}; unskewPos(m.u.c,m.rp); } const W=S.room.w, D=S.room.d, G=groupBox(M.map(m=>bbox(m.u.c,m.rp||m.p))), cx=G.x+G.w/2, cy=G.y+G.h/2;
@@ -4270,10 +4297,11 @@ function startChipDrag(e,chip){
           const ctm=svg.getScreenCTM(); k=ctm?Math.abs(ctm.a)||1:1; }
         const p=DR.p, W=DR.room.w, D=DR.room.d, b0=bbox(u.c,{x:0,y:0,rot:0}); geom=roomGeom(S,DR.room); CU=[...roomUnits(DR.room.id).filter(v=>v.key!==u.key), u];
         const tr=planUnified()?`translate(${+(DR.off.x*100).toFixed(2)},${+(DR.off.y*100).toFixed(2)})`:''; gh.setAttribute('transform',tr); ov.setAttribute('transform',tr);
-        let nx=Math.min(Math.max(0,p.x-b0.w/2),Math.max(0,W-b0.w)), ny=Math.min(Math.max(0,p.y-b0.h/2),Math.max(0,D-b0.h)), guides=[];
+        const np=nicheSnap(geom,u,{x:p.x-b0.w/2,y:p.y-b0.h/2,rot:0});
+        let nx=np?np.x:Math.min(Math.max(0,p.x-b0.w/2),Math.max(0,W-b0.w)), ny=np?np.y:Math.min(Math.max(0,p.y-b0.h/2),Math.max(0,D-b0.h)), guides=[];
         const thr=+S.norms.snap||0, free=ev.pointerType==='mouse'&&ev.shiftKey;
-        if(thr>0&&!free){ const r=snapPos(geom,u,nx,ny,b0.w,b0.h,thr); nx=r.x; ny=r.y; guides=r.guides; }
-        const pos=faceFromWall(geom,u,Math.round(nx*1000)/1000,Math.round(ny*1000)/1000); pos.x=Math.round(pos.x*1000)/1000; pos.y=Math.round(pos.y*1000)/1000;
+        if(!np&&thr>0&&!free){ const r=snapPos(geom,u,nx,ny,b0.w,b0.h,thr); nx=r.x; ny=r.y; guides=r.guides; }
+        const pos=np||faceFromWall(geom,u,Math.round(nx*1000)/1000,Math.round(ny*1000)/1000); pos.x=Math.round(pos.x*1000)/1000; pos.y=Math.round(pos.y*1000)/1000;
         if(pos.rot===90||pos.rot===270){ const nb=bbox(u.c,pos), X=pos.rot===270?0:W; guides=[{x1:X, y1:nb.y-0.1, x2:X, y2:nb.y+nb.h+0.1}]; }   // развёрнут к боковой стене — направляющая по ней
         place={pos, room:DR.room};
         const b=bbox(u.c,pos), c=`var(--z-${u.c.z})`, w=b.w*100, h=b.h*100, fe=pos.rot===0?[0,h,w,h]:pos.rot===180?[0,0,w,0]:pos.rot===90?[0,0,0,h]:[w,0,w,h];
@@ -4327,7 +4355,7 @@ function gatherHot(){
     pos.x=+pos.x.toFixed(3); pos.y=+pos.y.toFixed(3); S.layout[u.key]=pos; t+=c.w; }
   S.layoutManual=true; touch(); render(); toast('Тепловое собрано в одну линию под один зонт');
 }
-function clampPos(u,p){ const b=bbox(u.c,p); p.x=Math.min(Math.max(0,p.x),Math.max(0,S.room.w-b.w)); p.y=Math.min(Math.max(0,p.y),Math.max(0,S.room.d-b.h)); }
+function clampPos(u,p){ const n=nicheSnap(curGeom(),u,p); if(n){ p.x=n.x; p.y=n.y; return; } const b=bbox(u.c,p); p.x=Math.min(Math.max(0,p.x),Math.max(0,S.room.w-b.w)); p.y=Math.min(Math.max(0,p.y),Math.max(0,S.room.d-b.h)); }
 
 /* ---------- 6. Инженерия ---------- */
 // газ: тепловая мощность и максимальный расход при одновременной работе (ориентировочно)
@@ -5981,6 +6009,7 @@ function equipChains(room, units, layout){
   for(const s of roomWalls(room).map(w=>w.id)){
     const len=SIDE_LEN(room,s), its=[];
     for(const x of floor){ const d=unitWallDist(room,s,x.u.c,x.p), bold=x.back===s;
+      if(nicheFit({room,openings:room.openings||[]},x.b)){ const sp=spanOnWall(room,s,x.b); if(sp[1]<=0 || sp[0]>=len) continue; }
       if((bold && (d<=DIM_OFF+1e-6 || wallOfRect(room,x.b,x.p.rot,DIM_OFF+1e-6)===s)) || (!bold && d<=DIM_TOL)){ const [a,e]=unitWallSpan(room,s,x.u.c,x.p), am=Math.round(Math.max(0,a)*1000), sz=Math.round((e-a)*1000); its.push({a:am/1000, e:Math.min(len,(am+sz)/1000), sz:sz/1000, x, bold, d:posAng(x.p)&&bold?0:d}); inChain.add(x.u.key);   // целые мм
         if(bold && d>0.005) offsets.push({x, s, d}); } }
     its.sort((p,q)=>p.a-q.a||q.e-p.e);
@@ -5998,7 +6027,7 @@ function equipChains(room, units, layout){
   return {sides, islands, offsets, floor, wall, placed};
 }
 // отдельно стоящий: ближайшая стена по горизонтали и по вертикали (при равенстве — левая, верхняя)
-function islandOf(x,room){ const b=x.b, ws=roomWalls(room), pick=ax=>{ let best=null; for(const w of ws.filter(w=>w.axis===ax).sort((a,c)=>(ax==='v'?c.nx-a.nx:c.ny-a.ny))){ const d=backDist(room,w,b); if(!best||d<best.d) best={s:w.id, d}; } return best; };
+function islandOf(x,room){ const b=x.b, ws=roomWalls(room), pick=ax=>{ let best=null; for(const w of ws.filter(w=>w.axis===ax).sort((a,c)=>(ax==='v'?c.nx-a.nx:c.ny-a.ny))){ const d=nicheFit({room,openings:room.openings||[]},b)?Math.abs(backDist(room,w,b)):backDist(room,w,b); if(!best||d<best.d) best={s:w.id, d}; } return best; };
   return {x, h:pick('v'), v:pick('h')}; }
 // где стоит аппарат: у стены (спиной, отступ ≤ 300 мм) или отдельно
 function unitPlace(u, room, layout){ const L=layout||S.layout, p=L[u.key]; if(!p) return null; const b=bbox(u.c,p); if(posAng(p)&&p.sw) return {kind:'skew', s:p.sw, b, d:0, a:unitWallSpan(room,p.sw,u.c,p)[0]}; const back=wallOfRect(room,b,p.rot);

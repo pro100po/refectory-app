@@ -694,7 +694,7 @@ function mapDoor(A,d,B){
 function roomGeom(st, room){
   const ops=room.openings.slice();
   for(const o of st.rooms){ if(o===room) continue; for(const d of o.openings){ if(d.type==='door' && d.to==='room:'+room.id){ const m=mapDoor(o,d,room); if(m) ops.push(m); } } }
-  return {room:hasPoly(room)?{w:room.w, d:room.d, poly:room.poly}:{w:room.w, d:room.d}, openings:ops, points:room.points, norms:st.norms, layout:st.layout, id:room.id, stage:roomStage(room), stages:Object.fromEntries(st.rooms.map(r=>[r.id,roomStage(r)]))};
+  return {room:{...(hasPoly(room)?{w:room.w, d:room.d, poly:room.poly}:{w:room.w, d:room.d}), ...(roomObs(room).length?{obstacles:room.obstacles}:{})}, openings:ops, points:room.points, norms:st.norms, layout:st.layout, id:room.id, stage:roomStage(room), stages:Object.fromEntries(st.rooms.map(r=>[r.id,roomStage(r)]))};
 }
 function roomForZone(st, z, idx){
   if(z==='san'){ const prod=st.rooms.filter(r=>r.roles.includes('prep')||r.roles.includes('hot')); if(prod.length) return prod[idx%prod.length].id; }
@@ -1443,6 +1443,7 @@ function tiltRoomWall(room,id,end,shift,longer){
 function mirrorWallId(room,id){ if(hasPoly(room)) return id; return id==='l'?'r':id==='r'?'l':id; }
 function mirrorRoom(s){ const W=s.room.w, R=s.room;
   const room=hasPoly(R)?{w:R.w, d:R.d, poly:(()=>{ const n=R.poly.length; return R.poly.map((_,k)=>{ const p=R.poly[n-1-k], j=(n-2-k+n)%n; return {x:W-p.x,y:p.y,wid:R.poly[j].wid||('w'+j)}; }); })()}:{w:R.w, d:R.d};
+  if(roomObs(R).length) room.obstacles=R.obstacles.map(ob=>({...ob,x:W-ob.x-ob.w}));
   const mo=(side,off,len)=>{ const w=wallById(R,side); return w.axis==='v' ? {side:mirrorWallId(R,side), off} : {side:mirrorWallId(R,side), off:w.len-off-len}; };
   return {room, norms:s.norms, wg:s.wg, stage:s.stage, stages:s.stages,
     openings:s.openings.map(o=>{ const n={...o}; const m=mo(o.side,o.off,o.w); if(wallById(R,o.side).axis==='v') n.side=m.side; else n.off=m.off; return n; }),
@@ -1471,6 +1472,12 @@ function neighbors(s, o){ const els=wallEls(s,o.side).filter(x=>x.id!==o.id), L=
   return {prev, next, lo: prev?prev.off+prev.w:0, hi: next?next.off:L}; }
 function isProt(o){ return o.type==='prot' && !o.niche; }
 function protRect(s,o){ return bandOf(s,o,o.depth||0.3); }
+const OBS_NAMES={column:'колонну', stove:'печь', box:'короб', stair:'лестницу', other:'препятствие'};
+const OBS_NOM={column:'колонна', stove:'печь', box:'короб', stair:'лестница', other:'препятствие'};
+function roomObs(room){ return room.obstacles||[]; }
+function obsShapes(room){ return roomObs(room).map(ob=>{ const q={x:ob.x,y:ob.y,w:ob.w,h:ob.d,ob};
+  if(ob.shape==='round'){ const r=ob.w/2, R=r/Math.cos(Math.PI/24), P=Array.from({length:24},(_,i)=>{ const a=2*Math.PI*i/24; return {x:ob.x+r+R*Math.cos(a),y:ob.y+r+R*Math.sin(a)}; }); Object.assign(q,{a:true,P,FP:P}); }
+  return q; }); }
 function migratePoint(s,p){ const R=s.room, hood=p.type==='hood';
   if(hood){ const b={x:p.x,y:p.y,w:p.w,h:p.d}, sd=(hasPoly(R)?roomWalls(R).map(w=>w.id):['t','b','l','r']).find(id=>backDist(R,id,b)<=0.05)||null;
     if(sd){ const w=wallById(R,sd); p.side=sd; p.off=spanOnWall(R,w,b)[0]; if(w.axis==='v'){ const t=p.w; p.w=p.d; p.d=t; } } else p.side='floor'; return; }
@@ -1901,7 +1908,7 @@ function packForward(g, seq, startP, occ, out, reserve, runInit){
 function fillGaps(s, all, L, ins, cnt){
   const R=s.room;
   const occ=all.filter(u=>L[u.key]&&u.c.mount==='floor').map(u=>{ const b=bbox(u.c,L[u.key]); return {u,b,f:frontZone(b,L[u.key].rot,workDepth(s,u.c)),rot:L[u.key].rot,...(posAng(L[u.key])?{P:unitPoly(u.c,L[u.key]),FP:frontPoly(u.c,L[u.key],workDepth(s,u.c))}:{})}; });
-  const blocks=s.openings.filter(o=>o.type==='door').map(o=>doorBlock(s,o)).concat(s.openings.filter(isProt).map(o=>protRect(s,o)));
+  const blocks=s.openings.filter(o=>o.type==='door').map(o=>doorBlock(s,o)).concat(s.openings.filter(isProt).map(o=>protRect(s,o)),obsShapes(s.room));
   const wins=s.openings.filter(o=>o.type==='window').map(o=>({r:bandOf(s,o,0.35), sill:o.sill||0.9}));
   for(const w of roomWalls(R)){ if(!w.axis) continue;   // косые стены (30.3) — без вставок
     const side=w.id, rot=wallRot(w), horiz=w.axis==='h', Ls=w.len, O=horiz?w.offOrigin.x:w.offOrigin.y;
@@ -1955,7 +1962,7 @@ function flowInGeom(g, units, cnt, opt){
   const {sd,hd}=flowDoors(g);
   const reserve=Math.min(0.95, Math.max(0.6, ...units.filter(u=>u.c.mount==='floor').map(u=>u.c.d).filter(d=>d<=0.95)));
   const mk=()=>{ const o={L:{}, ins:[], unplaced:[]}; Object.defineProperty(o,'n',{get:()=>cnt.n, set:v=>{cnt.n=v;}}); return o; };
-  const out=mk(), occ=[];
+  const out=mk(), occ=obsShapes(g.room).map(q=>({b:{x:q.x,y:q.y,w:q.w,h:q.h}, f:NOF, hot:false, cold:false}));   // круг — по габариту: точная проверка в checkUnit, а многоугольник в occ замедлил бы free в разы
   const start = sd ? cwEdges(g,sd)[1] : 0;
   // 1. основное (тепловое) ставится первым
   let hotEnd=null, hotRun=null;
@@ -1986,7 +1993,7 @@ function flowInGeom(g, units, cnt, opt){
   else if(sd && hd) packForward(g, wash, cwEdges(g,hd)[1], occ, out, reserve);
   else if(!sd) packForward(g, wash, start, occ, out, reserve);
   // настенное
-  const bands=g.openings.filter(o=>o.type!=='prot'||isProt(o)).map(o=>isProt(o)?protRect(g,o):bandOf(g,o,0.6)), wpl=[];
+  const bands=g.openings.filter(o=>o.type!=='prot'||isProt(o)).map(o=>isProt(o)?protRect(g,o):bandOf(g,o,0.6)).concat(obsShapes(g.room)), wpl=[];
   for(const u of units.filter(u=>u.c.mount==='wall')){ const c=u.c;
     for(let p=0;p<P;p+=0.05){ const pa=perimeterAt(g.room,p), side=pa.id, st=pa.st, len=pa.len, t0=p-st;
       if(t0+c.w>len) continue;
@@ -2074,6 +2081,11 @@ function checkUnit(s, units, L, key){
   const nm=u=>shortName(u.c), sn=u=>u.c.lb2||u.c.s||shortName(u.c), me=p=>!one||p.u.key===key;
   const doors=s.openings.filter(o=>o.type==='door'), wins=s.openings.filter(o=>o.type==='window'), prots=s.openings.filter(isProt);
   for(const p of pl) if(me(p) && !(posAng(L[p.u.key])?unitInRoom(s.room,p.u.c,L[p.u.key]):rectInRoom(s.room,p.b))) iss.push({t:'bad', key:p.u.key, lbl:'Выходит за стену', m:`«${nm(p.u)}» выходит за стены помещения.`});
+  for(const q of obsShapes(s.room)) for(const p of pl){ if(!me(p)) continue;
+    const name=OBS_NAMES[q.ob.kind]||OBS_NAMES.other, nom=OBS_NOM[q.ob.kind]||OBS_NOM.other;
+    if(hitX(p,q)) iss.push({t:'bad', key:p.u.key, lbl:'Упирается в '+name, m:`«${nm(p.u)}» упирается в ${name}.`});
+    else if(p.u.c.mount==='floor' && hitX(p,q,true)) iss.push({t:'warn', key:p.u.key, lbl:'Проход '+fmtM(gapX(p,q)), m:`Перед «${nm(p.u)}» меньше ${fmtM(workDepth(s,p.u.c))} для работы: мешает ${nom}.`});
+  }
   for(const p of fl){ if(!me(p)) continue;
     for(const o of prots) if(hitX(p,protRect(s,o))) iss.push({t:'bad', key:p.u.key, lbl:'Упирается в выступ', m:`«${nm(p.u)}» упирается в выступ стены.`});
     for(const o of doors) if(hitX(p,doorBlock(s,o))) iss.push({t:'bad', key:p.u.key, lbl:'Загораживает дверь', m:`«${nm(p.u)}» загораживает дверь ${doorLabel(o)}.`});
@@ -2120,6 +2132,7 @@ function checkUnit(s, units, L, key){
           else if((c.h||0)>n.h+1e-6) iss.push({t:'bad', key:x.u.key, lbl:'Закрывает электрощит', m:`Перед электрощитом «${nm(x.u)}» высотой ${fmt0(c.h*1000)} мм — закрывает щит; допустимо до ${lowmm}.`});
           continue; }
         if(elWater(c)){ const d=gapX(x,P0); if(d<n.wd-1e-6) iss.push({t:'bad', key:x.u.key, lbl:`Вода в ${fmt1(d)} м от щита`, m:`${c.lb||nm(x.u)} в ${fmt1(d)} м от электрощита — источники воды не ближе ${fmtM(n.wd)}.`}); } }
+      if(!one) for(const ob of obsShapes(s.room)) if(hitX(ob,Z)) iss.push({t:'bad', m:`Перед электрощитом ${OBS_NOM[ob.ob.kind]||OBS_NOM.other} — щит будет закрыт, перенесите щит.`});
       if(!one) for(const w of s.points){ if(w.type!=='cw'&&w.type!=='hw') continue; const d=gap(wallPt(s,w),P0);
         if(d<n.wd-1e-6) iss.push({t:'bad', m:`Ввод ${w.type==='cw'?'холодной':'горячей'} воды в ${fmt1(d)} м от электрощита — перенесите кран или щит не ближе ${fmtM(n.wd)}.`}); } } }
   // газовый кран и розетки: аппарат у этой стены (ближе 0,3 м), перекрывает точку вдоль стены (±0,15 м)
@@ -3643,6 +3656,7 @@ const SNAP_NEAR=0.5;   // выравнивание краёв — только �
 function snapPos(g, u, x, y, bw, bh, thr, excl){
   const W=g.room.w, D=g.room.d, e=0.004, wallU=u.c.mount==='wall', rects=[];
   for(const o of g.openings) if(isProt(o)) rects.push(protRect(g,o));
+  rects.push(...obsShapes(g.room));
   for(const v of roomUnits(g.id)){ if(v.key===u.key||(excl&&excl.has(v.key))) continue; const p=g.layout[v.key]; if(!p) continue;
     if(wallU ? v.c.mount!=='wall' : v.c.mount!=='floor') continue; rects.push(bbox(v.c,p)); }
   // стены: вертикальные — цели по x, горизонтальные — по y (сначала ближние к началу координат — как раньше «лево», «верх»)

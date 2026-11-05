@@ -1189,7 +1189,8 @@ function spanOnWall(room,w,b){ w=W_OF(room,w); const O=w.offOrigin;
 // стены, к которым прямоугольник ближе tol (и с ним по одной линии)
 function rectWallHits(room,b,tol){ return roomWalls(room).filter(w=>{ if(backDist(room,w,b)>tol) return false; const s=spanOnWall(room,w,b); return s[1]>0 && s[0]<w.len; }).map(w=>w.id); }
 // у какой стены аппарат стоит спиной (вместо wallOf)
-function wallOfRect(room,b,rot,tol){ tol=tol==null?0.35:tol; for(const w of roomWalls(room)) if(wallRot(w)===rot && backDist(room,w,b)<=tol) return w.id; return null; }
+function wallOfRect(room,b,rot,tol,openings){ tol=tol==null?0.35:tol; for(const w of roomWalls(room)) if(wallRot(w)===rot){ const d=backDist(room,w,b); if(d<=tol) return w.id;
+    if(w.axis){ const sp=spanOnWall(room,w,b), pm=perimeterSpan(room,w.id,sp[0],sp[1]-sp[0])[0], dep=protBack({room,openings:openings||room.openings||[]},w.id,pm,sp[1]-sp[0]); if(dep>0 && d>=dep-0.004 && d<=dep+tol) return w.id; } } return null; }
 // стена, к которой спиной стоит аппарат с поворотом rot (ближайшая из таких)
 function wallForRot(room,rot,b){ let best=null, bd=Infinity; for(const w of roomWalls(room)){ if(wallRot(w)!==rot) continue; const d=b?Math.abs(backDist(room,w,b)):0; if(d<bd){ bd=d; best=w; } } return best; }
 // по периметру: off на стене → t; t → стена (incl — граница включается в предыдущую стену)
@@ -1473,6 +1474,9 @@ function neighbors(s, o){ const els=wallEls(s,o.side).filter(x=>x.id!==o.id), L=
   return {prev, next, lo: prev?prev.off+prev.w:0, hi: next?next.off:L}; }
 function isProt(o){ return o.type==='prot' && !o.niche; }
 function protRect(s,o){ return bandOf(s,o,o.depth||0.3); }
+let protBackOff=false;
+function protBack(g,sd,pm,w){ if(protBackOff || wallById(g.room,sd).axis===null) return 0;
+  let back=0; for(const o of g.openings) if(isProt(o) && o.side===sd){ const [a,e]=cwEdges(g,o); if(pm>=a-0.001 && pm+w<=e+0.001) back=Math.max(back,o.depth||0.3); } return back; }
 const OBS_NAMES={column:'колонну', stove:'печь', box:'короб', stair:'лестницу', other:'препятствие'};
 const OBS_NOM={column:'колонна', stove:'печь', box:'короб', stair:'лестница', other:'препятствие'};
 function roomObs(room){ return room.obstacles||[]; }
@@ -1548,9 +1552,11 @@ function swDrain(g,c,pos){ const b=bbox(c,pos), R=g.room, r=pos.rot;
   const f=posAng(pos)?frontDir(pos):null;
   const p= f?{x:b.x+b.w/2-f.x*c.d/2,y:b.y+b.h/2-f.y*c.d/2} : r===0?{x:b.x+b.w/2,y:b.y} : r===180?{x:b.x+b.w/2,y:b.y+b.h} : r===90?{x:b.x+b.w,y:b.y+b.h/2} : {x:b.x,y:b.y+b.h/2};
   const bw=f?wallById(R,pos.sw):wallForRot(R,r,b), dist=id=>projectToWall(R,id,p.x,p.y).dist;
-  const side= bw && dist(bw.id)<=0.3+1e-6 ? bw.id : nearestWall(R,p.x,p.y).id;
+  const sp=bw&&!f?spanOnWall(R,bw,b):null, dep=sp?protBack(g,bw.id,perimeterSpan(R,bw.id,sp[0],sp[1]-sp[0])[0],sp[1]-sp[0]):0;
+  const onProt=dep>0 && dist(bw.id)>=dep-0.004 && dist(bw.id)<=dep+0.3+1e-6;
+  const side= bw && (dist(bw.id)<=0.3+1e-6 || onProt) ? bw.id : nearestWall(R,p.x,p.y).id;
   const a=Math.min(Math.max(projectToWall(R,side,p.x,p.y).off,0),wallLen(R,side)), st=Math.max(0,dist(side));
-  return {p, side, t:swPerT(g,side,a), stub:st, cnt:st>0.3+1e-6?st:0}; }
+  return {p, side, t:swPerT(g,side,a), stub:st, cnt:!onProt && st>0.3+1e-6?st:0}; }
 // расстояние по обходу от a до x; dir = +1 — по часовой
 const swAlong=(P,a,x,dir)=>dir>0?swMod(x-a,P):swMod(a-x,P);
 // отрезок стены iv=[i0,i1] пересекает дугу от a длиной len (e — допуск по краям)
@@ -1904,16 +1910,16 @@ function packForward(g, seq, startP, occ, out, reserve, runInit){
     for(let k=0;k<Math.min(4,rest.length);k++){
       const u=rest[k]; if(k>0 && zi(u)!==zi(rest[0])) break;
       const c=u.c; if(t0+c.w>len-reserve+1e-6) continue;
-      const bo=u.parts?0:Math.max(0,(u.ld||c.d)-c.d);
+      const bo=u.parts?0:Math.max(0,(u.ld||c.d)-c.d,protBack(g,sd,pm,c.w));
       pos=posAt(sd,t0,c,bo); b=bbox(c,pos); f=frontZone(b,pos.rot,workDepth(g,c));
       if(free(b,f,c,u,pos)){ pick=k; break; }
     }
     if(pick<0){
       if(rest.every((u,k)=>k>=4 || t0+u.c.w>len-reserve+1e-6)){ const dep=closeCorner(sd,len,t0), jump=(len-t0)+dep+0.0005; p+=jump; trav+=jump; run={side:null,front:0,z:null}; }
-      else { p+=0.05; trav+=0.05; }
+      else { let step=0.05; if(!protBackOff && rest.slice(0,4).some(u=>!u.parts) && wallById(g.room,sd).axis!==null) for(const o of g.openings) if(isProt(o) && o.side===sd) for(const edge of cwEdges(g,o)){ const d=edge-pm; if(d>1e-9 && d<step) step=d; } p+=step; trav+=step; }
       continue;
     }
-    const u=rest.splice(pick,1)[0], c=u.c, bo=u.parts?0:Math.max(0,(u.ld||c.d)-c.d);
+    const u=rest.splice(pick,1)[0], c=u.c, bo=u.parts?0:Math.max(0,(u.ld||c.d)-c.d,protBack(g,sd,pm,c.w));
     occ.push({b,f,hot:!!c.hot,cold:isCold(c),...(posAng(pos)?{P:unitPoly(c,pos),FP:frontPoly(c,pos,workDepth(g,c))}:{})}); putUnit(g,u,pos,b,out);
     run={side:sd, front:bo+c.d, z:c.z}; p+=c.w;
   }
@@ -1929,7 +1935,7 @@ function fillGaps(s, all, L, ins, cnt){
   for(const w of roomWalls(R)){ if(!w.axis) continue;   // косые стены (30.3) — без вставок
     const side=w.id, rot=wallRot(w), horiz=w.axis==='h', Ls=w.len, O=horiz?w.offOrigin.x:w.offOrigin.y;
     const front=b=>farDist(R,w,b);
-    const items=occ.filter(q=>q.rot===rot && wallOfRect(R,q.b,rot)===side).map(q=>{ const sp=spanOnWall(R,w,q.b); return {a:sp[0], e:sp[1], fr:front(q.b), z:q.u.c.z, it:1}; });
+    const items=occ.filter(q=>q.rot===rot && wallOfRect(R,q.b,rot,undefined,s.openings)===side).map(q=>{ const sp=spanOnWall(R,w,q.b); return {a:sp[0], e:sp[1], fr:front(q.b), z:q.u.c.z, it:1}; });
     const bl=s.openings.filter(o=>o.side===side && o.type!=='window').map(o=>({a:o.off, e:o.off+o.w}));
     const seq=[{a:0,e:0}, ...[...items,...bl].sort((x,y)=>x.a-y.a), {a:Ls,e:Ls}];
     for(let i=0;i<seq.length-1;i++){
@@ -2046,6 +2052,7 @@ function flowPenalty(s, units, L, dir){
   return inv*30+dp;
 }
 function autoLayout(s, units){
+  try{ const search=()=>{
   let best=null, bs=Infinity;
   const all=r=>[...units, ...r.inserts.map(i=>({key:i.key,c:i.c}))];
   const unpl=r=>units.filter(u=>!r.L[u.key]).length;
@@ -2080,7 +2087,12 @@ function autoLayout(s, units){
       for(const q of g.points.filter(p=>p.type==='sewer')){
         let tq; if(q.side&&q.side!=='floor') tq=swPerT(g,q.side,q.off); else { const nw=nearestWall(g.room,q.x,q.y); tq=swPerT(g,nw.id,nw.off); }
         for(let d=-Lw-1.2; d<=0.61; d+=0.3) for(const we of [false,true]) tryOne(t.dir,{...t.opt, washP:tq+d, washEarly:we},t.pen); } } }
-  return best||{L:{},inserts:[]};
+  return {r:best||{L:{},inserts:[]}, sc:bs}; };
+  const withBack=search(); if(!s.openings.some(isProt)) return withBack.r;
+  protBackOff=true; const withoutBack=search();
+  const nb=x=>checkLayout(s,[...units,...x.r.inserts.map(i=>({key:i.key,c:i.c}))],x.r.L).filter(i=>i.t==='bad').length, b1=nb(withBack), b0=nb(withoutBack);   // выступ не должен добавлять ошибок
+  return b0<b1||(b0===b1&&withoutBack.sc<withBack.sc)?withoutBack.r:withBack.r;
+  } finally { protBackOff=false; }
 }
 
 // проверка расстановки. key задан — только правила, в которых участвует этот аппарат (подсветка на лету при перетаскивании);
@@ -5969,7 +5981,7 @@ function equipChains(room, units, layout){
   for(const s of roomWalls(room).map(w=>w.id)){
     const len=SIDE_LEN(room,s), its=[];
     for(const x of floor){ const d=unitWallDist(room,s,x.u.c,x.p), bold=x.back===s;
-      if((bold && d<=DIM_OFF+1e-6) || (!bold && d<=DIM_TOL)){ const [a,e]=unitWallSpan(room,s,x.u.c,x.p), am=Math.round(Math.max(0,a)*1000), sz=Math.round((e-a)*1000); its.push({a:am/1000, e:Math.min(len,(am+sz)/1000), sz:sz/1000, x, bold, d:posAng(x.p)&&bold?0:d}); inChain.add(x.u.key);   // целые мм
+      if((bold && (d<=DIM_OFF+1e-6 || wallOfRect(room,x.b,x.p.rot,DIM_OFF+1e-6)===s)) || (!bold && d<=DIM_TOL)){ const [a,e]=unitWallSpan(room,s,x.u.c,x.p), am=Math.round(Math.max(0,a)*1000), sz=Math.round((e-a)*1000); its.push({a:am/1000, e:Math.min(len,(am+sz)/1000), sz:sz/1000, x, bold, d:posAng(x.p)&&bold?0:d}); inChain.add(x.u.key);   // целые мм
         if(bold && d>0.005) offsets.push({x, s, d}); } }
     its.sort((p,q)=>p.a-q.a||q.e-p.e);
     const segs=[]; let cur=0;
@@ -5990,7 +6002,7 @@ function islandOf(x,room){ const b=x.b, ws=roomWalls(room), pick=ax=>{ let best=
   return {x, h:pick('v'), v:pick('h')}; }
 // где стоит аппарат: у стены (спиной, отступ ≤ 300 мм) или отдельно
 function unitPlace(u, room, layout){ const L=layout||S.layout, p=L[u.key]; if(!p) return null; const b=bbox(u.c,p); if(posAng(p)&&p.sw) return {kind:'skew', s:p.sw, b, d:0, a:unitWallSpan(room,p.sw,u.c,p)[0]}; const back=wallOfRect(room,b,p.rot);
-  if(back && sideDist(b,back,room)<=DIM_OFF+1e-6) return {kind:'wall', s:back, b, d:sideDist(b,back,room)};
+  if(back && (sideDist(b,back,room)<=DIM_OFF+1e-6 || wallOfRect(room,b,p.rot,DIM_OFF+1e-6)===back)) return {kind:'wall', s:back, b, d:sideDist(b,back,room)};
   if(u.c.mount==='wall'){ const ds=roomWalls(room).map(w=>w.id).map(s=>[s,sideDist(b,s,room)]).sort((a,c)=>a[1]-c[1]); return {kind:'wall', s:ds[0][0], b, d:ds[0][1]}; }
   return {kind:'island', b}; }
 // соседи вдоль стены: допустимый диапазон начала аппарата и ближайшие препятствия с двух сторон

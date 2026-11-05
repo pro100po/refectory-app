@@ -649,11 +649,15 @@ function exampleData(){
     ],
     manual:null, edits:{delta:{}, off:{}, pref:{}, skipHave:{}}, prices:{}, hoodPrice:38000, montage:10,
     norms:{work:0.9, passage:1.2, hoodV:0.3, hoodOver:0.15, waterTotal:12, waterHot:4, kArea:0.35, cos:0.95, gasHose:2, align:true, strict:false, elPanelDepth:0.8, elPanelWidth:0.6, elPanelLowH:0.95, elWaterDist:1.0, sewerMax:5, snap:0.05},
-    layout:{}, inserts:[], layoutManual:false, layoutSig:'', planDims:'all', utilities:'existing'
+    layout:{}, inserts:[], layoutManual:false, layoutSig:'', planDims:'all', utilities:'existing', nets:{water:'have', sewer:'have', vent:'have', el:'have', gas:'none'}
   };
 }
 // сети проектируются: точки подключения не требуются, «Требуемые подключения» — задание, куда вывести сети
-const netsDesign=s=>!!(s&&s.utilities==='design');
+const NET_KEYS=['water','sewer','vent','el','gas'];
+const netState=(s,k)=>s&&s.nets&&['have','none','unk'].includes(s.nets[k])?s.nets[k]:normNets(s||{})[k];
+const netsOpen=s=>NET_KEYS.slice(0,4).some(k=>netState(s,k)!=='have');
+const netsAllNone=s=>NET_KEYS.slice(0,4).every(k=>netState(s,k)==='none');
+const netsDesign=s=>netsAllNone(s);
 const NETS_INFO='Сети проектируются — места подключений смотрите в «Требуемых подключениях» (план и PDF).';
 const KC = [[1,1],[2,0.95],[3,0.9],[5,0.85],[8,0.75],[10,0.7],[15,0.65],[20,0.6],[30,0.55],[50,0.5]];
 function kc(n){ let k=1; for(const [t,v] of KC) if(n>=t) k=v; return k; }
@@ -967,7 +971,7 @@ function buildBuy(s, k, have){
   need('handsink', hs, hs===kitchens&&kitchens>1?`по раковине в каждом помещении, где готовят (${kitchens})`:N>100?'2 раковины — больше 100 человек':'1 раковина — до 100 человек');
   const sh=1+Math.floor(N/60); need('shelf', sh, `1 + по стеллажу на каждые 60 человек → ${sh}`);
   need('serveTable', 1+(N>80?1:0), N>80?'2 раздаточных стола — больше 80 человек':'1 раздаточный стол — до 80 человек');
-  if(k.heater) need('heater', k.heater, netsDesign(s)?`Сети проектируются: если будет централизованная горячая вода — уберите водонагреватель${k.heater!==k0.heater?'; упрощено, чтобы уложиться в мощность':''}`:`водонагреватель: на плане нет горячей воды; до 60 человек — 80 л, больше — 150 л${k.heater!==k0.heater?'; упрощено, чтобы уложиться в мощность':''}`, 'л');
+  if(k.heater) need('heater', k.heater, netState(s,'water')!=='have'?`Сети проектируются: если будет централизованная горячая вода — уберите водонагреватель${k.heater!==k0.heater?'; упрощено, чтобы уложиться в мощность':''}`:`водонагреватель: на плане нет горячей воды; до 60 человек — 80 л, больше — 150 л${k.heater!==k0.heater?'; упрощено, чтобы уложиться в мощность':''}`, 'л');
   need('grease', 1, 'жироуловитель под мойки');
   if(N>40) need('veg',1,'овощерезка — больше 40 человек');
   if(s.feats.meat) need('grinder',1,'отмечено «много мяса и птицы»');
@@ -1041,14 +1045,14 @@ function computeProject(s){
   const ed=applyEdits(r.buy, s);
   for(const id of ed.dropped){ delete E.off[id]; notes.push({t:'info', m:`Правка «убрано вами» для «${shortName(CATI[id]||{n:id})}» снята сама: по расчёту позиция больше не нужна.`}); }
   const buy=ed.buy;
-  if(netsDesign(s)) notes.push({t:'info', m:NETS_INFO});
-  if(!netsDesign(s) && !hasPt(s,'cw')) notes.push({t:'warn', step:2, m:'На плане помещения не отмечен ввод холодной воды. Пищеблоку он обязателен — отметьте существующий на шаге «Подключения».'});
-  if(!netsDesign(s) && !hasPt(s,'sewer')) notes.push({t:'warn', step:2, m:'На плане не отмечен выпуск в канализацию. Сливы от ванн, раковин и пароконвектомата нужно куда-то отводить.'});
-  if(!netsDesign(s) && !hasPt(s,'vent') && !hasPt(s,'hood')) notes.push({t:'info', step:2, m:'Не отмечены вентканал или существующий зонт — место выброса вытяжки определит проектировщик.'});
-  if(!netsDesign(s) && !hasPt(s,'hw')) notes.push({t:'info', step:2, m:'Горячей воды на плане нет — в подборе учтён накопительный водонагреватель.'});
+  if(netsAllNone(s)) notes.push({t:'info', m:NETS_INFO});
+  if(netState(s,'water')==='have' && !hasPt(s,'cw')) notes.push({t:'warn', step:2, m:'На плане помещения не отмечен ввод холодной воды. Пищеблоку он обязателен — отметьте существующий на шаге «Подключения».'});
+  if(netState(s,'sewer')==='have' && !hasPt(s,'sewer')) notes.push({t:'warn', step:2, m:'На плане не отмечен выпуск в канализацию. Сливы от ванн, раковин и пароконвектомата нужно куда-то отводить.'});
+  if(netState(s,'vent')==='have' && !hasPt(s,'vent') && !hasPt(s,'hood')) notes.push({t:'info', step:2, m:'Не отмечены вентканал или существующий зонт — место выброса вытяжки определит проектировщик.'});
+  if(netState(s,'water')==='have' && !hasPt(s,'hw')) notes.push({t:'info', step:2, m:'Горячей воды на плане нет — в подборе учтён накопительный водонагреватель.'});
   const items=[...have.map(h=>({...h, src:'have'})), ...buy.map(b=>({...b, src:'buy'}))];
   if(!items.some(i=>i.c.role==='combi'||i.c.role==='burners')) notes.unshift({t:'bad', step:0, m:'На кухне нет основного теплового оборудования. Приготовление пищи первично: нужен пароконвектомат или плита — индукционная или газовая. Выберите на шаге «Исходные».'});
-  if(!netsDesign(s) && items.some(i=>i.c.gas) && !hasPt(s,'gas')) notes.push({t:'warn', step:2, m:'В проекте есть газовое оборудование, а точка подключения газа на плане не отмечена. Отметьте её на шаге «Подключения» — к ней расстановка подтянет газовые аппараты.', go:2});
+  if(netState(s,'gas')==='have' && items.some(i=>i.c.gas) && !hasPt(s,'gas')) notes.push({t:'warn', step:2, m:'В проекте есть газовое оборудование, а точка подключения газа на плане не отмечена. Отметьте её на шаге «Подключения» — к ней расстановка подтянет газовые аппараты.', go:2});
   const power=powerCalc(items, s);
   power.need3 = items.some(i=>(i.c.kw||0)>0&&i.c.ph===3) || power.demand>15;
   power.verdict = powerVerdict(power, s);
@@ -2377,7 +2381,7 @@ function checkUnit(s, units, L, key){
   // слив до выпуска канализации: вдоль стен, двери не пересекаются; выпуск в полу — по прямой
   { const dl=pl.filter(x=>hasDrain(x.u.c)&&me(x));
     if(dl.length){ const outs=s.points.filter(p=>p.type==='sewer'), mx=swMax(s);
-      if(!outs.length){ if(!one && typeof S!=='undefined' && S && S.rooms && !netsDesign(S) && hasPt(S,'sewer')) iss.push({t:'warn', sw:true, m:`В «${roomName(S,s.id)}» нет выпуска канализации — отметьте его на шаге «Подключения».`}); }
+      if(!outs.length){ if(!one && typeof S!=='undefined' && S && S.rooms && netState(S,'sewer')==='have' && hasPt(S,'sewer')) iss.push({t:'warn', sw:true, m:`В «${roomName(S,s.id)}» нет выпуска канализации — отметьте его на шаге «Подключения».`}); }
       else for(const x of dl){ const r=sewerRoute(s,x.u,L); if(!r) continue; const nmS=swName(x.u.c);
         if(r.blocked) iss.push({t:'bad', key:x.u.key, sw:true, lbl:'Слив не провести', m:`${nmS}: до выпуска канализации не провести слив — путь вдоль стен перекрывают двери.`});
         else if(r.len>mx+1e-6) iss.push({t:'warn', key:x.u.key, sw:true, lbl:`Слив ${fmt1(r.len)} м`, m:`${nmS}: слив до канализации ${fmt1(r.len)} м ${r.via==='floor'?'по полу':'по стенам'} — больше ${fmtM(mx)}; придвиньте ${swWash(x.u.c)?'мойку':'аппарат'} к выпуску или добавьте выпуск.`}); } } }
@@ -2433,7 +2437,7 @@ function sanitary(s, items){
   const list=[
     {ok:r('handsink')>=1, m:'Раковина для мытья рук у входа на кухню'},
     {ok:r('bathRaw')>=1, m:'Отдельная мойка для овощей и сырых продуктов — не там, где моют посуду'},
-    {ok:hasPt(s,'vent')||hasPt(s,'hood')||r('combi')+r('burners')+r('kettle')===0 ? true : netsDesign(s) ? null : false, m:'Вытяжка над тепловым оборудованием'},
+    {ok:hasPt(s,'vent')||hasPt(s,'hood')||r('combi')+r('burners')+r('kettle')===0 ? true : netState(s,'vent')!=='have' ? null : false, m:'Вытяжка над тепловым оборудованием'},
     {ok:(r('dish')+r('bathTable')+r('bathKitchen'))>=1, m:'Место для мытья посуды'}];
   if(s.feats.fish) list.push({ok:r('tableFish')>=1 && r('bathFish')>=1, m:'Отдельные стол и мойка для рыбы, чтобы запах не переходил на остальное'});
   if(s.feats.meat) list.push({ok:r('tableMeat')>=1 && r('bathMeat')>=1, m:'Отдельные стол и мойка для мяса и птицы'});
@@ -2532,17 +2536,22 @@ function normReport(r){ r=r||{}; const m=r.meta||{}, PR=['full','electric','plum
   return {meta:{parish:m.parish||'', address:m.address||'', author:m.author||'', contact:m.contact||'', note:m.note||''},
     preset:PR.includes(r.preset)?r.preset:'full', sections:Object.assign({}, r.sections||{}), mono:!!r.mono}; }
 function normGas(g){ g=g||{}; return {on:!!g.on, src:g.src==='bottle'?'bottle':'main'}; }
+function normNets(o){
+  const design=o.utilities==='design', E=o.edits||{}, rooms=Array.isArray(o.rooms)?o.rooms:[], pts=rooms.flatMap(r=>r&&Array.isArray(r.points)?r.points:[]).concat(Array.isArray(o.points)?o.points:[]);
+  const gas=!design&&(!!(o.gas&&o.gas.on)||pts.some(p=>p&&p.type==='gas')||(Array.isArray(o.existing)?o.existing:[]).some(e=>e&&((CATI[e.cat]&&CATI[e.cat].gas)||itemOf(e).gas))||Object.keys(E.delta||{}).some(id=>CATI[id]&&CATI[id].gas)||Object.values(E.pref||{}).some(id=>CATI[id]&&CATI[id].gas)||(Array.isArray(o.manual)?o.manual:[]).some(e=>e&&CATI[e.cat]&&CATI[e.cat].gas));
+  return Object.fromEntries(NET_KEYS.map(k=>[k,o.nets&&['have','none','unk'].includes(o.nets[k])?o.nets[k]:design?'none':k==='gas'?(gas?'have':'none'):'have']));
+}
 function normHeat(n){ for(const k in (n.heat||{})){ const st=n.heat[k]; if(st&&typeof st==='object'&&st.fuel!=='gas') st.fuel='el'; } }
 function normRes(r){ r=r||{}; const pos=v=>(typeof v==='number'&&isFinite(v)&&v>0)?v:null;
   return {kw:pos(r.kw), ph:r.ph===1?1:3, max:pos(r.max), phMax:r.phMax===1?1:3, fit:!!r.fit}; }
 function migrate(o){
-  if(o.v===2){ const n=Object.assign(exampleData(), o, {norms:Object.assign(exampleData().norms, o.norms||{}), res:normRes(o.res), gas:normGas(o.gas), report:normReport(o.report), edits:normEdits(o.edits), planDims:['all','sel','off'].includes(o.planDims)?o.planDims:'all'}); n.existing=(Array.isArray(o.existing)?o.existing:[]).map(normExisting); normHeat(n); n.pid=o.pid||''; n.createdAt=o.createdAt||''; n.updatedAt=o.updatedAt||''; n.variantOf=o.variantOf||null; if(!o.rooms) n.rooms=null; prepare(n); clampAll(n); return n; }
+  if(o.v===2){ const n=Object.assign(exampleData(), o, {norms:Object.assign(exampleData().norms, o.norms||{}), res:normRes(o.res), gas:normGas(o.gas), nets:normNets(o), report:normReport(o.report), edits:normEdits(o.edits), planDims:['all','sel','off'].includes(o.planDims)?o.planDims:'all'}); n.utilities=netsAllNone(n)?'design':'existing'; n.existing=(Array.isArray(o.existing)?o.existing:[]).map(normExisting); normHeat(n); n.pid=o.pid||''; n.createdAt=o.createdAt||''; n.updatedAt=o.updatedAt||''; n.variantOf=o.variantOf||null; if(!o.rooms) n.rooms=null; prepare(n); clampAll(n); return n; }
   if(o.v===1){ const n=exampleState(); n.example=false; n.name=o.name||n.name; n.people=o.people||n.people; n.meals=o.meals||n.meals;
     if(o.room){ n.room={w:o.room.w, d:o.room.d}; n.openings=[{id:'o1', type:'door', side:'b', off:o.room.doorX||0.6, w:o.room.doorW||0.9, swing:'in', hinge:'l', to:'hall'}]; n.points=[]; }
     if(o.res){ n.res=normRes(o.res); }
     n.existing=(o.existing||[]).map(e=>{ if(e.cat&&CATI[e.cat]){ const c=CATI[e.cat], ri=ROLE_INFO[c.role]; return normExisting({uid:e.uid, qty:e.qty, n:c.n, model:'', w:c.w*1000, d:c.d*1000, h:c.h*1000, kw:c.kw, ph:c.kw?c.ph:0, z:c.z, mount:c.mount, hot:!!c.hot, wat:!!c.dr, gas:!!c.gas, gkw:c.gkw||null, role:ri?c.role:null, cap:ri&&ri.cap?c.cap:null, plate:c.role==='burners'?(c.id.startsWith('ind')?'ind':c.gas?'gas':'ten'):null, cat:c.id}); }
       const c=e.custom||{}; return normExisting({uid:e.uid, qty:e.qty, n:c.n||'Оборудование', model:'', w:c.w||600, d:c.d||600, h:850, kw:c.kw||0, ph:c.kw?(c.ph||1):0, z:c.z||'store', mount:c.noPlan?'table':'floor', hot:!!c.hot, wat:!!c.wat, gas:false}); });
-    clampAll(n); return n; }
+    n.nets=normNets({...o, existing:n.existing}); n.utilities=netsAllNone(n)?'design':'existing'; clampAll(n); return n; }
   return null;
 }
 let saveInfo={ok:true, at:null, err:null};
@@ -3495,9 +3504,9 @@ function resChips(){
 }
 function stepPoints(){
   return `${stepHead('Точки подключения', `Отметьте, что уже есть: вода, канализация, газ, вентиляция, электрощит. Точки привязываются размерами от углов.`)}${exampleBar()}
-  <section class="panel nets-panel" aria-label="Инженерные сети">${seg('utilities',S.utilities==='design'?'design':'existing',[['existing','Сети уже есть — отмечу их на плане'],['design','Сетей пока нет — проектируем']])}
-    <p class="hint" style="margin-top:8px">${netsDesign(S)?'Приложение расставит оборудование по технологии и покажет, куда вывести воду, канализацию, электрику и вентиляцию. Уже известные точки (например, стояк канализации) можно отметить — они будут учтены.':'Отметьте вводы воды, канализацию, вентиляцию и электрощит — расстановка подстроится под них.'}</p>
-    ${netsDesign(S)?notesHtml([{t:'info', m:NETS_INFO}]):''}</section>
+  <section class="panel nets-panel" aria-label="Инженерные сети">${seg('utilities',netsAllNone(S)?'design':'existing',[['existing','Сети уже есть — отмечу их на плане'],['design','Сетей пока нет — проектируем']])}
+    <p class="hint" style="margin-top:8px">${netsOpen(S)?'Приложение расставит оборудование по технологии и покажет, куда вывести воду, канализацию, электрику и вентиляцию. Уже известные точки (например, стояк канализации) можно отметить — они будут учтены.':'Отметьте вводы воды, канализацию, вентиляцию и электрощит — расстановка подстроится под них.'}</p>
+    ${netsOpen(S)?notesHtml([{t:'info', m:NETS_INFO}]):''}</section>
   <div class="stack"><section>${roomTabs()}${roomEditor()}</section>
   ${elPanels(curGeom()).length?(()=>{ const li=checkLayout(curGeom(),[]).filter(i=>!i.key&&/электрощит/.test(i.m)); return `<section class="panel"><h3>Проверка точек</h3>${li.length?notesHtml(li):`<p class="hint">Краны холодной и горячей воды — не ближе ${fmtM(elN(S).wd)} от электрощита. Выберите щит на плане, чтобы увидеть его зону.</p>`}</section>`; })():''}
   <section class="panel"><h3>Ресурсы по плану</h3>${resChips()}</section></div>${pager()}`;
@@ -3507,7 +3516,7 @@ function isBare(){ return step===1||step===2; }
 function roomEditor(){
   const tools=`<div class="pt-pal" role="group" aria-label="Добавить точку подключения">${PT_PAL.map(([k,nm,sh])=>`<button class="btn pt-pb" type="button" data-add="pt:${k}" aria-pressed="${addMode==='pt:'+k}" title="${nm}" aria-label="Добавить точку: ${nm}"><i class="pt-dot" style="background:var(${PT[k].col})" aria-hidden="true">${PT[k].l}</i><span class="pt-pn" aria-hidden="true">${sh}</span></button>`).join('')}<button class="btn pt-hood" type="button" data-add="pt:hood" aria-pressed="${addMode==='pt:hood'}" title="Существующий вытяжной зонт" aria-label="Добавить существующий вытяжной зонт">+ Зонт</button></div>`;
   const hint = !addMode ? '' : `<div class="example" data-fs="plan" style="margin-bottom:10px">Коснитесь плана у стены, где находится «${PT[addMode.slice(3)].n.toLowerCase()}». Если точка в полу или на потолке — коснитесь внутри помещения. <button class="btn small" type="button" id="add-cancel">Отмена</button></div>`;
-  return `${step===2?`<div class="points-tools"><div class="plan-bar"><div class="nets-inline" title="${netsDesign(S)?'Приложение расставит оборудование по технологии и покажет, куда вывести воду, канализацию, электрику и вентиляцию. Уже известные точки (например, стояк канализации) можно отметить — они будут учтены.':'Отметьте вводы воды, канализацию, вентиляцию и электрощит — расстановка подстроится под них.'}"><span class="lbl">Сети:</span>${seg('utilities',S.utilities==='design'?'design':'existing',[['existing','Уже есть'],['design','Проектируем']])}</div>${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div><div class="pt-pal-row">${tools}</div>${netsDesign(S)?`<div class="nets-inline-info">${notesHtml([{t:'info', m:NETS_INFO}])}</div>`:''}</div>`:`<div class="plan-bar"><div class="plan-bar-actions">${tools}</div>${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div>`}${hint}
+  return `${step===2?`<div class="points-tools"><div class="plan-bar"><div class="nets-inline" title="${netsOpen(S)?'Приложение расставит оборудование по технологии и покажет, куда вывести воду, канализацию, электрику и вентиляцию. Уже известные точки (например, стояк канализации) можно отметить — они будут учтены.':'Отметьте вводы воды, канализацию, вентиляцию и электрощит — расстановка подстроится под них.'}"><span class="lbl">Сети:</span>${seg('utilities',netsAllNone(S)?'design':'existing',[['existing','Уже есть'],['design','Проектируем']])}</div>${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div><div class="pt-pal-row">${tools}</div>${netsOpen(S)?`<div class="nets-inline-info">${notesHtml([{t:'info', m:NETS_INFO}])}</div>`:''}</div>`:`<div class="plan-bar"><div class="plan-bar-actions">${tools}</div>${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div>`}${hint}
     <div class="plan-box ${addMode?'adding':''} ${VZ('plan')>1.001?'zbig':''}" id="pbox" data-fs="plan" style="--pz:${VZ('plan')}">${planSvg('points',[],{bare:isBare()})}</div>
     ${typeof touchHintHtml==='function'?touchHintHtml('points'):''}${roomPanel()}
     <div class="panel" style="margin-top:12px"><h3>Точки и привязки</h3>${S.points.length?pointRows():'<p class="hint">Точек пока нет. Выберите тип в списке, нажмите «+ Точка» и коснитесь плана у нужной стены.</p>'}</div>`;
@@ -3655,7 +3664,7 @@ function nicheOutEdge(room, edge, openings){
 }
 function bindZoom(){}   // кнопки масштаба обрабатывает модуль «Масштаб и план»
 bind[2]=()=>{ bindRoomTabs(); bindRoomEditor();
-  segBind(main,(k,v)=>{ if(k!=='utilities') return; S.utilities=v==='design'?'design':'existing'; touch(); render(); toast(v==='design'?'Сети проектируются — точки не обязательны':'Сети уже есть — отметьте их на плане'); }); };
+  segBind(main,(k,v)=>{ if(k!=='utilities') return; S.utilities=v==='design'?'design':'existing'; S.nets=normNets({...S, nets:null}); touch(); render(); toast(v==='design'?'Сети проектируются — точки не обязательны':'Сети уже есть — отметьте их на плане'); }); };
 
 /* ---------- SVG плана ---------- */
 function svgPt(e){ const svg=document.getElementById('plan'); const m=svg.getScreenCTM().inverse(); const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(m);
@@ -3868,7 +3877,7 @@ function moveToRoom(key,rid){ if(P.roomOf[key]===rid) return false; const u=P.un
 // куда отпустить из резерва: помещение под указателем и координаты в нём
 function dropRoom(ev){ if(!planUnified()) return {room:S.room, p:svgPt(ev), off:{x:0,y:0}}; const g=svgPtG(ev), r=roomAt(g.x,g.y)||S.rooms.find(r=>nicheFit(roomGeom(S,r),{x:g.x-r.x,y:g.y-r.y,w:0,h:0})); return r?{room:r, p:{x:g.x-r.x, y:g.y-r.y}, off:{x:r.x,y:r.y}}:null; }
 // слой «Куда вывести сети»: по умолчанию включён, когда сети проектируются; выбор зрителя хранится в VIEW.layers.need
-function needOn(){ const v=VIEW.layers.need; return v==null ? netsDesign(S) : !!v; }
+function needOn(){ const v=VIEW.layers.need; return v==null ? netsOpen(S) : !!v; }
 function needLayerSvg(k){ if(typeof needMarks!=='function') return ''; k=k||1; const q=v=>+v.toFixed(2), mh=15/k, fs=9.5/k, gp=2/k; let out='';
   for(const u of curUnits()){ const p=S.layout[u.key]; if(!p) continue; const ms=needMarks(u.c); if(!ms.length) continue;
     const skew=posAng(p), b=skew?baseSize(u.c,p):bbox(u.c,p), X=skew?0:b.x*100, Y=skew?0:b.y*100, w=b.w*100, h=b.h*100, vert=p.rot===90||p.rot===270, sz=ms.map(m=>(m[0].length*5.6+7)/k);
@@ -5164,13 +5173,13 @@ function allIssues(){
 }
 function openQuestions(){
   const q=[];
-  const nd=netsDesign(S);   // сети проектируются — неотмеченные точки не вопрос
-  if(!nd && !hasPt(S,'cw')) q.push('Не отмечен ввод холодной воды — где он и какого диаметра.');
-  if(!nd && !hasPt(S,'sewer')) q.push('Не отмечен выпуск в канализацию.');
-  if(!nd && !hasPt(S,'vent')&&!hasPt(S,'hood')) q.push('Не отмечены вентканал или выход вытяжки.');
-  if(!nd && !hasPt(S,'el')) q.push('Не отмечен электрощит — откуда питать кухню.');
+  // сети проектируются — неотмеченные точки не вопрос
+  if(netState(S,'water')==='have' && !hasPt(S,'cw')) q.push('Не отмечен ввод холодной воды — где он и какого диаметра.');
+  if(netState(S,'sewer')==='have' && !hasPt(S,'sewer')) q.push('Не отмечен выпуск в канализацию.');
+  if(netState(S,'vent')==='have' && !hasPt(S,'vent')&&!hasPt(S,'hood')) q.push('Не отмечены вентканал или выход вытяжки.');
+  if(netState(S,'el')==='have' && !hasPt(S,'el')) q.push('Не отмечен электрощит — откуда питать кухню.');
   if(resEff(S).A==null) q.push('Не указана выделенная мощность — сравнить требуемую нагрузку не с чем.');
-  if(!nd && P.items.some(i=>i.c.gas) && !hasPt(S,'gas')) q.push('Есть газовое оборудование, но не отмечена точка газа.');
+  if(netState(S,'gas')==='have' && P.items.some(i=>i.c.gas) && !hasPt(S,'gas')) q.push('Есть газовое оборудование, но не отмечена точка газа.');
   const un=P.units.filter(u=>!S.layout[u.key]).length; if(un) q.push(`${un} ${plural(un,'единица','единицы','единиц')} оборудования не расставлены на плане.`);
   const m=reportState().meta; if(!m.parish) q.push('Не указаны приход или монастырь на титульном листе.');
   return q;
@@ -5201,7 +5210,7 @@ function planBlockFor(room, layer, pos, mono){
     .forEach(([t,col,n])=>legend.push({swatch:swatchSvg({kind:'mark',text:t,col,mono}), text:n}));
   if(layer==='points'||layer==='need'){ const ts=[...new Set(room.points.map(p=>p.type))].filter(t=>t!=='hood');
     ts.forEach(t=>legend.push({swatch:swatchSvg({kind:'pt', text:PT[t].l, col:PT[t].col, mono}), text:(layer==='need'?'есть: ':'')+PT[t].n.toLowerCase()})); }
-  let caption=`«${room.name}» — ${layer==='need'&&netsDesign(S)?'куда вывести сети':LAYER_CAPTION[layer].toLowerCase()}`;
+  let caption=`«${room.name}» — ${layer==='need'&&netsOpen(S)?'куда вывести сети':LAYER_CAPTION[layer].toLowerCase()}`;
   if(layer==='need') caption+='. Места подключений ориентировочные — у стены за аппаратом. Отсчёт «от угла» — от угла, отмеченного «0»';
   if(layer==='equip') caption+='. Отсчёт «от угла» — от угла, отмеченного «0»';
   return {t:'plan', svg, wMm:ex.w*10/k, hMm:ex.h*10/k, scale:'1:'+k, caption, legend, orient:'landscape'};
@@ -5264,7 +5273,7 @@ REPORT.register({ id:'input', title:'Исходные данные', group:'Об
     return [{t:'h1', text:'Исходные данные'},
       {t:'kv', cols:2, rows:[['Человек за одной трапезой', fmt0(S.people)],['Трапез в день', String(S.meals)],['Тарелок и чашек на человека', String(S.dishware||3)],
         ['Холодильное оборудование', S.coldOn!==false?'подбирать':'не подбирать'],['Много рыбы', S.feats.fish?'да, отдельные стол и ванна':'нет'],['Много мяса и птицы', S.feats.meat?'да, отдельные стол и ванна':'нет'],
-        ['Режим правил', S.norms.strict?'строгий: требования общепита':'здравый смысл'], ...(netsDesign(S)?[['Инженерные сети','проектируются']]:[])]},
+        ['Режим правил', S.norms.strict?'строгий: требования общепита':'здравый смысл'], ...(netsOpen(S)?[['Инженерные сети','проектируются']]:[])]},
       {t:'h3', text:'Тепловое оборудование — выбрано вручную'},
       {t:'table', cols:[{title:'Аппарат',w:3},{title:'Исполнение',w:2},{title:'Шт',w:.6,align:'r'},{title:'Топливо',w:1},{title:'кВт эл.',w:1,align:'r'},{title:'Газ, кВт тепл.',w:1.2,align:'r'}], rows:heat},
       {t:'h3', text:'Энергоснабжение и газ'},
@@ -5302,7 +5311,7 @@ REPORT.register({ id:'room-walls', title:'Стены и проёмы', group:'П
 function doorLabelIn(r,o){ if(o.to&&o.to.startsWith('room:')) return 'ведёт в «'+roomName(S,o.to.slice(5))+'»'; return 'ведёт '+(DOOR_TO[o.to]||'—'); }
 
 REPORT.register({ id:'room-points', title:'Существующие подключения', group:'Помещения', order:600, audience:['full','plumbing','gas'], perRoom:true,
-  available: ()=>!netsDesign(S),   // сети проектируются — раздела нет, в «Исходных данных» строка «Инженерные сети: проектируются»
+  available: ()=>!netsAllNone(S),   // сети проектируются — раздела нет, в «Исходных данных» строка «Инженерные сети: проектируются»
   build(ctx){ const r=ctx.room;
     const rows=r.points.slice().sort((a,b)=>Object.keys(PT).indexOf(a.type)-Object.keys(PT).indexOf(b.type)).map(p=>{
       const where = p.side==='floor'||!p.side ? 'пол' : wallTitle(r,p.side);
@@ -5346,7 +5355,7 @@ REPORT.register({ id:'room-need', title:'Требуемые подключени
       const drv=hasDrain(c)?drainVals(us.filter(u=>pos.unit(u)===x.p)).map(v=>v.t).join('; '):'';
       return [String(x.p.no), shortName(c)+(x.n>1?` × ${x.n}`:''), (c.kw||0)>0?fmt1(c.kw*x.n):'—', volts(c), yes(c.cw), yes(c.hw), yes(c.dr), drv, c.gas?(c.gkw?fmt1(c.gkw*x.n):'✓'):'', x.hood?'да':'', walls.join(', ')||'на столе', an.map(a=>a.along).join('; ')||'—', an.length?'по паспорту аппарата':'—']; });
     // сети проектируются: раздел — задание, куда вывести сети; перед таблицей — итог по помещению
-    const nd=netsDesign(S), xs=[...m.values()], cnt=f=>xs.reduce((a,x)=>a+(f(x.p.c)?x.n:0),0), el=xs.filter(x=>(x.p.c.kw||0)>0);
+    const nd=netsOpen(S), xs=[...m.values()], cnt=f=>xs.reduce((a,x)=>a+(f(x.p.c)?x.n:0),0), el=xs.filter(x=>(x.p.c.kw||0)>0);
     const sumLine=`Холодная вода — ${cnt(c=>c.cw)} ${plural(cnt(c=>c.cw),'вывод','вывода','выводов')}, горячая — ${cnt(c=>c.hw)}, канализация — ${cnt(c=>c.dr)} ${plural(cnt(c=>c.dr),'выпуск','выпуска','выпусков')}, электрика: 220 В — ${el.filter(x=>x.p.c.ph!==3).reduce((a,x)=>a+x.n,0)}, 380 В — ${el.filter(x=>x.p.c.ph===3).reduce((a,x)=>a+x.n,0)}, суммарно ${fmt1(el.reduce((a,x)=>a+x.p.c.kw*x.n,0))} кВт; газ — ${cnt(c=>c.gas)}; вытяжка — ${fmt0(H.exhaust)} м³/ч.`;
     return [{t:'h2', text:`«${r.name}»: ${nd?'задание: куда вывести сети':'требуемые подключения'}`},
       nd&&rows.length?{t:'p', text:sumLine}:null,
@@ -5354,7 +5363,7 @@ REPORT.register({ id:'room-need', title:'Требуемые подключени
         note:`Места подключений на плане ориентировочные — у стены за аппаратом. «От угла» — до центра метки подключения вдоль стены, от угла, отмеченного «0» на плане. Высота выводов — по паспорту выбранной модели. Слив до выпуска — вдоль стен до ближайшего выпуска этого помещения (на плане — пунктиром), через дверной проём не проходит; до трапа в полу — по прямой; предел ${fmtM(swMax(S))}.`}:{t:'p', text:'Подключения не требуются.', muted:true},
       rows.length?ctx.plan.room(r,'need'):null].filter(Boolean); } });
 // в режиме «сети проектируются» раздел называется «Задание: куда вывести сети» — в окне выгрузки, оглавлении и колонтитулах
-Object.defineProperty(REPORT.get('room-need'),'title',{get(){ return netsDesign(S)?'Задание: куда вывести сети':'Требуемые подключения'; }, configurable:true});
+Object.defineProperty(REPORT.get('room-need'),'title',{get(){ return netsOpen(S)?'Задание: куда вывести сети':'Требуемые подключения'; }, configurable:true});
 
 REPORT.register({ id:'spec', title:'Спецификация оборудования', group:'Оборудование', order:900, audience:['full','electric','cost'],
   available: ()=>P.items.length>0,
@@ -5932,7 +5941,7 @@ function blankProject(name, people){
     heat:heatRecommend(Math.max(1,Math.round(people||40))), rooms:[{id:'r1', name:'Кухня', x:0, y:0, w:6, d:4, roles:ROLES.map(r=>r[0]), openings:[], points:[]}],
     cur:'r1', unitRoom:{}, links:[], res:{kw:null, ph:3, max:null, phMax:3, fit:false}, gas:{on:false, src:'main'},
     report:{meta:{parish:'', address:'', author:'', contact:'', note:''}, preset:'full', sections:{}, mono:false},
-    existing:[], manual:null, prices:{}, layout:{}, inserts:[], layoutManual:false, layoutSig:'', utilities:'design'});   // новый чистый проект: сетей пока нет — проектируем
+    existing:[], manual:null, prices:{}, layout:{}, inserts:[], layoutManual:false, layoutSig:'', utilities:'design', nets:{water:'none', sewer:'none', vent:'none', el:'none', gas:'none'}});   // новый чистый проект: сетей пока нет — проектируем
   return o; }
 function createProject(data, msg){ if(S.pid) save(); data.pid=newPid(); data.createdAt=new Date().toISOString(); data.variantOf=data.variantOf||null;
   openProjectData(data,{persist:true, msg}); }
@@ -6010,6 +6019,9 @@ function sanitizeProject(d){
   for(const k of ['heat','norms','feats','res','gas','report','edits','prices']) if(!obj(d[k])){ d[k]=defaults[k]; messages.push('Восстановлены настройки: '+k); }
   for(const k of Object.keys(defaults.heat)) if(!obj(d.heat[k])){ d.heat[k]=defaults.heat[k]; messages.push('Восстановлены настройки теплового оборудования: '+k); }
   if(!Array.isArray(d.existing)){ d.existing=[]; messages.push('Сброшен список имеющегося оборудования'); }
+  if(own(d,'nets')&&!obj(d.nets)) drop(d,'nets','Восстановлены настройки инженерных сетей');
+  if(obj(d.nets)&&NET_KEYS.some(k=>own(d.nets,k)&&!['have','none','unk'].includes(d.nets[k]))) messages.push('Восстановлены настройки инженерных сетей');
+  d.nets=normNets(d); d.utilities=netsAllNone(d)?'design':'existing';
   if(own(d,'extras')){
     if(!Array.isArray(d.extras)) drop(d,'extras','Удалён повреждённый список своих строк сметы');
     else { const rows=extraRows(d), filtered=rows.filter(r=>obj(r)&&num(r.qty)&&r.qty>=0&&num(r.price)&&r.price>=0);
@@ -6038,6 +6050,7 @@ function parseProjectText(text){
     // Проверяем исходные значения до ограничения размеров при миграции.
     if(raw.v===2&&Array.isArray(raw.rooms)) m.rooms=JSON.parse(JSON.stringify(raw.rooms));
     for(const k of ['heat','norms','feats','res','gas','report','edits','prices','existing']) if(Object.prototype.hasOwnProperty.call(raw,k)&&(k==='existing'?!Array.isArray(raw[k]):!raw[k]||typeof raw[k]!=='object'||Array.isArray(raw[k]))) m[k]=raw[k];
+    if(Object.prototype.hasOwnProperty.call(raw,'nets')){ m.nets=raw.nets; m.utilities=raw.utilities; }
     messages.push(...sanitizeProject(m)); clampAll(m);
   }catch(e){ return {error:'Файл проекта повреждён: '+e.message}; }
   const data=JSON.parse(JSON.stringify(m)), focus=captureFocus();

@@ -1,0 +1,7 @@
+﻿
+warning: in the working copy of 'versions.html', LF will be replaced by CRLF the next time Git touches it
+[main c48f598] Пункт аудита 30.7, шаг 2: шаблоны формы «Срезанный угол» и «Эркер» — срез угла и выступ на стене задаются размерами, рядом расчётная длина косых стен и углы
+ 6 files changed, 6567 insertions(+), 8 deletions(-)
+ create mode 100644 versions/2026-11-05_1037.html
+To https://github.com/pro100po/refectory-app.git
+   34f36a7..c48f598  main -> main

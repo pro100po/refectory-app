@@ -429,6 +429,14 @@ html.set-lock,html.set-lock body{overflow:hidden}
 .nr-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
 .nr-wide{grid-column:1/-1}
 .nr-dlg .dish,.nr-dlg .btn,.nr-dlg select,.nr-dlg input{min-height:44px}
+.measure-dlg{max-width:600px;min-width:0}
+.measure-dlg svg{display:block;width:100%;height:auto;max-height:280px}
+.measure-dlg h3{margin-bottom:8px}
+.measure-dlg .rmp-note{margin:0 0 10px}
+.measure-dlg details{margin-top:14px}
+.measure-dlg summary{cursor:pointer;margin-bottom:12px}
+.measure-result p{margin:0 0 8px}
+@media (max-width:640px){ .measure-dlg .nr-fields{grid-template-columns:minmax(0,1fr)} }
 /* палитра точек: кружок с обозначением и название; до 640 px — только кружки в один ряд с прокруткой внутри */
 .pt-pal{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0;max-width:100%}
 .pt-pal .btn{min-height:44px;gap:8px;padding:6px 12px 6px 8px}
@@ -1507,14 +1515,16 @@ function setRoomShape(room,shape,shift){
   clampRoom({room,openings:room.openings,points:room.points});
   return {ok:true,moved}; }
 const MEASURED_STRAIGHT_RUN=0.1, MEASURED_STRAIGHT_ANGLE=5;
+function measuredStraight(dx,dy){ const run=Math.min(Math.abs(dx),Math.abs(dy)), along=Math.max(Math.abs(dx),Math.abs(dy));
+  return run<=MEASURED_STRAIGHT_RUN&&along>run&&Math.atan2(run,along)*180/Math.PI<=MEASURED_STRAIGHT_ANGLE; }
 function rectifyContour(pts){
   if(!Array.isArray(pts)||pts.length<4||pts.some(p=>!p||!Number.isFinite(p.x)||!Number.isFinite(p.y))) return null;
   const n=pts.length, lines=[];
   for(let i=0;i<n;i++){ const a=pts[i], b=pts[(i+1)%n], dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
     if(len<=1e-9) return null;
-    if(Math.abs(dy)<=MEASURED_STRAIGHT_RUN&&Math.abs(dx)>Math.abs(dy)&&Math.atan2(Math.abs(dy),Math.abs(dx))*180/Math.PI<=MEASURED_STRAIGHT_ANGLE)
+    if(Math.abs(dx)>Math.abs(dy)&&measuredStraight(dx,dy))
       lines.push({x:a.x,y:dx>0?Math.max(a.y,b.y):Math.min(a.y,b.y),ux:Math.sign(dx),uy:0});
-    else if(Math.abs(dx)<=MEASURED_STRAIGHT_RUN&&Math.abs(dy)>Math.abs(dx)&&Math.atan2(Math.abs(dx),Math.abs(dy))*180/Math.PI<=MEASURED_STRAIGHT_ANGLE)
+    else if(Math.abs(dy)>Math.abs(dx)&&measuredStraight(dx,dy))
       lines.push({x:dy<0?Math.max(a.x,b.x):Math.min(a.x,b.x),y:a.y,ux:0,uy:Math.sign(dy)});
     else lines.push({x:a.x,y:a.y,ux:dx/len,uy:dy/len}); }
   const out=[];
@@ -3062,7 +3072,8 @@ function shapeSecHtml(r){
   const tpl=shapeCurrentTpl(r), curRot=r.shape&&r.shape.rot||0, p=shapeCurrentParams(r,tpl), templates=[['rect','Прямо&shy;угольник'],['L','Г'],['U','П'],['T','Т'],['trap','Трапе&shy;ция'],['quad','По заме&shy;рам'],['cut','Срезан&shy;ный угол'],['bay','Эркер']];
   const choices=`<div class="shp-template-row">${templates.map(([key,label])=>`<button type="button" class="btn tap shp-template" data-shape-tpl="${key}" aria-pressed="${tpl===key}">${shapeSvg(key,0,key==='quad'?{a:3,b:2.1,c:2.4,d:2,e:3.5}:shapeDefaults(key,3,2))}<span>${label}</span></button>`).join('')}${tpl==='custom'?'<span class="shp-custom-label">Своя форма</span>':''}</div>`;
   const rotation=tpl!=='custom'&&tpl!=='rect'?`<div class="shp-rotation"><span class="lbl">Поворот</span><div class="shp-rot-row">${[0,1,2,3].map(rot=>`<button type="button" class="btn tap shp-rot" data-shape-rot="${rot}" aria-pressed="${Number(curRot)===rot}" aria-label="Поворот ${rot*90} градусов">${shapeSvg(tpl,rot,p)}<span>${rot*90}°</span></button>`).join('')}</div></div>`:'';
-  const walls=tpl==='custom'?`<div class="shp-wall-list">${roomWalls(r).map(w=>`<div class="shp-wall-row"><b>Стена ${w.i+1}</b>${num(`shp-wall-${esc(w.id)}`,'Длина, мм',Math.round(w.len*1000),10,300,30000,'',`data-wall-len="${esc(w.id)}"`)}</div>`).join('')}</div>`:'';
+  const measure=r.measured?`<p class="rmp-note">Уточнено по замерам: диагоналей — ${r.measured.diags.length}</p><div class="rep-btns"><button type="button" class="btn tap shp-action" data-measure-open>Изменить</button><button type="button" class="btn tap shp-action" data-measure-clear>Снять уточнение</button></div>`:'<button type="button" class="btn tap shp-action" data-measure-open>Уточнить по диагоналям</button><p class="rmp-note">Углы на стройке не бывают точно прямыми. Введите замеры стен и диагоналей</p>';
+  const walls=tpl==='custom'&&!r.measured?`<div class="shp-wall-list">${roomWalls(r).map(w=>`<div class="shp-wall-row"><b>Стена ${w.i+1}</b>${num(`shp-wall-${esc(w.id)}`,'Длина, мм',Math.round(w.len*1000),10,300,30000,'',`data-wall-len="${esc(w.id)}"`)}</div>`).join('')}</div>`:'';
   const stepWalls=roomWalls(r), stepWall=stepWalls.find(w=>w.id===stepWallSel)||stepWalls[0];
   const stepBlock=`<div class="shp-step"><h4>Уступ на стене</h4><label class="field"><span>Стена</span><select data-step-wall>${stepWalls.map(w=>{ const title=wallTitle(r,w.id); return `<option value="${esc(w.id)}" ${w.id===stepWall.id?'selected':''}>${esc(title.charAt(0).toUpperCase()+title.slice(1))}</option>`; }).join('')}</select></label>
     <div class="fields shp-fields">${num('step-off','Место уступа, мм — '+wallFrom(r,stepWall.id),Math.round(stepWall.len*50)*10,10,0,stepWall.len*1000,'','data-step-off')}${num('step-depth','Глубина, мм',600,10,300,'','','data-step-depth')}</div>
@@ -3072,7 +3083,7 @@ function shapeSecHtml(r){
     <div class="field"><span class="lbl">Угол вдоль стены</span>${seg('tilt-end',tiltEndSel,[['start',tiltTitle(stepWalls[(tiltIndex+stepWalls.length-1)%stepWalls.length])],['end',tiltTitle(stepWalls[(tiltIndex+1)%stepWalls.length])]])}</div>
     <div class="fields shp-fields">${num('tilt-shift','Сдвиг угла, мм',500,10,10,30000,'','data-tilt-shift')}</div>
     ${seg('tilt-dir',tiltDirSel,[['short','Соседняя стена короче'],['long','Соседняя стена длиннее']])}<button type="button" class="btn tap shp-action" data-tilt-apply>Наклонить стену</button></div>`;
-  return `<div class="shp-controls">${choices}${rotation}${tpl==='custom'?'':shapeFieldHtml(tpl,p,r)}${walls}${stepBlock}${tiltBlock}<div class="shp-error-slot"></div></div>`; }
+  return `<div class="shp-controls">${choices}${rotation}${measure}${tpl==='custom'?'':shapeFieldHtml(tpl,p,r)}${walls}${stepBlock}${tiltBlock}<div class="shp-error-slot"></div></div>`; }
 function shapeShowError(sec,el,msg){ if(el) el.setAttribute('aria-invalid','true'); const slot=sec.querySelector('.shp-error-slot'); if(slot) slot.innerHTML=`<p class="rmp-warn shp-warn" role="alert">${esc(msg)}</p>`; }
 function applyRoomShape(r,shape,sec,el,note){
   const result=setRoomShape(r,shape); if(result.error){ shapeShowError(sec,el,result.error); return false; }
@@ -3080,6 +3091,10 @@ function applyRoomShape(r,shape,sec,el,note){
   lastPush=0; touch(); recompute(); render(); if(message) toast(message); return true; }
 function bindShapeEditor(){
   const sec=document.querySelector('[data-rpsec="shape"]'); if(!sec) return;
+  const measureOpen=sec.querySelector('[data-measure-open]'); measureOpen&&measureOpen.addEventListener('click',openMeasure);
+  const measureClear=sec.querySelector('[data-measure-clear]'); measureClear&&measureClear.addEventListener('click',()=>{
+    const result=clearMeasured(S.room); if(result.error){ shapeShowError(sec,measureClear,result.error); return; }
+    lastPush=0; touch(); recompute(); render(); toast('Уточнение снято'+(result.moved.length?'. '+result.moved.join('. '):'')); });
   const stepWall=sec.querySelector('[data-step-wall]'); stepWall&&stepWall.addEventListener('change',()=>{ stepWallSel=stepWall.value; render(); });
   const tiltWall=sec.querySelector('[data-tilt-wall]'); tiltWall&&tiltWall.addEventListener('change',()=>{ tiltWallSel=tiltWall.value; render(); });
   segBind(sec,(key,value)=>{ if(key==='step-far') stepFarSel=value;
@@ -3273,6 +3288,84 @@ function nrHtml(){ const st=nrSt, owned=st.role!=='other'&&S.rooms.some(q=>q.rol
     <div class="field"><span class="lbl">Связи — откуда можно попасть</span><div class="chips" style="margin-top:6px">${nrLinkTargets().map(([id,n])=>`<button type="button" class="dish tap" data-nrlink="${id}" aria-pressed="${st.links.includes(id)}"><span class="bx">✓</span>${esc(n)}</button>`).join('')}</div>
       <small style="margin-top:4px">Двери к связанным помещениям поставятся сами, где стены соприкасаются.</small></div>
     <div class="rep-btns"><button class="btn primary tap" type="button" id="nr-ok">Создать</button><button class="btn tap" type="button" id="nr-no">Отмена</button></div>`; }
+function openMeasure(){
+  if(document.getElementById('measure-ov')) return;
+  const r=S.room, back=document.activeElement, base=r.measured?r.measured.base:r;
+  const withIds=room=>roomPoly(room).map((p,i)=>({...p,wid:p.wid||(hasPoly(room)?'w'+i:['t','r','b','l'][i])}));
+  const pts=r.measured?r.measured.pts.map((p,i)=>({...p,wid:p.wid||(hasPoly(base)?'w'+i:['t','r','b','l'][i])})):withIds(r), seed=withIds(base);
+  const letters='А Б В Г Д Е Ж И К Л М Н П Р С Т'.split(' '), walls=roomWalls(r), numbers=pts.map((p,i)=>{ const j=walls.findIndex(w=>w.id===p.wid); return j<0?i+1:j+1; });
+  const indices=new Map(pts.map((p,i)=>[p.wid,i])), seedIndices=new Map(seed.map((p,i)=>[p.wid,i])), pair=d=>Math.min(d.a,d.b)+':'+Math.max(d.a,d.b);
+  const saved=new Map((r.measured?r.measured.diags:[]).map(d=>{ const a=indices.get(d.a), b=indices.get(d.b); return [pair({a,b}),{a,b,len:d.len}]; }));
+  const required=triangulationDiagonals(pts), seen=new Set(required.map(pair)), others=[];
+  for(const d of [...visibleDiagonals(pts),...saved.values()]) if(!seen.has(pair(d))){ seen.add(pair(d)); others.push(d); }
+  const diagonals=[...required,...others], mm=v=>fmt0(v*1000), diagonalLabel=d=>letters[d.a]+'–'+letters[d.b];
+  const diagonalFields=list=>list.map(d=>{ const i=diagonals.indexOf(d), value=saved.get(pair(d)), hint=(i<required.length?'нужна для точной формы · ':'')+'по плану '+mm(Math.hypot(pts[d.b].x-pts[d.a].x,pts[d.b].y-pts[d.a].y));
+    return num('measure-diag-'+i,diagonalLabel(d)+', мм',value?value.len*1000:'',10,300,45000,hint,`data-measure-diag="${i}" data-optional`); }).join('');
+  const ov=document.createElement('div'); ov.className='rep-ov'; ov.id='measure-ov';
+  ov.innerHTML=`<div class="rep-dlg nr-dlg measure-dlg" role="dialog" aria-modal="true" aria-labelledby="measure-h">
+    <div class="rep-top"><h2 id="measure-h">Уточнить по диагоналям</h2><button type="button" class="rep-x" data-measure-close aria-label="Закрыть окно без изменений">✕</button></div>
+    <section><h3>Схема</h3><div data-measure-scheme></div></section>
+    <section><h3>Стены</h3><div class="fields nr-fields">${pts.map((p,i)=>num('measure-wall-'+i,`Стена ${numbers[i]} (${letters[i]}–${letters[(i+1)%pts.length]}), мм`,r.measured?r.measured.lens[p.wid]*1000:Math.round(Math.hypot(pts[(i+1)%pts.length].x-p.x,pts[(i+1)%pts.length].y-p.y)*1000),10,300,30000,'',`data-measure-wall="${i}"`)).join('')}</div></section>
+    <section><h3>Диагонали</h3><p class="rmp-note">Рулетка должна пройти по прямой. Можно заполнить только те, что удалось измерить</p>
+      <div class="fields nr-fields">${diagonalFields(required)}${pts.length<=6?diagonalFields(others):''}</div>${pts.length>6&&others.length?`<details><summary>Другие диагонали</summary><div class="fields nr-fields">${diagonalFields(others)}</div></details>`:''}</section>
+    <section><h3>Результат</h3><div class="measure-result" data-measure-result aria-live="polite"></div></section>
+    <div class="rep-btns"><button type="button" class="btn primary tap" data-measure-apply disabled>Применить</button><button type="button" class="btn tap" data-measure-close>Отмена</button></div></div>`;
+  document.body.appendChild(ov); document.documentElement.classList.add('set-lock');
+  const dlg=ov.querySelector('.measure-dlg'), scheme=dlg.querySelector('[data-measure-scheme]'), resultBox=dlg.querySelector('[data-measure-result]'), apply=dlg.querySelector('[data-measure-apply]');
+  const wallInputs=[...dlg.querySelectorAll('[data-measure-wall]')], diagInputs=[...dlg.querySelectorAll('[data-measure-diag]')];
+  let timer=0, contour=pts, focused=-1;
+  const draw=()=>{
+    const minX=Math.min(...contour.map(p=>p.x)), minY=Math.min(...contour.map(p=>p.y)), width=Math.max(...contour.map(p=>p.x))-minX, height=Math.max(...contour.map(p=>p.y))-minY;
+    const scale=Math.min(432/Math.max(width,0.001),192/Math.max(height,0.001)), x=p=>260+(p.x-minX-width/2)*scale, y=p=>140+(p.y-minY-height/2)*scale;
+    const sign=Math.sign(contour.reduce((s,p,i)=>{ const q=contour[(i+1)%contour.length]; return s+p.x*q.y-q.x*p.y; },0));
+    const normal=(a,b)=>{ const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy); return {x:sign*dy/len,y:-sign*dx/len}; };
+    const text=(px,py,label)=>`<text x="${px}" y="${py}" text-anchor="middle" dominant-baseline="central" fill="var(--ink)" stroke="var(--sheet)" stroke-width="4" paint-order="stroke" font-size="14">${label}</text>`;
+    scheme.innerHTML=`<svg viewBox="0 0 520 280" role="img" aria-label="Контур помещения, номера стен и диагонали"><polygon points="${contour.map(p=>x(p)+','+y(p)).join(' ')}" fill="var(--paper)" stroke="var(--steel)" stroke-width="2"/>${diagonals.map((d,i)=>{
+      const input=diagInputs[i]; if(i!==focused&&(!input.value.trim()||!Number.isFinite(Number(input.value.replace(/\s+/g,'').replace(',','.'))))) return '';
+      return `<line x1="${x(contour[d.a])}" y1="${y(contour[d.a])}" x2="${x(contour[d.b])}" y2="${y(contour[d.b])}" stroke="var(${i===focused?'--accent':'--ink-2'})" stroke-width="${i===focused?3:1.5}" stroke-dasharray="7 5"/>`; }).join('')}${contour.map((p,i)=>{
+      const prev=contour[(i+contour.length-1)%contour.length], next=contour[(i+1)%contour.length], a=normal(prev,p), b=normal(p,next), len=Math.hypot(a.x+b.x,a.y+b.y)||1;
+      return text(x(p)+(a.x+b.x)/len*24,y(p)+(a.y+b.y)/len*24,letters[i])+text((x(p)+x(next))/2-b.x*14,(y(p)+y(next))/2-b.y*14,numbers[i]); }).join('')}</svg>`; };
+  const fail=message=>{ resultBox.innerHTML=`<p class="rmp-warn" role="alert">${esc(message)}</p>`; apply.disabled=true; };
+  const read=()=>{
+    const lens={}, diags=[], numeric=el=>Number(el.value.replace(/\s+/g,'').replace(',','.'));
+    for(let i=0;i<wallInputs.length;i++){ const el=wallInputs[i], v=numeric(el); if(!el.value.trim()||!Number.isFinite(v)||v<300||v>30000){ fail(`Стена ${numbers[i]}: введите длину от 300 до 30 000 мм`); return null; } lens[pts[i].wid]=v/1000; }
+    for(let i=0;i<diagInputs.length;i++){ const el=diagInputs[i]; if(!el.value.trim()) continue; const v=numeric(el), d=diagonals[i];
+      if(!Number.isFinite(v)||v<300||v>45000){ fail(`Диагональ ${diagonalLabel(d)}: введите длину от 300 до 45 000 мм`); return null; } diags.push({a:pts[d.a].wid,b:pts[d.b].wid,len:v/1000}); }
+    return {lens,diags}; };
+  const preview=()=>{
+    clearTimeout(timer); const values=read(); if(!values) return null;
+    const result=solveMeasured(seed,seed.map(p=>values.lens[p.wid]),values.diags.map(d=>({a:seedIndices.get(d.a),b:seedIndices.get(d.b),len:d.len})));
+    if(!result.ok){ fail(result.error); return null; }
+    contour=result.pts; draw(); apply.disabled=false;
+    const lines=[`<p>${result.free>0?`Форма определена не полностью: для точной формы нужно ещё размеров — ${result.free}. Остальные углы останутся близкими к текущим`:'Форма определена полностью'}</p>`];
+    if(result.redundant>0) for(const item of result.items) if(item.kind==='diag'&&Math.abs(item.diff)>0.03){
+      const a=indices.get(seed[item.a].wid), b=indices.get(seed[item.b].wid);
+      lines.push(`<p class="rmp-warn" role="alert">Замеры расходятся: ${letters[a]}–${letters[b]} по замеру ${mm(item.target)} мм, по расчёту ${mm(item.actual)} мм. Проверьте размер</p>`); }
+    const sign=Math.sign(contour.reduce((s,p,i)=>{ const q=contour[(i+1)%contour.length]; return s+p.x*q.y-q.x*p.y; },0));
+    lines.push('<p>Углы: '+contour.map((p,i)=>{ const a=contour[(i+contour.length-1)%contour.length], b=contour[(i+1)%contour.length], dx=p.x-a.x, dy=p.y-a.y, ex=b.x-p.x, ey=b.y-p.y;
+      const angle=180-sign*Math.atan2(dx*ey-dy*ex,dx*ex+dy*ey)*180/Math.PI;
+      return letters[i]+' '+angle.toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1})+'°'; }).join(' · ')+'</p>');
+    contour.forEach((p,i)=>{ const q=contour[(i+1)%contour.length], dx=q.x-p.x, dy=q.y-p.y, run=Math.min(Math.abs(dx),Math.abs(dy)); if(run<0.001) return;
+      lines.push(`<p>Стена ${numbers[i]}: ${measuredStraight(dx,dy)?`ход ${mm(run)} мм — для расстановки считается прямой`:'косая'}</p>`); });
+    resultBox.innerHTML=lines.join(''); return values; };
+  // Общий обработчик data-num перехватывает input на document, поэтому слушаем раньше него.
+  const onInput=e=>{ if(!dlg.contains(e.target)||!e.target.matches('input')||e.target.__commit) return; apply.disabled=true; draw(); clearTimeout(timer); timer=setTimeout(preview,200); };
+  window.addEventListener('input',onInput,true);
+  const close=()=>{ clearTimeout(timer); window.removeEventListener('input',onInput,true); ov.remove(); document.documentElement.classList.remove('set-lock');
+    if(back&&document.contains(back)) try{ back.focus({preventScroll:true}); }catch(_){} };
+  ov.addEventListener('click',e=>{
+    if(e.target===ov||e.target.closest('[data-measure-close]')){ close(); return; }
+    if(!e.target.closest('[data-measure-apply]')) return;
+    const values=preview(); if(!values) return; const result=applyMeasured(S.room,values); if(result.error){ fail(result.error); return; }
+    close(); lastPush=0; touch(); recompute(); render(); const button=document.querySelector('[data-measure-open]'); if(button) button.focus({preventScroll:true}); toast('Форма уточнена по замерам'+(result.moved.length?'. '+result.moved.join('. '):'')); });
+  ov.addEventListener('focusin',e=>{ focused=e.target.hasAttribute('data-measure-diag')?Number(e.target.dataset.measureDiag):-1; draw(); });
+  ov.addEventListener('focusout',()=>{ focused=-1; draw(); });
+  ov.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(); return; }
+    if((e.ctrlKey||e.metaKey)&&['z','я','y','н'].includes(e.key.toLowerCase())) e.stopPropagation();
+    if(e.key==='Tab'){ const f=[...dlg.querySelectorAll('button,input,summary')].filter(el=>!el.disabled&&el.getClientRects().length); if(!f.length) return;
+      if(e.shiftKey&&document.activeElement===f[0]){ e.preventDefault(); f[f.length-1].focus(); } else if(!e.shiftKey&&document.activeElement===f[f.length-1]){ e.preventDefault(); f[0].focus(); } } });
+  draw(); preview(); dlg.querySelector('[data-measure-close]').focus(); }
 function openNewRoom(){
   closeNewRoom(); const free=ROOM_CHOICES.find(([k])=>k!=='other'&&!S.rooms.some(r=>r.roles.includes(k))), role=free?free[0]:'other';
   const near=roomParentFor(role==='other'?null:role).id;

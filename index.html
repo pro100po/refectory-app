@@ -1708,6 +1708,8 @@ function ptShift(sides,k){ const T=10, R=k?13/k:12, band=T+2*R+(k?8/k:8), sh=Mat
 /* ---- электрощит (правила заказчика): перед щитом — только столы, нейтральное и холодильный стол не выше elPanelLowH;
    источники воды — не ближе elWaterDist. Щит на стене любого помещения; щит в полу или на потолке — без правил ---- */
 const EL_NEUTRAL=new Set(['tableRaw','tableMeat','tableFish','tableReady','serveTable','shelf','insert']);
+const NEUTRAL_ROLES=new Set([...EL_NEUTRAL,'bathRaw','bathMeat','bathFish','bathKitchen','bathTable','prewash','handsink']);
+function isNeutral(c){ return c.mount==='floor'&&!c.hot&&!c.gas&&(c.kw||0)<=0&&(NEUTRAL_ROLES.has(c.role)||(c.own&&!c.role&&!c.noRole&&!c.what)); }
 const EL_WATER=new Set(['bathRaw','bathMeat','bathFish','bathKitchen','bathTable','prewash','handsink','dish','heater']);
 function elN(g){ const n=(g&&g.norms)||{}; return {d:n.elPanelDepth??0.8, w:n.elPanelWidth??0.6, h:n.elPanelLowH??0.95, wd:n.elWaterDist??1.0}; }
 function elPanels(g){ return ((g&&g.points)||[]).filter(p=>p.type==='el'&&p.side&&p.side!=='floor'); }
@@ -1852,10 +1854,27 @@ function ptLR(s,p){ const sp=ptSpan(p), L=sideLen(s,p.side); let l={pos:0,n:'у�
   return {l,r}; }
 
 /* ---------- план ---------- */
+function floorDepth(mm){ return mm<600?mm:mm>=800?800:mm>=700?700:600; }
+function unitVariant(c,key,edits=S.unitEdits){
+  const e=(edits||{})[key]; if(!e||(e.w==null&&e.d==null)||!isNeutral(c)) return c;
+  const cw=Math.round(c.w*1000), cd=Math.round(c.d*1000), w=e.w??cw, raw=e.d??cd, d=raw===cd?cd:floorDepth(raw);
+  if(w===cw&&d===cd) return c;
+  const size=`${w}×${d}`, re=/\d{3,4}×\d{3,4}/, n=re.test(c.n)?c.n.replace(re,size):`${c.n}, ${size} мм`;
+  return {...c,id:`${c.id}~${w}x${d}`,base:c.id,w:w/1000,d:d/1000,n};
+}
+function splitItems(items,edits){
+  if(!Object.values(edits||{}).some(e=>e&&(e.w!=null||e.d!=null))) return items;
+  const out=[];
+  for(const it of items){ const variants=new Map(); let qty=0;
+    for(let i=0;i<it.qty;i++){ const c=unitVariant(it.c,(it.src==='have'?'h:':'b:')+it.c.id+':'+i,edits);
+      if(c===it.c){ qty++; continue; } const v=variants.get(c.id); if(v) v.qty++; else variants.set(c.id,{...it,c,qty:1}); }
+    if(qty) out.push({...it,qty}); out.push(...variants.values()); }
+  return out;
+}
 function unitsOf(items){
   const u=[];
   for(const it of items){ if(it.c.mount!=='floor' && it.c.mount!=='wall') continue;
-    for(let i=0;i<it.qty;i++) u.push({key:(it.src==='have'?'h:':'b:')+it.c.id+':'+i, c:it.c, src:it.src}); }
+    for(let i=0;i<it.qty;i++){ const key=(it.src==='have'?'h:':'b:')+it.c.id+':'+i; u.push({key, c:unitVariant(it.c,key), src:it.src}); } }
   return u;
 }
 function unitNote(u){
@@ -1865,8 +1884,8 @@ function unitNote(u){
 function setUnitNote(u,text){
   const note=String(text).trim().slice(0,500);
   if(u.c.insert){ const i=(S.inserts||[]).find(i=>i.key===u.key); if(i){ if(note) i.note=note; else delete i.note; } return; }
-  if(note){ if(!S.unitEdits) S.unitEdits={}; S.unitEdits[u.key]={note,nm:shortName(u.c)}; }
-  else if(S.unitEdits){ delete S.unitEdits[u.key]; if(!Object.keys(S.unitEdits).length) delete S.unitEdits; }
+  if(note){ if(!S.unitEdits) S.unitEdits={}; S.unitEdits[u.key]={...S.unitEdits[u.key],note,nm:shortName(u.c)}; }
+  else if(S.unitEdits){ const e=S.unitEdits[u.key]; if(e){ delete e.note; if(e.w==null&&e.d==null) delete S.unitEdits[u.key]; } if(!Object.keys(S.unitEdits).length) delete S.unitEdits; }
 }
 function notesFor(c,src,room){
   const us=P.units.filter(u=>u.c.id===c.id&&u.src===src&&(!room||P.roomOf[u.key]===room)), texts=new Map();
@@ -1878,7 +1897,7 @@ function unitNotes(){
   return P.units.filter(u=>unitNote(u)).map(u=>({key:u.key,no:(pos.unit(u)||{}).no,name:shortName(u.c),room:roomName(S,P.roomOf[u.key]),text:unitNote(u)}));
 }
 function orphanNotesHtml(){
-  const keys=new Set(P.units.map(u=>u.key)), entries=Object.entries(S.unitEdits||{}).filter(([key])=>!keys.has(key));
+  const keys=new Set(P.units.map(u=>u.key)), entries=Object.entries(S.unitEdits||{}).filter(([key,e])=>!keys.has(key)&&e.note);
   if(!entries.length) return '';
   return `<section class="panel" style="margin-top:18px"><h3>Комментарии без элемента</h3><p class="hint">Элемент заменён или убран. Текст сохранён, пока вы его не удалите.</p>${entries.map(([key,e])=>`<div class="unit-orphan"><b>${esc(e.nm||'Оборудование')}</b><p>${esc(e.note)}</p><button class="btn small danger" type="button" data-note-del="${esc(key)}">Удалить</button></div>`).join('')}</section>`;
 }
@@ -2613,6 +2632,7 @@ document.addEventListener('keydown',e=>{ const t=e.target; if(t&&(t.tagName==='I
   else if(((k==='z'||k==='я')&&e.shiftKey)||k==='y'||k==='н'){ e.preventDefault(); doRedo(); } });
 function recompute(){
   P=computeProject(S); const real=unitsOf(P.items);
+  P.specItems=splitItems(P.items,S.unitEdits);
   if(P.manualConverted){ setTimeout(()=>toast('Ручной режим заменён правками — расчёт снова обновляется'),50); save(); }
   P.roomOf=assignRooms(S, real);
   const sig=JSON.stringify([real.map(u=>u.key+u.c.w+u.c.d+u.c.h+u.c.mount+(u.c.roomId||'')), S.rooms, S.unitRoom, S.norms.align, S.norms.work, [S.norms.elPanelDepth,S.norms.elPanelWidth,S.norms.elPanelLowH,S.norms.elWaterDist], S.norms.sewerMax, 'flow3']);
@@ -2632,6 +2652,7 @@ function recompute(){
     if(!room || (b.x<-0.05 || b.y<-0.05 || b.x+b.w>room.w+0.05 || b.y+b.h>room.d+0.05) && (u.parts || posAng(pos) || !nicheFit(roomGeom(S,room),b))){ delete S.layout[u.key]; delete S.layoutRoom[u.key]; continue; }
     S.layoutRoom[u.key]=rid; }
   P.foot+=S.inserts.reduce((a,i)=>a+i.w*i.d,0);
+  if(P.specItems!==P.items) P.foot+=P.specItems.reduce((a,it)=>{ if(!it.c.base||it.c.mount!=='floor') return a; const c=P.items.find(x=>x.c.id===it.c.base&&x.src===it.src).c; return a+(it.c.w*it.c.d-c.w*c.d)*it.qty; },0);
   P.iss=null;   // замечания по шагам пересобираются при следующей отрисовке (stepIss)
   navDirty=true; if(!navRaf) navRaf=requestAnimationFrame(()=>{ navRaf=0; if(navDirty) renderNav(); });   // пересчёт без перерисовки шага — значки обновятся в следующем кадре
 }
@@ -2716,7 +2737,7 @@ function seg(id,val,opts){ return `<div class="seg" role="group" data-seg="${id}
 function num(id,label,val,st,min,max,hint,attr=''){ return `<label class="field"><span>${label}</span><input id="${id}" type="text" inputmode="decimal" data-num autocomplete="off" value="${val}" step="${st}" min="${min}" max="${max}" ${attr}>${hint?`<small>${hint}</small>`:''}</label>`; }
 function chk(id,label,val){ return `<label class="check"><input id="${id}" type="checkbox" ${val?'checked':''}>${label}</label>`; }
 function segBind(root,fn){ root.querySelectorAll('[data-seg]').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); fn(g.dataset.seg,b.dataset.v); })); }
-function priceOf(c){ return S.prices[c.id] ?? c.p; }
+function priceOf(c){ return S.prices[c.id] ?? (c.base!=null?S.prices[c.base]:undefined) ?? c.p; }
 function dot(n){ return String(n).replace(',','.'); }
 
 function powerMeter(){
@@ -2737,7 +2758,7 @@ function bindFit(){ main.querySelectorAll('[data-fit]').forEach(b=>b.addEventLis
   toast(S.res.fit?`Подбор упрощён, чтобы уложиться в ${fmt1(resEff(S).lim)} кВт`:'Подбор снова под технологию, без ограничения по мощности'); })); }
 function meters(){
   const sh=P.foot/P.area, k=S.norms.kArea;
-  const buy=[...P.items,...insertItems()].filter(i=>i.src==='buy').reduce((s,i)=>s+priceOf(i.c)*i.qty,0);
+  const buy=[...P.specItems,...insertItems()].filter(i=>i.src==='buy').reduce((s,i)=>s+priceOf(i.c)*i.qty,0);
   const shc = sh>k+0.1?'bad':sh>k?'warn':'';
   return `<div class="meters">
     ${powerMeter()}
@@ -4335,7 +4356,7 @@ bind[3]=()=>{
     editUid=null; draft=null; formErr=false; touch(); render(); toast('Сохранено'); });
 };
 
-function roomsOfItem(it){ if(!P.roomOf) return ''; const ids=[...new Set(P.units.filter(u=>u.c.id===it.c.id&&u.src===it.src).map(u=>P.roomOf[u.key]))];
+function roomsOfItem(it){ if(!P.roomOf) return ''; const ids=[...new Set(P.units.filter(u=>(u.c.base||u.c.id)===(it.c.base||it.c.id)&&u.src===it.src).map(u=>P.roomOf[u.key]))];
   if(!ids.length) return it.c.mount==='table'?'на стол':''; return ids.map(id=>'в «'+roomName(S,id)+'»').join(', '); }
 /* ---------- 4. Подбор ---------- */
 let confirmEditsReset=false, addQuery='';
@@ -4346,6 +4367,7 @@ function selRow(it){
   const c=it.c, E=S.edits, pale=it.pale, isHave=it.src==='have', h=!isHave&&!pale?heatOf(c):null;
   const why=(it.why||[]).join('; ');
   const tags=[];
+  if(!pale){ const n=P.units.filter(u=>(u.c.base||u.c.id)===c.id&&u.src===it.src&&(S.unitEdits||{})[u.key]&&((S.unitEdits[u.key].w!=null)||(S.unitEdits[u.key].d!=null))).length; if(n) tags.push(`свой размер: ${n} шт.`); }
   if(it.edit){ tags.push(it.edit.added?'добавлено вами':`изменено вами: ${it.edit.d>0?'+':''}${it.edit.d}`); }
   if(!isHave && !pale && E.pref[c.role]===c.id) tags.push(`исполнение выбрано вами: ${CAP_ROLES.includes(c.role)?fmt0(c.cap)+' л':variantLabel(c).split(' · ')[0]}`);
   if(pale==='off') tags.push('убрано вами'); if(pale==='skip') tags.push('не используется');
@@ -4555,7 +4577,7 @@ bind[5]=()=>{
   main.querySelectorAll('[data-put]').forEach(b=>{ b.addEventListener('click',e=>{ if(b.__dragged){ b.__dragged=false; e.preventDefault(); return; } const u=P.units.find(x=>x.key===b.dataset.put); if(P.roomOf[u.key]&&S.rooms.some(r=>r.id===P.roomOf[u.key])) S.cur=P.roomOf[u.key]; placeFromReserve(u,{x:Math.max(0,+(S.room.w/2-u.c.w/2).toFixed(2)), y:Math.max(0,+(S.room.d/2-u.c.d/2).toFixed(2)), rot:0}); });
     b.addEventListener('pointerdown',e=>startChipDrag(e,b)); });
   main.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>planAct(b.dataset.act)));
-  main.querySelectorAll('[data-note-del]').forEach(b=>b.addEventListener('click',()=>{ delete S.unitEdits[b.dataset.noteDel]; if(!Object.keys(S.unitEdits).length) delete S.unitEdits; touch(); render(); }));
+  main.querySelectorAll('[data-note-del]').forEach(b=>b.addEventListener('click',()=>{ setUnitNote({key:b.dataset.noteDel,c:{}},''); touch(); render(); }));
   main.querySelectorAll('.notes li[data-key]').forEach(li=>li.addEventListener('click',()=>focusNote(li.dataset.key)));
   main.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.goto)));
   bindPlanPointer();
@@ -4660,9 +4682,9 @@ function deleteUnit(u){
   if(S.unitEdits){ delete S.unitEdits[u.key]; if(last!==u.key){ if(S.unitEdits[last]) S.unitEdits[u.key]=S.unitEdits[last]; delete S.unitEdits[last]; } if(!Object.keys(S.unitEdits).length) delete S.unitEdits; }
   if(last!==u.key){ if(S.layout[last]){ S.layout[u.key]=S.layout[last]; S.layoutRoom[u.key]=S.layoutRoom[last]; } else delete S.layout[u.key]; delete S.layout[last]; delete S.layoutRoom[last];
     if(S.unitRoom&&S.unitRoom[last]){ S.unitRoom[u.key]=S.unitRoom[last]; delete S.unitRoom[last]; } }
-  if(u.src==='have'){ const uidE=u.c.id.slice(2), e=S.existing.find(x=>x.uid===uidE); if(e){ if(e.qty>1) e.qty--; else S.existing=S.existing.filter(x=>x!==e); }
+  if(u.src==='have'){ const uidE=(u.c.base||u.c.id).slice(2), e=S.existing.find(x=>x.uid===uidE); if(e){ if(e.qty>1) e.qty--; else S.existing=S.existing.filter(x=>x!==e); }
     toast(`«${nm}» удалено из имеющегося оборудования`); return; }
-  editStep(u.c.id, -1);
+  editStep(u.c.base||u.c.id, -1);
   toast(`«${nm}» убрано из подбора — это правка на шаге «Подбор». Вернуть — «Отменить» вверху или «Вернуть» в подборе`);
 }
 function gatherHot(){
@@ -4744,7 +4766,7 @@ function insertItems(){ const m=new Map(); P.units.filter(u=>u.c.insert).forEach
 function extraRows(s){ return Array.isArray(s.extras)?s.extras:[]; }
 function costCalc(){
   const H=hoodsAll();
-  const map=new Map(); [...P.items,...insertItems()].forEach(it=>{ const k=it.c.id+':'+it.src; const m=map.get(k); if(m) m.qty+=it.qty; else map.set(k,{...it}); });
+  const map=new Map(); [...P.specItems,...insertItems()].forEach(it=>{ const k=it.c.id+':'+it.src; const m=map.get(k); if(m) m.qty+=it.qty; else map.set(k,{...it}); });
   const rows=[...map.values()].sort((a,b)=>ZORDER.indexOf(a.c.z)-ZORDER.indexOf(b.c.z));
   const eq=rows.filter(r=>r.src==='buy').reduce((s,r)=>s+priceOf(r.c)*r.qty,0);
   const hoodLen=Math.ceil(H.len*10)/10, hoodSum=hoodLen*S.hoodPrice, mont=(eq+hoodSum)*S.montage/100;
@@ -4784,7 +4806,7 @@ bind[7]=()=>{
   main.querySelectorAll('[data-extra-name]').forEach(i=>i.addEventListener('change',()=>{ const r=extraRows(S)[+i.dataset.extraName]; if(r){ r.name=i.value; touch(); render(); } }));
   for(const k of ['qty','price']) main.querySelectorAll('[data-extra-'+k+']').forEach(i=>i.addEventListener('change',()=>{ const v=parseFloat(i.value), r=extraRows(S)[+i.getAttribute('data-extra-'+k)]; if(r&&isFinite(v)&&v>=0){ r[k]=v; touch(); render(); } }));
   main.querySelectorAll('[data-extra-del]').forEach(b=>b.addEventListener('click',()=>{ const rows=extraRows(S).filter((r,i)=>i!==+b.dataset.extraDel); if(rows.length) S.extras=rows; else delete S.extras; touch(); render(); }));
-  main.querySelectorAll('[data-price]').forEach(i=>i.addEventListener('change',()=>{ const v=parseFloat(i.value); if(isFinite(v)&&v>=0){ S.prices[i.dataset.price]=v; touch(); render(); } }));
+  main.querySelectorAll('[data-price]').forEach(i=>i.addEventListener('change',()=>{ if(!i.value.trim()){ delete S.prices[i.dataset.price]; touch(); render(); return; } const v=parseFloat(i.value); if(isFinite(v)&&v>=0){ S.prices[i.dataset.price]=v; touch(); render(); } }));
   const hp=document.getElementById('hood-price'); hp.addEventListener('change',()=>{ const v=parseFloat(hp.value); if(isFinite(v)&&v>=0){ S.hoodPrice=v; touch(); render(); } });
   const mo=document.getElementById('montage'); mo.addEventListener('change',()=>{ const v=parseFloat(mo.value); if(isFinite(v)&&v>=0){ S.montage=v; touch(); render(); } });
   document.getElementById('cp-tbl').addEventListener('click',()=>{ const C=costCalc();
@@ -4986,7 +5008,7 @@ function sectionOn(id){ const r=reportState(), s=REPORT.get(id); if(!s) return f
 function positions(){
   const m=new Map();
   const add=(c,src,qty)=>{ const k=c.id+':'+src, x=m.get(k); if(x) x.qty+=qty; else m.set(k,{key:k, c, src, qty}); };
-  for(const it of P.items) add(it.c, it.src, it.qty);
+  for(const it of P.specItems) add(it.c, it.src, it.qty);
   for(const it of insertItems()) add(it.c, 'buy', it.qty);
   const zi=z=>{ const i=ZORDER.indexOf(z); return i<0?99:i; };
   const list=[...m.values()].sort((a,b)=>zi(a.c.z)-zi(b.c.z) || a.c.n.localeCompare(b.c.n,'ru') || (a.src==='have'?-1:1));
@@ -5410,7 +5432,7 @@ Object.defineProperty(REPORT.get('room-need'),'title',{get(){ return netsOpen(S)
 REPORT.register({ id:'spec', title:'Спецификация оборудования', group:'Оборудование', order:900, audience:['full','electric','cost'],
   available: ()=>P.items.length>0,
   build(ctx){ const L=ctx.pos.list, hasNotes=L.some(p=>notesFor(p.c,p.src));
-    const E=S.edits||{}, edited=p=>p.src==='buy' && !!((E.delta&&E.delta[p.c.id]) || (E.pref&&E.pref[p.c.role]===p.c.id)), anyEd=L.some(edited);
+    const E=S.edits||{}, edited=p=>p.src==='buy' && !!((E.delta&&E.delta[p.c.base||p.c.id]) || (E.pref&&E.pref[p.c.role]===(p.c.base||p.c.id))), anyEd=L.some(edited);
     const rows=L.map(p=>{ const c=p.c, price=p.src==='have'?0:priceOf(c);
       return [String(p.no), c.n+(p.src==='have'&&c.what&&!c.n.toLowerCase().includes(c.what.toLowerCase())?` (${lc1(c.what)})`:'')+(edited(p)?' ✎':''), p.src==='have'?(c.model||'—'):'—', p.rooms.map(id=>roomName(S,id)).join(', '), String(p.qty), dimsOf(c), (c.kw||0)>0?fmt1(c.kw*p.qty):'—', volts(c), waterOf(c), c.gas?(c.gkw?fmt1(c.gkw*p.qty)+' тепл.':'да'):'—', p.src==='have'?'имеется':'купить', p.src==='have'?'—':fmt0(price), p.src==='have'?'—':fmt0(price*p.qty), ...(hasNotes?[notesFor(c,p.src)]:[])]; });
     const sum=L.filter(p=>p.src==='buy').reduce((a,p)=>a+priceOf(p.c)*p.qty,0), kw=L.reduce((a,p)=>a+(p.c.kw||0)*p.qty,0);
@@ -5500,7 +5522,7 @@ REPORT.register({ id:'hygiene', title:'Гигиена и санитария', gr
       {t:'p', muted:true, text:S.norms.strict?'Строгий режим: по смыслу СанПиН 2.3/2.4.4282-26 «Санитарно-эпидемиологические требования к организации общественного питания населения». Номера пунктов сверяйте с действующим текстом.':'Трапезная — домашняя кухня на большую семью, поэтому здесь советы, а не требования.'}]; } });
 
 REPORT.register({ id:'cost', title:'Смета', group:'Справочно', order:1500, audience:['full','cost'],
-  build(ctx){ const C=costCalc(), pos=ctx.pos, custom=C.rows.some(r=>S.prices[r.c.id]!=null);
+  build(ctx){ const C=costCalc(), pos=ctx.pos, custom=C.rows.some(r=>S.prices[r.c.id]!=null||(r.c.base!=null&&S.prices[r.c.base]!=null));
     const rows=C.rows.map(r=>{ const p=pos.of(r.c,r.src); return [p?String(p.no):'', r.c.n, String(r.qty), r.src==='have'?'имеется':fmt0(priceOf(r.c)), r.src==='have'?'—':fmt0(priceOf(r.c)*r.qty)]; });
     rows.push(['','Зонт вытяжной пристенный, погонный метр', fmt1(C.hoodLen)+' м', fmt0(S.hoodPrice), fmt0(C.hoodSum)]);
     C.extraRows.forEach(r=>rows.push(['',r.name.trim()||'Без названия',String(r.qty),fmt0(r.price),fmt0(r.qty*r.price)]));
@@ -6059,13 +6081,16 @@ function sanitizeProject(d){
   for(const k of ['layoutRoom','unitRoom']) if(own(d,k)&&!obj(d[k])){ d[k]={}; messages.push('Сброшено распределение оборудования по помещениям: '+k); }
   if(own(d,'inserts')&&!Array.isArray(d.inserts)){ d.inserts=[]; messages.push('Удалены повреждённые вставки'); }
   if(own(d,'unitEdits')){
-    let damaged=false;
+    let damaged=false, sizes=false;
     if(!obj(d.unitEdits)){ delete d.unitEdits; damaged=true; }
     else { for(const k of Object.keys(d.unitEdits)){ const e=d.unitEdits[k];
-        if(!obj(e)||typeof e.note!=='string'){ delete d.unitEdits[k]; damaged=true; }
-        else { e.note=e.note.trim().slice(0,500); if(!e.note) delete d.unitEdits[k]; } }
+        if(!obj(e)){ delete d.unitEdits[k]; damaged=true; }
+        else { if(own(e,'note')){ if(typeof e.note!=='string'){ delete e.note; damaged=true; } else { e.note=e.note.trim().slice(0,500); if(!e.note) delete e.note; } }
+          for(const f of ['w','d']) if(own(e,f)&&(!Number.isInteger(e[f])||e[f]<300||e[f]>3000)){ delete e[f]; sizes=true; }
+          if(!e.note&&e.w==null&&e.d==null) delete d.unitEdits[k]; } }
       if(!Object.keys(d.unitEdits).length) delete d.unitEdits; }
     if(damaged) messages.push('Удалены повреждённые комментарии к оборудованию');
+    if(sizes) messages.push('Удалены повреждённые размеры оборудования');
   }
   for(const i of d.inserts||[]) if(obj(i)&&own(i,'note')){ if(typeof i.note!=='string') delete i.note; else { i.note=i.note.trim().slice(0,500); if(!i.note) delete i.note; } }
   for(const k of ['heat','norms','feats','res','gas','report','edits','prices']) if(!obj(d[k])){ d[k]=defaults[k]; messages.push('Восстановлены настройки: '+k); }
@@ -6634,7 +6659,10 @@ function selDimsHtml(u){
     <span class="pos-press"><button class="btn small tap" type="button" data-press="lo" title="Вплотную к ${esc(rg.loN?unitShort(rg.loN):'углу')}">${vert?'⤒ прижать':'⇤ прижать'}</button><button class="btn small tap" type="button" data-press="hi" title="Вплотную к ${esc(rg.hiN?unitShort(rg.hiN):'углу')}">${vert?'прижать ⤓':'прижать ⇥'}</button></span></div>`;
 }
 function unitCardHtml(u){
-  return `<label class="unit-note"><span>Комментарий</span><textarea id="unit-note" rows="2" maxlength="500">${esc(unitNote(u))}</textarea></label>`;
+  let size='';
+  if(!u.parts&&(isNeutral(u.c)||u.c.insert)){ const c=P.items.find(it=>it.c.id===(u.c.base||u.c.id))?.c||u.c, cd=Math.round(c.d*1000), d=Math.round(u.c.d*1000), e=(S.unitEdits||{})[u.key], ds=[...new Set([600,700,800,cd,d])].sort((a,b)=>a-b);
+    size=`<div class="pos-row"><label class="pos-f"><span>Ширина, мм</span><input type="text" inputmode="numeric" data-num id="unit-w" value="${Math.round(u.c.w*1000)}"></label><label class="pos-f"><span>Глубина, мм</span><select id="unit-d">${ds.map(v=>`<option value="${v}" ${v===d?'selected':''}>${v}</option>`).join('')}</select></label>${!u.c.insert&&e&&(e.w!=null||e.d!=null)?'<button class="btn small" type="button" id="unit-size-reset">Как в каталоге</button>':''}</div>`; }
+  return size+`<label class="unit-note"><span>Комментарий</span><textarea id="unit-note" rows="2" maxlength="500">${esc(unitNote(u))}</textarea></label>`;
 }
 const fmt0r=v=>String(Math.round(v));
 // поставить начало аппарата вдоль стены; нельзя наложить на соседа и выйти за стену
@@ -6661,6 +6689,32 @@ function setOffset(u, s, d, el){
   const pp=wallPerpPos(room,s,sz,v); if(hz) p.y=r3(pp); else p.x=r3(pp);
   S.layoutManual=true; S.layoutRoom[u.key]=S.room.id;
 }
+function resizeUnit(u,wMm,dMm,el){
+  if(u.parts||(!isNeutral(u.c)&&!u.c.insert)) return;
+  if(!Number.isInteger(wMm)||wMm<300||wMm>3000){ if(el) fieldMsg(el,'Ширина от 300 до 3000 мм'); render(); return; }
+  const room=S.room, oldPos=S.layout[u.key], pl=oldPos&&unitPlace(u,room), p=oldPos&&{...oldPos}, c=P.items.find(it=>it.c.id===(u.c.base||u.c.id))?.c||u.c;
+  const cd=Math.round(c.d*1000), d=dMm===cd?cd:floorDepth(dMm), prev=S.unitEdits&&S.unitEdits[u.key], had=!!S.unitEdits, i=u.c.insert&&(S.inserts||[]).find(i=>i.key===u.key), oldIns=i&&{w:i.w,d:i.d};
+  if(i){ i.w=+(wMm/1000).toFixed(3); i.d=+(d/1000).toFixed(3); }
+  else { const e={...prev}; if(wMm===Math.round(c.w*1000)) delete e.w; else e.w=wMm;
+    if(d===cd) delete e.d; else e.d=d;
+    if(e.note||e.w!=null||e.d!=null){ if(!S.unitEdits) S.unitEdits={}; S.unitEdits[u.key]=e; }
+    else if(S.unitEdits){ delete S.unitEdits[u.key]; if(!Object.keys(S.unitEdits).length) delete S.unitEdits; } }
+  const next={...u,c:i?insertUnits([i])[0].c:unitVariant(c,u.key)};
+  if(p){ const b=bbox(next.c,p);
+    if(pl.kind==='wall'){ const hz=!isVert(room,pl.s), pp=wallPerpPos(room,pl.s,hz?b.h:b.w,pl.d); if(hz) p.y=pp; else p.x=pp; }
+    else { p.x=pl.b.x+(pl.b.w-b.w)/2; p.y=pl.b.y+(pl.b.h-b.h)/2; if(pl.kind==='skew') skewPlace(room,next,p,p.sw); }
+    clampPos(next,p);
+    const nb=bbox(next.c,p);
+    if((nb.w>room.w+1e-9||nb.h>room.d+1e-9)&&(next.parts||posAng(p)||!nicheFit(roomGeom(S,room),nb))){
+      if(i){ i.w=oldIns.w; i.d=oldIns.d; }
+      else { if(prev){ if(!S.unitEdits) S.unitEdits={}; S.unitEdits[u.key]=prev; } else if(S.unitEdits) delete S.unitEdits[u.key]; if(!had) delete S.unitEdits; }
+      if(el) fieldMsg(el,'Не помещается в помещение'); render(); return;
+    }
+    S.layout[u.key]=p;   // новый габарит и позиция проверены до recompute, чтобы единица не ушла в резерв
+  }
+  S.layoutManual=true; S.layoutRoom=S.layoutRoom||{}; S.layoutRoom[u.key]=room.id;
+  recompute(); touch(); render();
+}
 function setIsland(u, axis, v, el){
   const room=S.room, p=S.layout[u.key], b=bbox(u.c,p), vert=axis==='y';
   const others=curUnitsOf(room).filter(o=>o.key!==u.key&&S.layout[o.key]&&o.c.mount===u.c.mount).map(o=>({o, b:bbox(o.c,S.layout[o.key])}));
@@ -6676,6 +6730,10 @@ function bindEquipDims(){
   const seg2=document.getElementById('pdims-bar'); seg2&&segBind(seg2,(k,v)=>{ if(k==='pdims'){ S.planDims=v; touch(); render(); } });
   const u=sel&&curUnits().find(x=>x.key===sel);
   const note=document.getElementById('unit-note'); note&&u&&note.addEventListener('change',()=>{ setUnitNote(u,note.value); touch(); });
+  const width=document.getElementById('unit-w'), depth=document.getElementById('unit-d'), reset=document.getElementById('unit-size-reset');
+  width&&u&&width.addEventListener('change',()=>resizeUnit(u,Number(width.value),Math.round(u.c.d*1000),width));
+  depth&&u&&depth.addEventListener('change',()=>resizeUnit(u,Math.round(u.c.w*1000),Number(depth.value),depth));
+  reset&&u&&reset.addEventListener('click',()=>{ const c=P.items.find(it=>it.c.id===(u.c.base||u.c.id))?.c; if(c) resizeUnit(u,Math.round(c.w*1000),Math.round(c.d*1000),reset); });
   if(u&&S.layout[u.key]){ const room=S.room;
     main.querySelectorAll('[data-pos]').forEach(el=>el.addEventListener('change',()=>{ const pl=unitPlace(u,room), v=parseFloat(String(el.value).replace(',','.'))/1000; if(!pl||!isFinite(v)) return; const f=el.dataset.pos;
       if(f==='skt'&&pl.kind==='skew'){ const p=S.layout[u.key], w=wallById(room,p.sw), q=wallPoint(room,p.sw,v+u.c.w/2), b=bbox(u.c,p); p.x=q.x+w.nx*u.c.d/2-b.w/2; p.y=q.y+w.ny*u.c.d/2-b.h/2; skewPlace(room,u,p,p.sw); S.layoutManual=true; S.layoutRoom[u.key]=room.id; }

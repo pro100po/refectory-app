@@ -655,6 +655,7 @@ function exampleData(){
 // сети проектируются: точки подключения не требуются, «Требуемые подключения» — задание, куда вывести сети
 const NET_KEYS=['water','sewer','vent','el','gas'];
 const netState=(s,k)=>s&&s.nets&&['have','none','unk'].includes(s.nets[k])?s.nets[k]:normNets(s||{})[k];
+const netsUnknown=s=>NET_KEYS.map((key,i)=>({key,label:['Вода','Канализация','Вентиляция','Электрика','Газ'][i]})).filter(n=>netState(s,n.key)==='unk');
 const netsOpen=s=>NET_KEYS.slice(0,4).some(k=>netState(s,k)!=='have');
 const netsAllNone=s=>NET_KEYS.slice(0,4).every(k=>netState(s,k)==='none');
 const netsDesign=s=>netsAllNone(s);
@@ -971,7 +972,7 @@ function buildBuy(s, k, have){
   need('handsink', hs, hs===kitchens&&kitchens>1?`по раковине в каждом помещении, где готовят (${kitchens})`:N>100?'2 раковины — больше 100 человек':'1 раковина — до 100 человек');
   const sh=1+Math.floor(N/60); need('shelf', sh, `1 + по стеллажу на каждые 60 человек → ${sh}`);
   need('serveTable', 1+(N>80?1:0), N>80?'2 раздаточных стола — больше 80 человек':'1 раздаточный стол — до 80 человек');
-  if(k.heater) need('heater', k.heater, netState(s,'water')!=='have'?`Сети проектируются: если будет централизованная горячая вода — уберите водонагреватель${k.heater!==k0.heater?'; упрощено, чтобы уложиться в мощность':''}`:`водонагреватель: на плане нет горячей воды; до 60 человек — 80 л, больше — 150 л${k.heater!==k0.heater?'; упрощено, чтобы уложиться в мощность':''}`, 'л');
+  if(k.heater) need('heater', k.heater, netState(s,'water')!=='have'?`${netState(s,'water')==='unk'?'Если':'Сети проектируются: если'} будет централизованная горячая вода — уберите водонагреватель${k.heater!==k0.heater?'; упрощено, чтобы уложиться в мощность':''}`:`водонагреватель: на плане нет горячей воды; до 60 человек — 80 л, больше — 150 л${k.heater!==k0.heater?'; упрощено, чтобы уложиться в мощность':''}`, 'л');
   need('grease', 1, 'жироуловитель под мойки');
   if(N>40) need('veg',1,'овощерезка — больше 40 человек');
   if(s.feats.meat) need('grinder',1,'отмечено «много мяса и птицы»');
@@ -1046,6 +1047,7 @@ function computeProject(s){
   for(const id of ed.dropped){ delete E.off[id]; notes.push({t:'info', m:`Правка «убрано вами» для «${shortName(CATI[id]||{n:id})}» снята сама: по расчёту позиция больше не нужна.`}); }
   const buy=ed.buy;
   if(netsAllNone(s)) notes.push({t:'info', m:NETS_INFO});
+  else if(NET_KEYS.slice(0,4).some(k=>netState(s,k)==='none')) notes.push({t:'info', m:`Проектируются: ${NET_KEYS.slice(0,4).filter(k=>netState(s,k)==='none').map(k=>({water:'вода',sewer:'канализация',vent:'вентиляция',el:'электрика'})[k]).join(', ')} — места смотрите в «Требуемых подключениях».`});
   if(netState(s,'water')==='have' && !hasPt(s,'cw')) notes.push({t:'warn', step:2, m:'На плане помещения не отмечен ввод холодной воды. Пищеблоку он обязателен — отметьте существующий на шаге «Подключения».'});
   if(netState(s,'sewer')==='have' && !hasPt(s,'sewer')) notes.push({t:'warn', step:2, m:'На плане не отмечен выпуск в канализацию. Сливы от ванн, раковин и пароконвектомата нужно куда-то отводить.'});
   if(netState(s,'vent')==='have' && !hasPt(s,'vent') && !hasPt(s,'hood')) notes.push({t:'info', step:2, m:'Не отмечены вентканал или существующий зонт — место выброса вытяжки определит проектировщик.'});
@@ -5178,6 +5180,7 @@ function allIssues(){
 }
 function openQuestions(){
   const q=[];
+  for(const n of netsUnknown(S)) q.push(n.key==='gas'&&P.items.some(i=>i.c.gas)?'В подборе есть газовое оборудование, наличие газа не подтверждено.':`Не выяснено, есть ли ${n.label.toLowerCase()}: от этого зависит, что проектировать.`);
   // сети проектируются — неотмеченные точки не вопрос
   if(netState(S,'water')==='have' && !hasPt(S,'cw')) q.push('Не отмечен ввод холодной воды — где он и какого диаметра.');
   if(netState(S,'sewer')==='have' && !hasPt(S,'sewer')) q.push('Не отмечен выпуск в канализацию.');
@@ -5258,7 +5261,7 @@ REPORT.register({ id:'title', title:'Титульный лист', group:'Общ
       {t:'kv', cols:2, rows:[
         ['Человек за трапезой', fmt0(S.people)], ['Трапез в день', String(S.meals)],
         ['Помещений', `${S.rooms.length}, всего ${fmt1(area)} м²`], ['Позиций оборудования', `${posL.length}: купить ${buyN}, имеется ${haveN}`],
-        ['Требуется электричества', pw], ['Газ', gasOn?(S.gas.src==='bottle'?'есть, баллоны':'есть, сеть'):(gasItems?'есть газовое имеющееся':'нет')],
+        ['Требуется электричества', pw], ['Газ', gasOn?(S.gas.src==='bottle'?'есть, баллоны':'есть, сеть'):netState(S,'gas')==='unk'?'неизвестно':netState(S,'gas')==='have'?'есть, в подборе не используется':(gasItems?'есть газовое имеющееся':'нет')],
         ['Итог сметы', rub(cost.total)], ['Режим правил', S.norms.strict?'строгий (общепит)':'здравый смысл']]},
       {t:'p', text:'Расчёты ориентировочные: это исходные данные для поставщика оборудования и проектировщиков инженерных систем. Итоговые значения определяет проектировщик.', muted:true},
       {t:'pagebreak'} ]; } });
@@ -5278,13 +5281,13 @@ REPORT.register({ id:'input', title:'Исходные данные', group:'Об
     return [{t:'h1', text:'Исходные данные'},
       {t:'kv', cols:2, rows:[['Человек за одной трапезой', fmt0(S.people)],['Трапез в день', String(S.meals)],['Тарелок и чашек на человека', String(S.dishware||3)],
         ['Холодильное оборудование', S.coldOn!==false?'подбирать':'не подбирать'],['Много рыбы', S.feats.fish?'да, отдельные стол и ванна':'нет'],['Много мяса и птицы', S.feats.meat?'да, отдельные стол и ванна':'нет'],
-        ['Режим правил', S.norms.strict?'строгий: требования общепита':'здравый смысл'], ...(netsOpen(S)?[['Инженерные сети','проектируются']]:[])]},
+        ['Режим правил', S.norms.strict?'строгий: требования общепита':'здравый смысл'], ...(netsOpen(S)?[['Инженерные сети',netsAllNone(S)?'проектируются':NET_KEYS.slice(0,4).map(k=>`${({water:'вода',sewer:'канализация',vent:'вентиляция',el:'электрика'})[k]} — ${({have:'есть',none:'проектируется',unk:'неизвестно'})[netState(S,k)]}`).join('; ')]]:[])]},
       {t:'h3', text:'Тепловое оборудование — выбрано вручную'},
       {t:'table', cols:[{title:'Аппарат',w:3},{title:'Исполнение',w:2},{title:'Шт',w:.6,align:'r'},{title:'Топливо',w:1},{title:'кВт эл.',w:1,align:'r'},{title:'Газ, кВт тепл.',w:1.2,align:'r'}], rows:heat},
       {t:'h3', text:'Энергоснабжение и газ'},
       {t:'kv', cols:2, rows:[['Сейчас выделено', R.A!=null?fmt1(R.A)+' кВт':'не указано'],['Сейчас ввод', S.res.ph===3?'3 фазы, 380 В':'1 фаза, 220 В'],
         ['Можно увеличить до', R.B!=null?fmt1(R.B)+' кВт':'не указано'],['Ввод после увеличения', R.B!=null?(S.res.phMax===1?'1 фаза, 220 В':'3 фазы, 380 В'):'—'],
-        ['Уложиться в мощность', S.res.fit?'да, вспомогательное упрощено':'нет, подбор под технологию'],['Газ', S.gas&&S.gas.on?(S.gas.src==='bottle'?'есть, баллоны':'есть, сеть (есть или можно провести)'):'нет']]}]; } });
+        ['Уложиться в мощность', S.res.fit?'да, вспомогательное упрощено':'нет, подбор под технологию'],['Газ', S.gas&&S.gas.on?(S.gas.src==='bottle'?'есть, баллоны':'есть, сеть (есть или можно провести)'):netState(S,'gas')==='unk'?'неизвестно':netState(S,'gas')==='have'?'есть, в подборе не используется':'нет']]}]; } });
 
 REPORT.register({ id:'rooms', title:'Помещения', group:'Помещения', order:400, audience:['full'],
   build(ctx){ const links=r=>{ const t=[]; for(const l of effLinks()){ const o=l[0]===r.id?l[1]:l[1]===r.id?l[0]:null; if(!o) continue; t.push(LINK_EXT[o]||('«'+roomName(S,o)+'»')); } return t.join(', ')||'—'; };
@@ -5946,7 +5949,7 @@ function blankProject(name, people){
     heat:heatRecommend(Math.max(1,Math.round(people||40))), rooms:[{id:'r1', name:'Кухня', x:0, y:0, w:6, d:4, roles:ROLES.map(r=>r[0]), openings:[], points:[]}],
     cur:'r1', unitRoom:{}, links:[], res:{kw:null, ph:3, max:null, phMax:3, fit:false}, gas:{on:false, src:'main'},
     report:{meta:{parish:'', address:'', author:'', contact:'', note:''}, preset:'full', sections:{}, mono:false},
-    existing:[], manual:null, prices:{}, layout:{}, inserts:[], layoutManual:false, layoutSig:'', utilities:'design', nets:{water:'none', sewer:'none', vent:'none', el:'none', gas:'none'}});   // новый чистый проект: сетей пока нет — проектируем
+    existing:[], manual:null, prices:{}, layout:{}, inserts:[], layoutManual:false, layoutSig:'', utilities:'existing', nets:{water:'unk', sewer:'unk', vent:'unk', el:'unk', gas:'unk'}});   // новый чистый проект: наличие сетей пока неизвестно
   return o; }
 function createProject(data, msg){ if(S.pid) save(); data.pid=newPid(); data.createdAt=new Date().toISOString(); data.variantOf=data.variantOf||null;
   openProjectData(data,{persist:true, msg}); }

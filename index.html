@@ -4817,7 +4817,7 @@ bind[7]=()=>{
   document.getElementById('cp-tbl').addEventListener('click',()=>{ const C=costCalc();
     const hasGas=C.rows.some(r=>r.c.gas);
     const hasNotes=C.rows.some(r=>notesFor(r.c,r.src));
-    const lines=[['Наименование','Модель','Кол-во','Ед.','Цена, ₽','Сумма, ₽','Статус','Мощность, кВт',...(hasGas?['Газ, кВт тепл.']:[]),'Габариты Ш×Г×В, мм',...(hasNotes?['Комментарий']:[])].join('\t')];
+    const lines=[['Наименование','Модель','Кол-во','Ед.','Цена, ₽','Сумма, ₽','Статус','Мощность, кВт',...(hasGas?['Газ, кВт тепл.']:[]),'Габариты Ш×Г×В, мм',...(hasNotes?['Примечание']:[])].join('\t')];
     C.rows.forEach(r=>lines.push([r.c.n, r.c.model||'', r.qty, 'шт', r.src==='have'?0:priceOf(r.c), r.src==='have'?0:priceOf(r.c)*r.qty, r.src==='have'?'имеется':'закупка', fmt1(r.c.kw*r.qty), ...(hasGas?[r.c.gas&&r.c.gkw>0?fmt1(r.c.gkw*r.qty):'']:[]), Math.round(r.c.w*1000)+'×'+Math.round(r.c.d*1000)+'×'+Math.round(r.c.h*1000), ...(hasNotes?[notesFor(r.c,r.src).replace(/[\t\r\n]+/g,' ')]:[])].join('\t')));
     lines.push(['Зонт вытяжной пристенный','',String(C.hoodLen).replace('.',','),'м',S.hoodPrice,Math.round(C.hoodSum),'закупка','',''].join('\t'));
     C.extraRows.forEach(r=>lines.push([r.name.trim()||'Без названия','',r.qty,'шт',r.price,r.qty*r.price,'закупка','',...(hasGas?['']:[]),''].join('\t')));
@@ -5397,7 +5397,7 @@ REPORT.register({ id:'room-equip', title:'Расстановка оборудо�
     const rows=[...m.values()].sort((a,b)=>a.p.no-b.p.no).map(x=>[String(x.p.no), posLabel(x.p), String(x.n), dimsOf(x.p.c), x.p.src==='have'?'имеется':'купить', ...(hasNotes?[notesFor(x.p.c,x.p.src,r.id)]:[])]);
     const tableItems=pos.list.filter(p=>p.c.mount==='table'&&p.rooms.includes(r.id));
     const out=[{t:'h2', text:`«${r.name}»: расстановка оборудования`}];
-    out.push(rows.length?{t:'table', cols:[{title:'Поз.',w:.6,align:'r'},{title:'Наименование',w:hasNotes?3:5},{title:'Шт',w:.6,align:'r'},{title:'Ш×Г×В, мм',w:1.8},{title:'',w:1}, ...(hasNotes?[{title:'Комментарий',w:2}]:[])], rows}:{t:'p', text:'Оборудования в этом помещении нет.', muted:true});
+    out.push(rows.length?{t:'table', cols:[{title:'Поз.',w:.6,align:'r'},{title:'Наименование',w:hasNotes?3:5},{title:'Шт',w:.6,align:'r'},{title:'Ш×Г×В, мм',w:1.8},{title:'',w:1}, ...(hasNotes?[{title:'Примечание',w:2}]:[])], rows}:{t:'p', text:'Оборудования в этом помещении нет.', muted:true});
     if(tableItems.length){ const hostTables=us.filter(u=>S.layout[u.key]&&/^table|^serveTable|insert/.test(u.c.role||'')).map(u=>pos.unit(u)).filter(Boolean);
       const host=z=>{ const same=hostTables.find(t=>t.c.z===z); return same||hostTables[0]; };
       const grp=new Map(); tableItems.forEach(p=>{ const h=host(p.c.z); const k=h?h.no:0; (grp.get(k)||grp.set(k,[]).get(k)).push(p); });
@@ -5443,7 +5443,7 @@ REPORT.register({ id:'spec', title:'Спецификация оборудова�
     const sum=L.filter(p=>p.src==='buy').reduce((a,p)=>a+priceOf(p.c)*p.qty,0), kw=L.reduce((a,p)=>a+(p.c.kw||0)*p.qty,0);
     return [{t:'pagebreak', orient:'landscape'}, {t:'h1', text:'Спецификация оборудования'},
       {t:'p', muted:true, text:'кВт — электрическая мощность (у газовых — только электрическая часть). Столы-вставки заполняют углы и промежутки в линиях оборудования. Цены ориентировочные.'+(anyEd?' ✎ — изменено вручную: количество или исполнение поправлено на шаге «Подбор».':'')},
-      {t:'table', cols:[{title:'Поз.',w:.5,align:'r'},{title:'Наименование',w:hasNotes?2.4:4.2},{title:'Модель',w:1.4},{title:'Помещение',w:1.4},{title:'Шт',w:.5,align:'r'},{title:'Ш×Г×В, мм',w:1.5},{title:'кВт',w:.7,align:'r'},{title:'В',w:.5,align:'r'},{title:'Вода',w:1},{title:'Газ',w:.9},{title:'',w:.9},{title:'Цена, ₽',w:1,align:'r'},{title:'Сумма, ₽',w:1.1,align:'r'}, ...(hasNotes?[{title:'Комментарий',w:1.8}]:[])],
+      {t:'table', cols:[{title:'Поз.',w:.5,align:'r'},{title:'Наименование',w:hasNotes?2.4:4.2},{title:'Модель',w:1.4},{title:'Помещение',w:1.4},{title:'Шт',w:.5,align:'r'},{title:'Ш×Г×В, мм',w:1.5},{title:'кВт',w:.7,align:'r'},{title:'В',w:.5,align:'r'},{title:'Вода',w:1},{title:'Газ',w:.9},{title:'',w:.9},{title:'Цена, ₽',w:1,align:'r'},{title:'Сумма, ₽',w:1.1,align:'r'}, ...(hasNotes?[{title:'Примечание',w:1.8}]:[])],
         rows, foot:[['','Всего позиций: '+L.length,'','',String(L.reduce((a,p)=>a+p.qty,0)),'',fmt1(kw),'','','','','','', ...(hasNotes?['']:[])],['','К закупке','','',String(L.filter(p=>p.src==='buy').reduce((a,p)=>a+p.qty,0)),'','','','','','','',fmt0(sum), ...(hasNotes?['']:[])]],
 },
       {t:'pagebreak', orient:'portrait'}]; } });

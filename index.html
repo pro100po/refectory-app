@@ -5958,6 +5958,47 @@ function showJsonFallback(text, name){
 
 /* ---- загрузка проекта: файл, перетаскивание, текст ---- */
 const NOT_PROJECT='Это не файл проекта кухни трапезной';
+function sanitizeProject(d){
+  const messages=[], obj=v=>!!v&&typeof v==='object'&&!Array.isArray(v), num=Number.isFinite, pos=v=>num(v)&&v>0;
+  const points=v=>Array.isArray(v)&&v.length>=3&&v.every(p=>obj(p)&&num(p.x)&&num(p.y));
+  const defaults=exampleData(), own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+  const drop=(o,k,msg)=>{ delete o[k]; messages.push(msg); };
+  if(!Array.isArray(d.rooms)||!d.rooms.length) throw new Error('В файле нет помещений');
+  for(const r of d.rooms){
+    if(!obj(r)||!pos(r.w)||!pos(r.d)) throw new Error('Размеры помещения должны быть числами больше нуля');
+    const label='Помещение «'+(r.name||'Без названия')+'»: ';
+    if(!Array.isArray(r.roles)) r.roles=ROLES.map(x=>x[0]);
+    if(own(r,'poly')&&!points(r.poly)) drop(r,'poly',label+'удалён повреждённый контур');
+    const sides=new Set(roomWalls(r).map(w=>w.id));
+    for(const k of ['openings','points']){
+      const old=r[k], filtered=Array.isArray(old)?old.filter(p=>obj(p)&&(k==='points'&&(p.side==='floor'||!p.side)?num(p.x)&&num(p.y):sides.has(p.side)&&num(p.off))&&(k==='openings'||p.type==='hood'?pos(p.w):true)&&(p.type==='hood'?pos(p.d):true)):[];
+      if(!Array.isArray(old)||filtered.length!==old.length){ r[k]=filtered; messages.push(label+(k==='openings'?'удалены повреждённые проёмы':'удалены повреждённые подключения')); }
+    }
+    if(own(r,'obstacles')){
+      if(!Array.isArray(r.obstacles)) drop(r,'obstacles',label+'удалены повреждённые препятствия');
+      else { const filtered=r.obstacles.filter(p=>obj(p)&&num(p.x)&&num(p.y)&&pos(p.w)&&pos(p.d));
+        if(!filtered.length) drop(r,'obstacles',label+'удалён пустой список препятствий');
+        else if(filtered.length!==r.obstacles.length){ r.obstacles=filtered; messages.push(label+'удалены повреждённые препятствия'); } }
+    }
+    if(own(r,'wallEntered')&&!obj(r.wallEntered)) drop(r,'wallEntered',label+'сброшены введённые длины стен');
+    if(own(r,'measured')){
+      const m=r.measured, base=obj(m)&&m.base;
+      if(!obj(m)||!points(m.pts)||!obj(m.lens)||!Object.values(m.lens).every(pos)||!m.pts.every(p=>pos(m.lens[p.wid]))||!Array.isArray(m.diags)||!m.diags.every(p=>obj(p)&&typeof p.a==='string'&&typeof p.b==='string'&&pos(p.len))||!obj(base)||!pos(base.w)||!pos(base.d)||!num(base.x)||!num(base.y)||(own(base,'poly')&&!points(base.poly))||(own(m,'at')&&(!obj(m.at)||!num(m.at.x)||!num(m.at.y)))) drop(r,'measured',label+'удалены повреждённые замеры');
+    }
+  }
+  let lostLayout=false;
+  if(!obj(d.layout)){ d.layout={}; lostLayout=true; messages.push('Повреждённая расстановка будет построена заново'); }
+  else { const keys=Object.keys(d.layout); for(const k of keys) if(!obj(d.layout[k])||!num(d.layout[k].x)||!num(d.layout[k].y)){ delete d.layout[k]; messages.push('Удалена повреждённая позиция оборудования: '+k); }
+    lostLayout=keys.length>0&&!Object.keys(d.layout).length; }
+  if(lostLayout){ d.layoutManual=false; d.layoutSig=''; }
+  for(const k of ['layoutRoom','unitRoom']) if(own(d,k)&&!obj(d[k])){ d[k]={}; messages.push('Сброшено распределение оборудования по помещениям: '+k); }
+  if(own(d,'inserts')&&!Array.isArray(d.inserts)){ d.inserts=[]; messages.push('Удалены повреждённые вставки'); }
+  for(const k of ['heat','norms','feats','res','gas','report','edits','prices']) if(!obj(d[k])){ d[k]=defaults[k]; messages.push('Восстановлены настройки: '+k); }
+  for(const k of Object.keys(defaults.heat)) if(!obj(d.heat[k])){ d.heat[k]=defaults.heat[k]; messages.push('Восстановлены настройки теплового оборудования: '+k); }
+  if(!Array.isArray(d.existing)){ d.existing=[]; messages.push('Сброшен список имеющегося оборудования'); }
+  if(!pos(d.people)){ d.people=defaults.people; messages.push('Восстановлено количество людей'); }
+  return messages;
+}
 function parseProjectText(text){
   let o; try{ o=JSON.parse(text); }catch(e){ return {error:NOT_PROJECT}; }
   if(!o||typeof o!=='object') return {error:NOT_PROJECT};
@@ -5966,9 +6007,42 @@ function parseProjectText(text){
   else if(!(o.v===1||o.v===2)) return {error:NOT_PROJECT};
   if(raw.v===2 && !Array.isArray(raw.rooms) && !raw.room) return {error:NOT_PROJECT};
   if(raw.v===1 && !raw.room && !raw.people) return {error:NOT_PROJECT};
-  let m; try{ m=migrate(JSON.parse(JSON.stringify(raw))); }catch(e){ m=null; }
+  let m, messages=[];
+  try{ m=migrate(JSON.parse(JSON.stringify(raw))); }
+  catch(e){
+    try{ const clean=JSON.parse(JSON.stringify(raw)); messages=sanitizeProject(clean); m=migrate(clean); }catch(e){ m=null; }
+  }
   if(!m) return {error: newer?'Файл сохранён более новой версией приложения, и открыть его не получилось':NOT_PROJECT};
-  return {data:JSON.parse(JSON.stringify(m)), newer, savedAt:o.savedAt||null};
+  try{
+    // Проверяем исходные значения до ограничения размеров при миграции.
+    if(raw.v===2&&Array.isArray(raw.rooms)) m.rooms=JSON.parse(JSON.stringify(raw.rooms));
+    for(const k of ['heat','norms','feats','res','gas','report','edits','prices','existing']) if(Object.prototype.hasOwnProperty.call(raw,k)&&(k==='existing'?!Array.isArray(raw[k]):!raw[k]||typeof raw[k]!=='object'||Array.isArray(raw[k]))) m[k]=raw[k];
+    messages.push(...sanitizeProject(m)); clampAll(m);
+  }catch(e){ return {error:'Файл проекта повреждён: '+e.message}; }
+  const data=JSON.parse(JSON.stringify(m)), focus=captureFocus();
+  const saved={S,step,sel,selSet,selRoom,addMode,editUid,formErr,draft,planMode,P,planRebuilt,issCache,lastSnap,fieldMsgs,scrK,posCache,rpOpen,rpFocus,rpScroll,roomFreeze,stepWallSel,stepFarSel,tiltWallSel,tiltEndSel,tiltDirSel,lastPlanCtx,navDirty,navRaf,save,saveView,commit,toast,timeout:window.setTimeout,raf:window.requestAnimationFrame};
+  const view=JSON.parse(JSON.stringify(VIEW)), cw={...lastCW}, scroll={...boxScroll};
+  const restore=()=>{ ({S,step,sel,selSet,selRoom,addMode,editUid,formErr,draft,planMode,P,planRebuilt,issCache,lastSnap,fieldMsgs,scrK,posCache,rpOpen,rpFocus,rpScroll,roomFreeze,stepWallSel,stepFarSel,tiltWallSel,tiltEndSel,tiltDirSel,lastPlanCtx,navDirty,navRaf}=saved); };
+  let failed=false;
+  try{
+    save=saveView=commit=toast=()=>{};
+    window.setTimeout=window.requestAnimationFrame=()=>0;
+    S=prepare(JSON.parse(JSON.stringify(data))); sel=null; selSet=new Set(); selRoom=null; addMode=null; editUid=null; draft=null; rpOpen=false; fieldMsgs={}; lastSnap=null; issCache={key:null,val:null};
+    for(step=0;step<=7;step++) renderRaw();
+  }catch(e){ failed=true; }
+  finally{
+    restore(); Object.assign(VIEW,view);
+    try{ selSet=new Set(saved.selSet); renderRaw(); restoreFocus(focus); }
+    catch(e){ failed=true; }
+    finally{
+      restore(); Object.assign(VIEW,view);
+      for(const k of Object.keys(lastCW)) delete lastCW[k]; Object.assign(lastCW,cw);
+      for(const k of Object.keys(boxScroll)) delete boxScroll[k]; Object.assign(boxScroll,scroll);
+      save=saved.save; saveView=saved.saveView; commit=saved.commit; toast=saved.toast; window.setTimeout=saved.timeout; window.requestAnimationFrame=saved.raf;
+    }
+  }
+  if(failed) return {error:'Файл проекта повреждён: приложение не может его показать'};
+  return {data, messages:[...new Set(messages)], newer, savedAt:o.savedAt||null};
 }
 function importProjectText(text, fname){
   const r=parseProjectText(text);
@@ -5978,7 +6052,7 @@ function importProjectText(text, fname){
   const org=d.report&&d.report.meta&&d.report.meta.parish;
   const ov=pjDialog(`<h3>Загрузить проект</h3>
     ${r.newer?`<p class="warn">Файл сохранён более новой версией приложения. Открою то, что понятно этой версии.</p>`:''}
-    <div class="card"><b>${esc(d.name||'Без названия')}</b>${org?`<div class="note">${esc(org)}</div>`:''}<div class="note">${esc([`${fmt0(d.people)} ${plural(d.people,'человек','человека','человек')}`, upd?`изменён ${fmtD(upd)}`:'', `${d.rooms?d.rooms.length:1} ${plural(d.rooms?d.rooms.length:1,'помещение','помещения','помещений')}`].filter(Boolean).join(' · '))}</div></div>
+    <div class="card"><b>${esc(d.name||'Без названия')}</b>${org?`<div class="note">${esc(org)}</div>`:''}<div class="note">${esc([`${fmt0(d.people)} ${plural(d.people,'человек','человека','человек')}`, upd?`изменён ${fmtD(upd)}`:'', `${d.rooms?d.rooms.length:1} ${plural(d.rooms?d.rooms.length:1,'помещение','помещения','помещений')}`].filter(Boolean).join(' · '))}</div>${r.messages.length?`<div class="warn">В файле исправлено:${r.messages.slice(0,5).map(m=>`<div>${esc(m)}</div>`).join('')}${r.messages.length>5?`<div>и ещё ${r.messages.length-5}</div>`:''}</div>`:''}</div>
     ${has?`<p class="warn">${browserNewer?`В браузере есть более новая версия (изменена ${esc(fmtDT(has.updatedAt))}). «Заменить» вернёт проект к версии из файла.`:`Этот проект уже есть в браузере: «${esc(has.name)}», изменён ${esc(fmtDT(has.updatedAt))}.`}</p>
       <div class="btns"><button class="btn primary tap" type="button" id="pj-replace">Заменить</button><button class="btn tap" type="button" id="pj-copyopen">Открыть как копию</button><button class="btn tap" type="button" id="pj-cancel">Отмена</button></div>`
     :`<div class="btns"><button class="btn primary tap" type="button" id="pj-open" autofocus>Открыть</button><button class="btn tap" type="button" id="pj-cancel">Отмена</button></div>`}`);

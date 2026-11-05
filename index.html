@@ -1858,6 +1858,8 @@ function bbox(c,pos){ if(posAng(pos)!==0){ const b=baseSize(c,pos), a=posAng(pos
 function unitPoly(c,pos){ const b=bbox(c,pos); if(!posAng(pos)) return [{x:b.x,y:b.y},{x:b.x+b.w,y:b.y},{x:b.x+b.w,y:b.y+b.h},{x:b.x,y:b.y+b.h}];
   const bs=baseSize(c,pos), cx=b.x+b.w/2, cy=b.y+b.h/2, a=posAng(pos)*Math.PI/180, co=Math.cos(a), si=Math.sin(a);
   return [[-bs.w/2,-bs.h/2],[bs.w/2,-bs.h/2],[bs.w/2,bs.h/2],[-bs.w/2,bs.h/2]].map(([x,y])=>({x:cx+x*co-y*si,y:cy+x*si+y*co})); }
+function sideDist(b,s,room){ return backDist(room,s,b); }
+function sideSpan(b,s,room){ return spanOnWall(room,s,b); }
 function unitWallDist(room,s,c,pos){ if(!posAng(pos)) return sideDist(bbox(c,pos),s,room); return Math.min(...unitPoly(c,pos).map(p=>projectToWall(room,s,p.x,p.y).dist)); }
 function unitWallSpan(room,s,c,pos){ if(!posAng(pos)) return sideSpan(bbox(c,pos),s,room); const a=unitPoly(c,pos).map(p=>projectToWall(room,s,p.x,p.y).off); return [Math.min(...a),Math.max(...a)]; }
 function rectPoly(r){ return [{x:r.x,y:r.y},{x:r.x+r.w,y:r.y},{x:r.x+r.w,y:r.y+r.h},{x:r.x,y:r.y+r.h}]; }
@@ -6349,8 +6351,6 @@ document.addEventListener('keydown',e=>{
 const DIM_TOL=0.01, DIM_OFF=0.3;
 // стены — через геометрический слой (длина, расстояние от стены, проекция на стену)
 const SIDE_LEN=(room,s)=>wallLen(room,s);
-function sideDist(b,s,room){ return backDist(room,s,b); }
-function sideSpan(b,s,room){ return spanOnWall(room,s,b); }
 const isVert=(room,s)=>wallById(room,s).axis==='v';
 const nearSide=(room,s)=>{ const w=wallById(room,s); return w.nx>0||w.ny>0; };   // стена, от которой «наружу» — к меньшим координатам (верх, лево)
 const r3=v=>Math.round(v*1000)/1000;

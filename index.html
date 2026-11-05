@@ -1564,13 +1564,28 @@ function sewerRoute(g,u,L){
   const P=perimLen(g.room), dr=swDrain(g,u.c,pos);
   const doors=g.openings.filter(o=>o.type==='door').map(o=>({o, iv:cwEdges(g,o)}));
   const prots=g.openings.filter(isProt).map(o=>({o, iv:cwEdges(g,o), dep:o.depth||0.3}));
+  for(const ob of roomObs(g.room)){ const b={x:ob.x,y:ob.y,w:ob.w,h:ob.shape==='round'?ob.w:ob.d};
+    for(const w of roomWalls(g.room)){ if(!w.axis||backDist(g.room,w,b)>=0.1) continue;
+      const sp=spanOnWall(g.room,w,b), off=Math.max(0,sp[0]), end=Math.min(w.len,sp[1]);
+      if(end>off) prots.push({o:ob, iv:perimeterSpan(g.room,w.id,off,end-off), dep:farDist(g.room,w,b)}); } }
   let best=null, near=null;
   for(const q of outs){
-    if(!q.side||q.side==='floor'){ const end={x:q.x,y:q.y}, len=Math.hypot(end.x-dr.p.x,end.y-dr.p.y);
-      if(!best||len<best.len) best={len, via:'floor', blocked:false, point:q, path:[{x:dr.p.x,y:dr.p.y}, end]}; continue; }
+    if(!q.side||q.side==='floor'){ const end={x:q.x,y:q.y}, dx=end.x-dr.p.x, dy=end.y-dr.p.y, direct=Math.hypot(dx,dy), detours=[]; let len=direct;
+      for(const ob of roomObs(g.room)){ const b={x:ob.x,y:ob.y,w:ob.w,h:ob.shape==='round'?ob.w:ob.d};
+        if(!segHitsRect(dr.p.x,dr.p.y,end.x,end.y,b)) continue;
+        let t0=0, t1=1;
+        for(const [p,v] of [[-dx,dr.p.x-b.x],[dx,b.x+b.w-dr.p.x],[-dy,dr.p.y-b.y],[dy,b.y+b.h-dr.p.y]]) if(p<0) t0=Math.max(t0,v/p); else if(p>0) t1=Math.min(t1,v/p);
+        const at=t=>({x:Math.min(b.x+b.w,Math.max(b.x,dr.p.x+dx*t)),y:Math.min(b.y+b.h,Math.max(b.y,dr.p.y+dy*t))}), a=at(t0), z=at(t1), per=2*(b.w+b.h);
+        const edge=p=>Math.abs(p.y-b.y)<1e-9?p.x-b.x:Math.abs(p.x-b.x-b.w)<1e-9?b.w+p.y-b.y:Math.abs(p.y-b.y-b.h)<1e-9?2*b.w+b.h-(p.x-b.x):per-(p.y-b.y);
+        const sa=edge(a), sz=edge(z), cw=swMod(sz-sa,per), ccw=per-cw, dir=cw<=ccw?1:-1, arc=Math.min(cw,ccw);
+        const corners=rectPoly(b).map((p,i)=>({p,d:swAlong(per,sa,[0,b.w,b.w+b.h,2*b.w+b.h][i],dir)})).filter(x=>x.d>1e-9&&x.d<arc-1e-9).sort((a,b)=>a.d-b.d);
+        len+=arc-direct*(t1-t0); detours.push({t:t0,path:[a,...corners.map(x=>x.p),z]}); }
+      const path=[{x:dr.p.x,y:dr.p.y},...detours.sort((a,b)=>a.t-b.t).flatMap(x=>x.path),end];
+      if(!best||len<best.len) best={len, via:'floor', blocked:false, point:q, path}; continue; }
     const tq=swPerT(g,q.side,q.off);
     for(const dir of [1,-1]){ const arc=swAlong(P,dr.t,tq,dir); let ex=0; const pr=[];
       for(const x of prots){ if(!swHits(P,dr.t,arc,dir,x.iv,0.001)) continue; ex+=x.dep*((swIn(P,dr.t,x.iv)?0:1)+(swIn(P,tq,x.iv)?0:1)); pr.push(x); }
+      for(const ob of roomObs(g.room)){ const two=pr.filter(x=>x.o===ob); if(two.length===2 && two.every(x=>!swIn(P,dr.t,x.iv)&&!swIn(P,tq,x.iv))) ex-=two[0].dep*2+two[1].dep*2; }   // препятствие в углу: трасса срезает угол, длиннее не становится
       const edge=x=>swAlong(P,dr.t,dir>0?x.iv[0]:x.iv[1],dir);
       const hit=doors.filter(x=>swHits(P,dr.t,arc,dir,x.iv,0.01)).sort((a,b)=>edge(a)-edge(b));
       const r={len:dr.cnt+arc+ex, via:'wall', blocked:hit.length>0, point:q, dir, arc, t0:dr.t, t1:tq, pr, dr, door:hit.length?hit[0].o:null};
@@ -5984,7 +5999,8 @@ function alongRange(u, room, layout, s){
   const [a0,e0]=sideSpan(b,s,room), sz=e0-a0, perp=vert?[b.x,b.x+b.w]:[b.y,b.y+b.h];
   let lo=0, hi=len, loN=null, hiN=null;
   const pool=curUnitsOf(room).filter(o=>o.key!==u.key && L[o.key] && (u.c.mount==='wall' ? o.c.mount==='wall' : o.c.mount==='floor'));
-  for(const o of pool){ const ob=bbox(o.c,L[o.key]), op=vert?[ob.x,ob.x+ob.w]:[ob.y,ob.y+ob.h];
+  const others=pool.map(o=>({o,b:bbox(o.c,L[o.key])})).concat(roomObs(room).map(ob=>({o:{key:null,c:{s:OBS_NOM[ob.kind]||OBS_NOM.other,mount:'floor'}},b:{x:ob.x,y:ob.y,w:ob.w,h:ob.shape==='round'?ob.w:ob.d}})));
+  for(const x of others){ const o=x.o, ob=x.b, op=vert?[ob.x,ob.x+ob.w]:[ob.y,ob.y+ob.h];
     if(op[1]<=perp[0]+0.002 || op[0]>=perp[1]-0.002) continue;      // не на одной линии с нами
     const [oa,oe]=sideSpan(ob,s,room);
     if(oe<=a0+0.002 && oe>lo){ lo=oe; loN=o; }
@@ -6078,11 +6094,11 @@ function frontRayDist(room,b,rot,ray){
 // привязки выбранного аппарата — акцентом; проход перед фронтом — красным, если меньше нормы
 function frontGap(u, room){
   const p=S.layout[u.key], b=bbox(u.c,p), fw=wallForRot(room,(p.rot+180)%360,b); let dist, hit=null;   // стена перед фронтом
-  const others=curUnitsOf(room).filter(o=>o.key!==u.key&&S.layout[o.key]&&o.c.mount==='floor').map(o=>({o, b:bbox(o.c,S.layout[o.key]), rot:S.layout[o.key].rot}));
+  const others=curUnitsOf(room).filter(o=>o.key!==u.key&&S.layout[o.key]&&o.c.mount==='floor').map(o=>({o, b:bbox(o.c,S.layout[o.key]), rot:S.layout[o.key].rot})).concat(roomObs(room).map(ob=>({o:{key:null,c:{s:OBS_NOM[ob.kind]||OBS_NOM.other,mount:'floor'}},b:{x:ob.x,y:ob.y,w:ob.w,h:ob.shape==='round'?ob.w:ob.d},rot:null,ob:true})));
   if(posAng(p)){
     const d=frontDir(p), F=frontPoly(u.c,p,0), ray={x:F.reduce((s,v)=>s+v.x,0)/4,y:F.reduce((s,v)=>s+v.y,0)/4,dx:d.x,dy:d.y};
     dist=frontRayDist(room,b,p.rot,ray);
-    for(const x of others){ const Q=unitPoly(x.o.c,S.layout[x.o.key]);
+    for(const x of others){ const Q=x.ob?rectPoly(x.b):unitPoly(x.o.c,S.layout[x.o.key]);
       for(let i=0;i<Q.length;i++){ const a=Q[i], z=Q[(i+1)%Q.length], vx=z.x-a.x, vy=z.y-a.y, qx=a.x-ray.x, qy=a.y-ray.y, den=ray.dx*vy-ray.dy*vx; let t;
         if(Math.abs(den)<1e-12){ if(Math.abs(qx*ray.dy-qy*ray.dx)>1e-9) continue;
           const t0=qx*ray.dx+qy*ray.dy, t1=(z.x-ray.x)*ray.dx+(z.y-ray.y)*ray.dy; if(Math.max(t0,t1)<0) continue; t=Math.max(0,Math.min(t0,t1));
@@ -6090,7 +6106,7 @@ function frontGap(u, room){
         if(t<dist){ dist=t; hit=x; }
       }
     }
-    const hd=hit&&frontDir(S.layout[hit.o.key]), facing=hit&&d.x*hd.x+d.y*hd.y< -0.9, norm=facing?S.norms.passage:workDepth(S,u.c);
+    const hd=hit&&!hit.ob&&frontDir(S.layout[hit.o.key]), facing=hit&&(hit.ob?false:d.x*hd.x+d.y*hd.y< -0.9), norm=facing?S.norms.passage:workDepth(S,u.c);
     return {dist:Math.max(0,dist), norm, facing, hit, b, rot:p.rot, ray};
   }
   const ovl=(a1,a2,b1,b2)=>Math.min(a2,b2)-Math.max(a1,b1)>0.01;
@@ -6098,7 +6114,7 @@ function frontGap(u, room){
   else if(p.rot===180){ dist=fw?backDist(room,fw,b):frontRayDist(room,b,p.rot); for(const x of others) if(ovl(b.x,b.x+b.w,x.b.x,x.b.x+x.b.w) && x.b.y+x.b.h<=b.y+0.005 && b.y-(x.b.y+x.b.h)<dist){ dist=b.y-(x.b.y+x.b.h); hit=x; } }
   else if(p.rot===90){ dist=fw?backDist(room,fw,b):frontRayDist(room,b,p.rot); for(const x of others) if(ovl(b.y,b.y+b.h,x.b.y,x.b.y+x.b.h) && x.b.x+x.b.w<=b.x+0.005 && b.x-(x.b.x+x.b.w)<dist){ dist=b.x-(x.b.x+x.b.w); hit=x; } }
   else { dist=fw?backDist(room,fw,b):frontRayDist(room,b,p.rot); for(const x of others) if(ovl(b.y,b.y+b.h,x.b.y,x.b.y+x.b.h) && x.b.x>=b.x+b.w-0.005 && x.b.x-(b.x+b.w)<dist){ dist=x.b.x-(b.x+b.w); hit=x; } }
-  const facing=hit && Math.abs(hit.rot-p.rot)===180, norm=facing?S.norms.passage:workDepth(S,u.c);
+  const facing=hit && !hit.ob && Math.abs(hit.rot-p.rot)===180, norm=facing?S.norms.passage:workDepth(S,u.c);
   return {dist:Math.max(0,dist), norm, facing, hit, b, rot:p.rot};
 }
 function selDimsSvg(room,u,ch,fs){

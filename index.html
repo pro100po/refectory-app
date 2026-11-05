@@ -1709,6 +1709,8 @@ function ptShift(sides,k){ const T=10, R=k?13/k:12, band=T+2*R+(k?8/k:8), sh=Mat
    источники воды — не ближе elWaterDist. Щит на стене любого помещения; щит в полу или на потолке — без правил ---- */
 const EL_NEUTRAL=new Set(['tableRaw','tableMeat','tableFish','tableReady','serveTable','shelf','insert']);
 const NEUTRAL_ROLES=new Set([...EL_NEUTRAL,'bathRaw','bathMeat','bathFish','bathKitchen','bathTable','prewash','handsink']);
+const PURPOSE_FAMILIES=[{tableRaw:'Сырая продукция',tableMeat:'Мясо, птица',tableFish:'Рыба',tableReady:'Готовая продукция',serveTable:'Раздача'},{bathRaw:'Овощи и сырая продукция',bathMeat:'Мясо, птица',bathFish:'Рыба',bathKitchen:'Кухонная посуда',bathTable:'Столовая посуда',prewash:'Ополаскивание перед посудомоечной'}];
+function purposeFamily(c){ return PURPOSE_FAMILIES.find(f=>Object.prototype.hasOwnProperty.call(f,c.role))||null; }
 function isNeutral(c){ return c.mount==='floor'&&!c.hot&&!c.gas&&(c.kw||0)<=0&&(NEUTRAL_ROLES.has(c.role)||(c.own&&!c.role&&!c.noRole&&!c.what)); }
 const EL_WATER=new Set(['bathRaw','bathMeat','bathFish','bathKitchen','bathTable','prewash','handsink','dish','heater']);
 function elN(g){ const n=(g&&g.norms)||{}; return {d:n.elPanelDepth??0.8, w:n.elPanelWidth??0.6, h:n.elPanelLowH??0.95, wd:n.elWaterDist??1.0}; }
@@ -4672,16 +4674,19 @@ function startChipDrag(e,chip){
   if(touchP) timer=setTimeout(()=>begin(),300);
   window.addEventListener('pointermove',mv,{passive:false}); window.addEventListener('pointerup',up); window.addEventListener('pointercancel',cancel);
 }
-// удалить позицию из проекта: вставку — совсем, покупку — из подбора (ручной режим), имеющееся — из списка имеющегося
-function deleteUnit(u){
-  const nm=shortName(u.c);
-  if(u.c.insert){ S.inserts=(S.inserts||[]).filter(i=>i.key!==u.key); delete S.layout[u.key]; delete S.layoutRoom[u.key]; toast(`«${nm}» удалено`); return; }
+function shiftKeysAfterRemove(u){
   // ключи единиц одного вида идут по порядку: убирается последняя, её место на плане занимает та, что осталась
   const pre=u.key.slice(0,u.key.lastIndexOf(':')+1), same=P.units.filter(x=>x.key.startsWith(pre)).map(x=>x.key).sort((a,b)=>+a.slice(pre.length)-+b.slice(pre.length)), last=same[same.length-1];
   delete S.layout[u.key]; delete S.layoutRoom[u.key];
   if(S.unitEdits){ delete S.unitEdits[u.key]; if(last!==u.key){ if(S.unitEdits[last]) S.unitEdits[u.key]=S.unitEdits[last]; delete S.unitEdits[last]; } if(!Object.keys(S.unitEdits).length) delete S.unitEdits; }
   if(last!==u.key){ if(S.layout[last]){ S.layout[u.key]=S.layout[last]; S.layoutRoom[u.key]=S.layoutRoom[last]; } else delete S.layout[u.key]; delete S.layout[last]; delete S.layoutRoom[last];
     if(S.unitRoom&&S.unitRoom[last]){ S.unitRoom[u.key]=S.unitRoom[last]; delete S.unitRoom[last]; } }
+}
+// удалить позицию из проекта: вставку — совсем, покупку — из подбора (ручной режим), имеющееся — из списка имеющегося
+function deleteUnit(u){
+  const nm=shortName(u.c);
+  if(u.c.insert){ S.inserts=(S.inserts||[]).filter(i=>i.key!==u.key); delete S.layout[u.key]; delete S.layoutRoom[u.key]; toast(`«${nm}» удалено`); return; }
+  shiftKeysAfterRemove(u);
   if(u.src==='have'){ const uidE=(u.c.base||u.c.id).slice(2), e=S.existing.find(x=>x.uid===uidE); if(e){ if(e.qty>1) e.qty--; else S.existing=S.existing.filter(x=>x!==e); }
     toast(`«${nm}» удалено из имеющегося оборудования`); return; }
   editStep(u.c.base||u.c.id, -1);
@@ -6660,8 +6665,10 @@ function selDimsHtml(u){
 }
 function unitCardHtml(u){
   let size='';
+  const family=purposeFamily(u.c), purpose=family?`<label class="pos-f"><span>Назначение</span><select id="unit-purpose">${Object.entries(family).map(([role,label])=>`<option value="${role}" ${role===u.c.role?'selected':''}>${esc(label)}</option>`).join('')}</select></label>`:'';
   if(!u.parts&&(isNeutral(u.c)||u.c.insert)){ const c=P.items.find(it=>it.c.id===(u.c.base||u.c.id))?.c||u.c, cd=Math.round(c.d*1000), d=Math.round(u.c.d*1000), e=(S.unitEdits||{})[u.key], ds=[...new Set([600,700,800,cd,d])].sort((a,b)=>a-b);
-    size=`<div class="pos-row"><label class="pos-f"><span>Ширина, мм</span><input type="text" inputmode="numeric" data-num id="unit-w" value="${Math.round(u.c.w*1000)}"></label><label class="pos-f"><span>Глубина, мм</span><select id="unit-d">${ds.map(v=>`<option value="${v}" ${v===d?'selected':''}>${v}</option>`).join('')}</select></label>${!u.c.insert&&e&&(e.w!=null||e.d!=null)?'<button class="btn small" type="button" id="unit-size-reset">Как в каталоге</button>':''}</div>`; }
+    size=`<div class="pos-row">${purpose}<label class="pos-f"><span>Ширина, мм</span><input type="text" inputmode="numeric" data-num id="unit-w" value="${Math.round(u.c.w*1000)}"></label><label class="pos-f"><span>Глубина, мм</span><select id="unit-d">${ds.map(v=>`<option value="${v}" ${v===d?'selected':''}>${v}</option>`).join('')}</select></label>${!u.c.insert&&e&&(e.w!=null||e.d!=null)?'<button class="btn small" type="button" id="unit-size-reset">Как в каталоге</button>':''}</div>`; }
+  else if(purpose) size=`<div class="pos-row">${purpose}</div>`;
   return size+`<label class="unit-note"><span>Комментарий</span><textarea id="unit-note" rows="2" maxlength="500">${esc(unitNote(u))}</textarea></label>`;
 }
 const fmt0r=v=>String(Math.round(v));
@@ -6689,6 +6696,40 @@ function setOffset(u, s, d, el){
   const pp=wallPerpPos(room,s,sz,v); if(hz) p.y=r3(pp); else p.x=r3(pp);
   S.layoutManual=true; S.layoutRoom[u.key]=S.room.id;
 }
+function refitPos(room,pl,p,c){
+  p={...p}; const next={c}, b=bbox(c,p);
+  if(pl.kind==='wall'){ const hz=!isVert(room,pl.s), pp=wallPerpPos(room,pl.s,hz?b.h:b.w,pl.d); if(hz) p.y=pp; else p.x=pp; }
+  else { p.x=pl.b.x+(pl.b.w-b.w)/2; p.y=pl.b.y+(pl.b.h-b.h)/2; if(pl.kind==='skew') skewPlace(room,next,p,p.sw); }
+  clampPos(next,p);
+  const nb=bbox(c,p);
+  if((nb.w>room.w+1e-9||nb.h>room.d+1e-9)&&(posAng(p)||!nicheFit(roomGeom(S,room),nb))) return null;
+  return p;
+}
+function moveUnitPurpose(u,to,el){
+  const family=purposeFamily(u.c); if(to===u.c.role||!family||!Object.prototype.hasOwnProperty.call(family,to)) return;
+  const from=u.c.base||u.c.id, t=CAT.find(x=>x.role===to); if(!t) return;
+  const have=u.src==='have', e=have&&S.existing.find(x=>x.uid===from.slice(2)); if(have&&!e) return;
+  const n=have?0:P.items.filter(it=>it.src==='buy'&&it.c.id===t.id).reduce((a,it)=>a+it.qty,0), rec=e&&{...e,uid:e.qty>1?uid('e'):e.uid,qty:1,role:to};
+  if(rec){ if(e.cat&&CATI[e.cat]&&e.n===CATI[e.cat].n){ rec.cat=t.id; rec.n=t.n; } else rec.cat=null; }
+  const key=have?`h:x_${rec.uid}:0`:`b:${t.id}:${n}`, target=have?itemOf(rec):t, edit={...(S.unitEdits||{})[u.key]}, rid=P.roomOf[u.key], room=rById(rid), oldPos=S.layout[u.key];
+  if(edit.w===Math.round(target.w*1000)) delete edit.w; if(edit.d===Math.round(target.d*1000)) delete edit.d;
+  if(edit.note) edit.nm=shortName(target);
+  const c=unitVariant(target,key,{[key]:edit}), pos=oldPos&&refitPos(room,unitPlace(u,room),oldPos,c);
+  if(oldPos&&!pos){ fieldMsg(el,'Не помещается в помещение'); render(); return; }
+  const pre=u.key.slice(0,u.key.lastIndexOf(':')+1), same=P.units.filter(x=>x.key.startsWith(pre)), last=same[same.length-1];
+  if(have){ if(e.qty>1){ shiftKeysAfterRemove(u); e.qty--; S.existing.push(rec); } else Object.assign(e,rec); }
+  else { shiftKeysAfterRemove(u); editStep(from,-1);
+    if(S.edits.off[t.id]){ delete S.edits.off[t.id]; const bq=P.base.get(t.id)?.qty||0; if(bq>1) S.edits.delta[t.id]={d:-(bq-1),baseAt:bq}; }
+    else editStep(t.id,1); }
+  if(last&&last.key!==u.key) S.unitRoom[u.key]=P.roomOf[last.key];
+  if(pos) S.layout[key]=pos;
+  S.layoutRoom=S.layoutRoom||{}; if(pos) S.layoutRoom[key]=rid;
+  S.unitRoom[key]=rid;
+  if(edit.note||edit.w!=null||edit.d!=null){ if(!S.unitEdits) S.unitEdits={}; S.unitEdits[key]=edit; }
+  else if(S.unitEdits){ delete S.unitEdits[key]; if(!Object.keys(S.unitEdits).length) delete S.unitEdits; }
+  S.layoutManual=true; sel=key; recompute(); touch(); render();
+  toast(have?'Назначение изменено. Подбор пересчитан с учётом имеющегося':`«${shortName(u.c)}» теперь: ${family[to]}`);
+}
 function resizeUnit(u,wMm,dMm,el){
   if(u.parts||(!isNeutral(u.c)&&!u.c.insert)) return;
   if(!Number.isInteger(wMm)||wMm<300||wMm>3000){ if(el) fieldMsg(el,'Ширина от 300 до 3000 мм'); render(); return; }
@@ -6700,17 +6741,13 @@ function resizeUnit(u,wMm,dMm,el){
     if(e.note||e.w!=null||e.d!=null){ if(!S.unitEdits) S.unitEdits={}; S.unitEdits[u.key]=e; }
     else if(S.unitEdits){ delete S.unitEdits[u.key]; if(!Object.keys(S.unitEdits).length) delete S.unitEdits; } }
   const next={...u,c:i?insertUnits([i])[0].c:unitVariant(c,u.key)};
-  if(p){ const b=bbox(next.c,p);
-    if(pl.kind==='wall'){ const hz=!isVert(room,pl.s), pp=wallPerpPos(room,pl.s,hz?b.h:b.w,pl.d); if(hz) p.y=pp; else p.x=pp; }
-    else { p.x=pl.b.x+(pl.b.w-b.w)/2; p.y=pl.b.y+(pl.b.h-b.h)/2; if(pl.kind==='skew') skewPlace(room,next,p,p.sw); }
-    clampPos(next,p);
-    const nb=bbox(next.c,p);
-    if((nb.w>room.w+1e-9||nb.h>room.d+1e-9)&&(next.parts||posAng(p)||!nicheFit(roomGeom(S,room),nb))){
+  if(p){ const fitted=refitPos(room,pl,p,next.c);
+    if(!fitted){
       if(i){ i.w=oldIns.w; i.d=oldIns.d; }
       else { if(prev){ if(!S.unitEdits) S.unitEdits={}; S.unitEdits[u.key]=prev; } else if(S.unitEdits) delete S.unitEdits[u.key]; if(!had) delete S.unitEdits; }
       if(el) fieldMsg(el,'Не помещается в помещение'); render(); return;
     }
-    S.layout[u.key]=p;   // новый габарит и позиция проверены до recompute, чтобы единица не ушла в резерв
+    S.layout[u.key]=fitted;   // новый габарит и позиция проверены до recompute, чтобы единица не ушла в резерв
   }
   S.layoutManual=true; S.layoutRoom=S.layoutRoom||{}; S.layoutRoom[u.key]=room.id;
   recompute(); touch(); render();
@@ -6729,6 +6766,7 @@ function setIsland(u, axis, v, el){
 function bindEquipDims(){
   const seg2=document.getElementById('pdims-bar'); seg2&&segBind(seg2,(k,v)=>{ if(k==='pdims'){ S.planDims=v; touch(); render(); } });
   const u=sel&&curUnits().find(x=>x.key===sel);
+  const purpose=document.getElementById('unit-purpose'); purpose&&u&&purpose.addEventListener('change',()=>moveUnitPurpose(u,purpose.value,purpose));
   const note=document.getElementById('unit-note'); note&&u&&note.addEventListener('change',()=>{ setUnitNote(u,note.value); touch(); });
   const width=document.getElementById('unit-w'), depth=document.getElementById('unit-d'), reset=document.getElementById('unit-size-reset');
   width&&u&&width.addEventListener('change',()=>resizeUnit(u,Number(width.value),Math.round(u.c.d*1000),width));

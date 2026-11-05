@@ -1608,6 +1608,10 @@ function unitPoly(c,pos){ const b=bbox(c,pos); if(!posAng(pos)) return [{x:b.x,y
 function unitWallDist(room,s,c,pos){ if(!posAng(pos)) return sideDist(bbox(c,pos),s,room); return Math.min(...unitPoly(c,pos).map(p=>projectToWall(room,s,p.x,p.y).dist)); }
 function unitWallSpan(room,s,c,pos){ if(!posAng(pos)) return sideSpan(bbox(c,pos),s,room); const a=unitPoly(c,pos).map(p=>projectToWall(room,s,p.x,p.y).off); return [Math.min(...a),Math.max(...a)]; }
 function rectPoly(r){ return [{x:r.x,y:r.y},{x:r.x+r.w,y:r.y},{x:r.x+r.w,y:r.y+r.h},{x:r.x,y:r.y+r.h}]; }
+function pointInPoly(poly,x,y){ let sign=0;
+  for(let i=0;i<poly.length;i++){ const p=poly[i], q=poly[(i+1)%poly.length], cross=(q.x-p.x)*(y-p.y)-(q.y-p.y)*(x-p.x); if(Math.abs(cross)<1e-9) continue;
+    const s=Math.sign(cross); if(sign&&sign!==s) return false; sign=s;
+  } return true; }
 function frontPoly(c,pos,depth){ if(!posAng(pos)) return rectPoly(frontZone(bbox(c,pos),pos.rot,depth));
   const b=bbox(c,pos), bs=baseSize(c,pos), cx=b.x+b.w/2, cy=b.y+b.h/2, a=posAng(pos)*Math.PI/180, co=Math.cos(a), si=Math.sin(a);
   return rectPoly(frontZone({x:-bs.w/2,y:-bs.h/2,w:bs.w,h:bs.h},pos.rot,depth)).map(p=>({x:cx+p.x*co-p.y*si,y:cy+p.x*si+p.y*co})); }
@@ -2123,7 +2127,8 @@ function hoods(s, units){
   const ex=s.points.filter(p=>p.type==='hood').map(p=>ptRect(s,p));
   const covered=u=>{ if(!L[u.key]) return false; const b=bbox(u.c,L[u.key]), cx=b.x+b.w/2, cy=b.y+b.h/2; return ex.some(r=>cx>=r.x&&cx<=r.x+r.w&&cy>=r.y&&cy<=r.y+r.h); };
   const hot=units.filter(u=>u.c.hot);
-  const rects=hot.filter(u=>L[u.key]&&!covered(u)).map(u=>{ const b=bbox(u.c,L[u.key]);
+  const skew=u=>posAng(L[u.key])!==0&&L[u.key].sw;
+  const rects=hot.filter(u=>L[u.key]&&!covered(u)&&!skew(u)).map(u=>{ const b=bbox(u.c,L[u.key]);
     let x1=b.x-o, y1=b.y-o, x2=b.x+b.w+o, y2=b.y+b.h+o;
     for(const w of roomWalls(s.room)){ const sp=spanOnWall(s.room,w,b); if(w.axis && backDist(s.room,w,b)<=0.4 && sp[1]>0 && sp[0]<w.len){ if(w.axis==='h'){ if(w.ny>0) y1=w.y1; else y2=w.y1; } else { if(w.nx>0) x1=w.x1; else x2=w.x1; } } }   // зонт у стены — до стены
     x1=Math.max(0,x1); y1=Math.max(0,y1); x2=Math.min(W,x2); y2=Math.min(D,y2); return {x:x1,y:y1,w:x2-x1,h:y2-y1}; });
@@ -2134,6 +2139,12 @@ function hoods(s, units){
   const notPl=hot.filter(u=>!L[u.key]);
   const extra=notPl.reduce((a,u)=>a+(u.c.w+2*o)*(u.c.d+o),0), extraLen=notPl.reduce((a,u)=>a+u.c.w+2*o,0);
   const list=m.map(r=>({...r, area:r.w*r.h, len:Math.max(r.w,r.h)}));
+  const spans=hot.filter(u=>L[u.key]&&!covered(u)&&skew(u)).map(u=>{ const pos=L[u.key], w=wallById(s.room,pos.sw), [t0,t1]=unitWallSpan(s.room,pos.sw,u.c,pos);
+    return {sw:pos.sw,t0:Math.max(0,t0-o),t1:Math.min(w.len,t1+o),dep:u.c.d+o}; }).sort((a,b)=>a.t0-b.t0);
+  const merged=[];
+  for(const r of spans){ const prev=merged.findLast(p=>p.sw===r.sw); if(prev&&r.t0-prev.t1<0.05){ prev.t1=Math.max(prev.t1,r.t1); prev.dep=Math.max(prev.dep,r.dep); } else merged.push({...r}); }
+  for(const r of merged){ const w=wallById(s.room,r.sw), point=(t,d)=>({x:w.x1+w.dir.x*t+w.nx*d,y:w.y1+w.dir.y*t+w.ny*d}), poly=[point(r.t0,0),point(r.t1,0),point(r.t1,r.dep),point(r.t0,r.dep)], xs=poly.map(p=>p.x), ys=poly.map(p=>p.y), x=Math.min(...xs), y=Math.min(...ys), len=r.t1-r.t0;
+    list.push({poly,x,y,w:Math.max(...xs)-x,h:Math.max(...ys)-y,area:len*r.dep,len,sw:r.sw}); }
   const area=list.reduce((a,r)=>a+r.area,0)+extra, len=list.reduce((a,r)=>a+r.len,0)+extraLen;
   const exArea=ex.filter(r=>hot.some(u=>covered(u))).reduce((a,r)=>a+r.w*r.h,0);
   return {list, area, len, exArea, coveredN:hot.filter(covered).length, exhaust:3600*s.norms.hoodV*(area+exArea)};
@@ -3322,7 +3333,7 @@ function planSvg(mode, iss, opts){
   if(hasPoly(S.room)){ const id=`rc-${S.room.id||'r'}`, points=contourPts(S.room,0).map(p=>`${p.x},${p.y}`).join(' '); gridClip=`<clipPath id="${id}"><polygon points="${points}"/></clipPath>`; g=`<g clip-path="url(#${id})">${g}</g>`; }
   g+=nicheGridSvg(S.room);
   const H=bare||!layerOn('pts')?{list:[]}:hoods(curGeom(),curUnits());
-  let hoodsSvg=H.list.map(r=>`<rect x="${r.x*100}" y="${r.y*100}" width="${r.w*100}" height="${r.h*100}" fill="none" stroke="var(--z-hot)" stroke-width="2.5" stroke-dasharray="10 7" opacity=".85" style="pointer-events:none"/>`).join('');
+  let hoodsSvg=H.list.map(r=>`${r.poly?`<polygon points="${r.poly.map(p=>`${p.x*100},${p.y*100}`).join(' ')}"`:`<rect x="${r.x*100}" y="${r.y*100}" width="${r.w*100}" height="${r.h*100}"`} fill="none" stroke="var(--z-hot)" stroke-width="2.5" stroke-dasharray="10 7" opacity=".85" style="pointer-events:none"/>`).join('');
   if(gridClip && hasPoly(S.room) && roomWalls(S.room).some(w=>!w.axis)) hoodsSvg=`<g clip-path="url(#rc-${S.room.id||'r'})">${hoodsSvg}</g>`;
   let zonesSvg='';
   const eq=(bare?[]:curUnits()).filter(u=>S.layout[u.key]).sort((a,b)=>(a.c.mount==='wall')-(b.c.mount==='wall')).map(u=>{
@@ -4575,7 +4586,7 @@ function printPlanSvg(opts){
         const dash = wall ? 'stroke-dasharray="3 5"' : u.src==='have' ? 'stroke-dasharray="7 4"' : '';
         eq+=`<g transform="${posAng(p)?skewTransform(u.c,p):`translate(${b.x*100},${b.y*100})`}"><rect width="${w}" height="${h}" fill="#ffffff"/><rect width="${w}" height="${h}" fill="${fill}" fill-opacity="${fop}" stroke="${mono?ink:zc}" stroke-width="2" ${dash}/>${wall?'':`<line x1="${fe[0]}" y1="${fe[1]}" x2="${fe[2]}" y2="${fe[3]}" stroke="${mono?ink:zc}" stroke-width="6"/>`}</g>`;
         const pp=pos&&pos.unit(u); if(pp) nums+=numCircle(b.x*100+(posAng(p)?b.w*100:w)/2, b.y*100+(posAng(p)?b.h*100:h)/2, pp.no); }
-      let hs=H.list.map(r=>`<rect x="${r.x*100}" y="${r.y*100}" width="${r.w*100}" height="${r.h*100}" fill="none" stroke="${mono?ink:'var(--z-hot)'}" stroke-width="2.5" stroke-dasharray="10 7"/>`).join('');
+      let hs=H.list.map(r=>`${r.poly?`<polygon points="${r.poly.map(p=>`${p.x*100},${p.y*100}`).join(' ')}"`:`<rect x="${r.x*100}" y="${r.y*100}" width="${r.w*100}" height="${r.h*100}"`} fill="none" stroke="${mono?ink:'var(--z-hot)'}" stroke-width="2.5" stroke-dasharray="10 7"/>`).join('');
       if(gridClip && hasPoly(S.room) && roomWalls(S.room).some(w=>!w.axis)) hs=`<g clip-path="url(#rcp-${S.room.id||'r'})">${hs}</g>`;
       body=zones+eq+hs+walls+ops+hoodsOnly+nums+(typeof equipDimsSvg==='function'?equipDimsSvg(S.room, curUnits(), {print:true}):'');
     } else if(layer==='need'){
@@ -4846,7 +4857,7 @@ REPORT.register({ id:'room-need', title:'Требуемые подключени
   available: ()=>P.items.length>0,
   build(ctx){ const r=ctx.room, pos=ctx.pos, us=roomUnitsOf(r.id);
     const H=(()=>{ const c=S.cur; S.cur=r.id; try{ return hoods(curGeom(),curUnits()); } finally{ S.cur=c; } })();
-    const under=u=>{ const p=S.layout[u.key]; if(!p) return false; const b=bbox(u.c,p), cx=b.x+b.w/2, cy=b.y+b.h/2; return H.list.some(h=>cx>=h.x&&cx<=h.x+h.w&&cy>=h.y&&cy<=h.y+h.h); };
+    const under=u=>{ const p=S.layout[u.key]; if(!p) return false; const b=bbox(u.c,p), cx=b.x+b.w/2, cy=b.y+b.h/2; return H.list.some(h=>h.poly?pointInPoly(h.poly,cx,cy):cx>=h.x&&cx<=h.x+h.w&&cy>=h.y&&cy<=h.y+h.h); };
     const m=new Map(); for(const u of us){ const p=pos.unit(u); if(!p) continue; const x=m.get(p.no)||{p,n:0,hood:false}; x.n++; x.hood=x.hood||under(u)||(u.c.hot&&!S.layout[u.key]); m.set(p.no,x); }
     // настольное с питанием или водой — тоже в таблицу
     pos.list.filter(p=>p.c.mount==='table'&&p.rooms.includes(r.id)&&((p.c.kw||0)>0||p.c.cw||p.c.dr)).forEach(p=>m.set(p.no,{p,n:p.qty,hood:false}));
@@ -4917,9 +4928,9 @@ REPORT.register({ id:'eng-vent', title:'Вентиляция', group:'Инжен
   build(ctx){ const pos=ctx.pos, rows=[], ex=[]; let total=0;
     for(const r of S.rooms){ const c=S.cur; S.cur=r.id; try{
       const us=curUnits(), H=hoods(curGeom(),us);
-      H.list.forEach((h,i)=>{ const over=us.filter(u=>{ const p=S.layout[u.key]; if(!p||!u.c.hot) return false; const b=bbox(u.c,p), cx=b.x+b.w/2, cy=b.y+b.h/2; return cx>=h.x&&cx<=h.x+h.w&&cy>=h.y&&cy<=h.y+h.h; })
+      H.list.forEach((h,i)=>{ const over=us.filter(u=>{ const p=S.layout[u.key]; if(!p||!u.c.hot) return false; const b=bbox(u.c,p), cx=b.x+b.w/2, cy=b.y+b.h/2; return h.poly?pointInPoly(h.poly,cx,cy):cx>=h.x&&cx<=h.x+h.w&&cy>=h.y&&cy<=h.y+h.h; })
           .map(u=>pos.unit(u)).filter(Boolean); const nos=[...new Set(over.map(p=>p.no))].sort((a,b)=>a-b);
-        rows.push([r.name, `${fmt0(h.w*1000)} × ${fmt0(h.h*1000)}`, fmt2(h.w*h.h), nos.map(n=>'поз. '+n).join(', ')||'—', fmt0(3600*S.norms.hoodV*h.w*h.h)]); });
+        rows.push([r.name, `${fmt0((h.poly?h.len:h.w)*1000)} × ${fmt0((h.poly?h.area/h.len:h.h)*1000)}`, fmt2(h.poly?h.area:h.w*h.h), nos.map(n=>'поз. '+n).join(', ')||'—', fmt0(3600*S.norms.hoodV*(h.poly?h.area:h.w*h.h))]); });
       S.points.filter(p=>p.type==='hood').forEach(p=>ex.push([r.name, `${fmt0(p.w*1000)} × ${fmt0(p.d*1000)}`, p.spec||'—']));
       total+=H.exhaust;
     } finally{ S.cur=c; } }

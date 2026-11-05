@@ -1243,6 +1243,19 @@ function innerRect(room){ if(!hasPoly(room)) return {x:0,y:0,w:room.w,h:room.d};
   return best; }
 // стены по контуру
 function wallsPathSvg(room,T,stroke){ const P=contourPts(room,T/2), d=P.map((p,i)=>`${i?'L':'M'}${p.x},${p.y}`).join(' ')+' Z'; return `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${T}" stroke-linejoin="miter"/>`; }
+function measuredOutlineSvg(room,ink,paper,width){ if(!room.measured) return '';
+  const points=room.measured.pts.map(p=>`${p.x*100},${p.y*100}`).join(' ');
+  return `<polygon points="${points}" fill="none" stroke="${paper}" stroke-width="${width+2}" pointer-events="none"/><polygon points="${points}" fill="none" stroke="${ink}" stroke-width="${width}" stroke-dasharray="${4*width} ${3*width}" pointer-events="none"/>`; }
+function measuredRows(room){ if(!room.measured) return [];
+  const pts=room.measured.pts;
+  return roomWalls(room).flatMap(w=>{ const i=pts.findIndex(p=>p.wid===w.id); if(i<0||pts.length<2) return [];
+    const a=pts[i], b=pts[(i+1)%pts.length], dx=b.x-a.x, dy=b.y-a.y;
+    return [{n:w.i+1,real:Math.hypot(dx,dy),plan:w.len,run:Math.min(Math.abs(dx),Math.abs(dy)),straight:measuredStraight(dx,dy)}]; }); }
+function measuredCorners(room){ if(!room.measured) return [];
+  const pts=room.measured.pts, ws=roomWalls(room), n=pts.length, area=pts.reduce((s,p,i)=>{ const q=pts[(i+1)%n]; return s+p.x*q.y-q.x*p.y; },0);
+  return pts.flatMap((p,i)=>{ const prev=pts[(i+n-1)%n], next=pts[(i+1)%n], a=ws.find(w=>w.id===prev.wid), b=ws.find(w=>w.id===p.wid); if(!a||!b) return [];
+    const ux=p.x-prev.x, uy=p.y-prev.y, vx=next.x-p.x, vy=next.y-p.y, turn=Math.atan2(ux*vy-uy*vx,ux*vx+uy*vy);
+    return [{a:a.i+1,b:b.i+1,deg:180-Math.sign(area)*turn*180/Math.PI}]; }); }
 /* ---------- форма помещения (30.2): шаблоны, проверка контура, смена формы ---------- */
 function trapGeom(p){
   if(!p) return null;
@@ -2999,7 +3012,7 @@ function roomsPlanSvg(){
       const wallNums=on&&hasPoly(r)?roomWalls(r).map(w=>{ const x=(w.x1+w.x2)*50+w.nx*22/k, y=(w.y1+w.y2)*50+w.ny*22/k; return `<g style="pointer-events:none"><circle cx="${q(x)}" cy="${q(y)}" r="${q(11/k)}" fill="var(--paper)" stroke="var(--rule)" stroke-width="${q(1.2/k)}"/><text x="${q(x)}" y="${q(y)}" font-size="${q(12/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--ink-2)">${w.i+1}</text></g>`; }).join(''):'';
       const wallHandles=on?roomWalls(r).map(w=>{ if(w.axis===null) return ''; const x=(w.x1+w.x2)*50, y=(w.y1+w.y2)*50, cursor=w.axis==='h'?'ns-resize':'ew-resize'; return `<g class="shp-handle" data-wall-handle="${esc(w.id)}" data-room="${esc(r.id)}" style="cursor:${cursor}"><circle cx="${q(x)}" cy="${q(y)}" r="${q(22/k)}" fill="transparent" stroke="none"/><circle cx="${q(x)}" cy="${q(y)}" r="${q(7/k)}" fill="var(--paper)" stroke="var(--steel)" stroke-width="${q(2/k)}" style="pointer-events:none"/><title>Перетащите, чтобы сдвинуть стену</title></g>`; }).join(''):'';
       const wallPreview=on?`<polygon id="shp-ghost" points="${points||roomPoly(r).map(p=>`${q(p.x*100)},${q(p.y*100)}`).join(' ')}" fill="none" stroke="var(--steel)" stroke-width="${q(2/k)}" stroke-dasharray="${q(6/k)} ${q(4/k)}" stroke-linejoin="round" display="none" style="pointer-events:none"/><text id="shp-drag-label" x="0" y="0" font-size="${q(13/k)}" text-anchor="middle" dominant-baseline="central" fill="var(--steel)" display="none" style="pointer-events:none"></text>`:'';
-      body+=`<g data-rg="${r.id}" class="${on?'rm-on':''}" transform="translate(${q(r.x*100)},${q(r.y*100)})">${bg}${nicheBg}${planSvg('room',[],{inner:true, k, bare:true, blocked:many?blockedSides(r):new Set()})}${wallNums}${wallPreview}${wallHandles}${roomLabelSvg(r,k)}</g>`; } }
+      body+=`<g data-rg="${r.id}" class="${on?'rm-on':''}" transform="translate(${q(r.x*100)},${q(r.y*100)})">${bg}${nicheBg}${planSvg('room',[],{inner:true, k, bare:true, blocked:many?blockedSides(r):new Set()})}${on?measuredOutlineSvg(r,'var(--accent)','var(--paper)',2/k):''}${wallNums}${wallPreview}${wallHandles}${roomLabelSvg(r,k)}</g>`; } }
   finally{ S.cur=keep; scrK=null; PT_SH={t:0,r:0,b:0,l:0}; }
   return `<svg id="plan" data-unified="1" data-rooms="1" viewBox="${q(vx)} ${q(vy)} ${q(vw)} ${q(vh)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${many?'План помещений: '+esc(rs.map(r=>r.name).join(', ')):`План помещения: длина ${fmt0(rs[0].d*1000)} мм по вертикали, ширина ${fmt0(rs[0].w*1000)} мм по горизонтали`}">
     <defs><pattern id="hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="10" stroke="var(--ink-2)" stroke-width="1.2" opacity=".35"/></pattern></defs>
@@ -3072,7 +3085,7 @@ function shapeSecHtml(r){
   const tpl=shapeCurrentTpl(r), curRot=r.shape&&r.shape.rot||0, p=shapeCurrentParams(r,tpl), templates=[['rect','Прямо&shy;угольник'],['L','Г'],['U','П'],['T','Т'],['trap','Трапе&shy;ция'],['quad','По заме&shy;рам'],['cut','Срезан&shy;ный угол'],['bay','Эркер']];
   const choices=`<div class="shp-template-row">${templates.map(([key,label])=>`<button type="button" class="btn tap shp-template" data-shape-tpl="${key}" aria-pressed="${tpl===key}">${shapeSvg(key,0,key==='quad'?{a:3,b:2.1,c:2.4,d:2,e:3.5}:shapeDefaults(key,3,2))}<span>${label}</span></button>`).join('')}${tpl==='custom'?'<span class="shp-custom-label">Своя форма</span>':''}</div>`;
   const rotation=tpl!=='custom'&&tpl!=='rect'?`<div class="shp-rotation"><span class="lbl">Поворот</span><div class="shp-rot-row">${[0,1,2,3].map(rot=>`<button type="button" class="btn tap shp-rot" data-shape-rot="${rot}" aria-pressed="${Number(curRot)===rot}" aria-label="Поворот ${rot*90} градусов">${shapeSvg(tpl,rot,p)}<span>${rot*90}°</span></button>`).join('')}</div></div>`:'';
-  const measure=r.measured?`<p class="rmp-note">Уточнено по замерам: диагоналей — ${r.measured.diags.length}</p><div class="rep-btns"><button type="button" class="btn tap shp-action" data-measure-open>Изменить</button><button type="button" class="btn tap shp-action" data-measure-clear>Снять уточнение</button></div>`:'<button type="button" class="btn tap shp-action" data-measure-open>Уточнить по диагоналям</button><p class="rmp-note">Углы на стройке не бывают точно прямыми. Введите замеры стен и диагоналей</p>';
+  const measure=r.measured?`<p class="rmp-note">Уточнено по замерам: диагоналей — ${r.measured.diags.length}</p><p class="rmp-note">На плане штрихами — реальный контур. Размеры плана и расстановка — по рабочему контуру: стены выровнены по самой выступающей точке</p>${measuredRows(r).map(w=>`<p class="rmp-note">Стена ${w.n}: замер ${fmt0(w.real*1000)}, на плане ${fmt0(w.plan*1000)} мм${!w.straight?', косая':w.run>=0.001?`, ход ${fmt0(w.run*1000)} мм`:''}</p>`).join('')}<div class="rep-btns"><button type="button" class="btn tap shp-action" data-measure-open>Изменить</button><button type="button" class="btn tap shp-action" data-measure-clear>Снять уточнение</button></div>`:'<button type="button" class="btn tap shp-action" data-measure-open>Уточнить по диагоналям</button><p class="rmp-note">Углы на стройке не бывают точно прямыми. Введите замеры стен и диагоналей</p>';
   const walls=tpl==='custom'&&!r.measured?`<div class="shp-wall-list">${roomWalls(r).map(w=>`<div class="shp-wall-row"><b>Стена ${w.i+1}</b>${num(`shp-wall-${esc(w.id)}`,'Длина, мм',Math.round(w.len*1000),10,300,30000,'',`data-wall-len="${esc(w.id)}"`)}</div>`).join('')}</div>`:'';
   const stepWalls=roomWalls(r), stepWall=stepWalls.find(w=>w.id===stepWallSel)||stepWalls[0];
   const stepBlock=`<div class="shp-step"><h4>Уступ на стене</h4><label class="field"><span>Стена</span><select data-step-wall>${stepWalls.map(w=>{ const title=wallTitle(r,w.id); return `<option value="${esc(w.id)}" ${w.id===stepWall.id?'selected':''}>${esc(title.charAt(0).toUpperCase()+title.slice(1))}</option>`; }).join('')}</select></label>
@@ -3785,7 +3798,7 @@ function planSvg(mode, iss, opts){
       ${BL.has('l')&&BL.has('r')?'':`<g ${BL.has('l')?`transform="translate(${W+oR+oL},0)"`:''}><line x1="${-oL}" y1="0" x2="${-oL}" y2="${D}" stroke="var(--ink-2)" stroke-width="1.2"/><line x1="${-oL-8}" y1="0" x2="${-oL+8}" y2="0" stroke="var(--ink-2)" stroke-width="1.2"/><line x1="${-oL-8}" y1="${D}" x2="${-oL+8}" y2="${D}" stroke="var(--ink-2)" stroke-width="1.2"/>
       </g><g ${BL.has('l')?`transform="translate(${W+oR+oL+20+dimFs*0.9},0)"`:''}>${showDim?`<text x="${-oL-10}" y="${D/2}" text-anchor="middle" transform="rotate(-90 ${-oL-10} ${D/2})">${fmt0(S.room.d*1000)}</text>`:''}</g>`}</g>`:''}
     ${!layerOn('dims')?'':mode==='room'?chainsSvg(false,BL):mode==='points'?chainsSvg(true):''}
-    ${zonesSvg}${hoodsSvg}${obstaclesSvg(S.room,mode)}${eq}${mode==='equip'&&!bare?groupOutlineSvg():''}${swSvg}${mode==='equip'&&!bare&&needOn()?needLayerSvg(scrK):''}${nicheWallsSvg(S.room,walls,false)}${ops}${pts}${mode==='equip'&&!bare&&typeof equipDimsSvg==='function'?equipDimsSvg(S.room, curUnits(), {blocked:opts.blocked}):''}${opts.inner?'':'</svg>'}`;
+    ${zonesSvg}${hoodsSvg}${obstaclesSvg(S.room,mode)}${eq}${mode==='equip'&&!bare?groupOutlineSvg():''}${swSvg}${mode==='equip'&&!bare&&needOn()?needLayerSvg(scrK):''}${nicheWallsSvg(S.room,walls,false)}${bare?'':measuredOutlineSvg(S.room,'var(--accent)','var(--paper)',2)}${ops}${pts}${mode==='equip'&&!bare&&typeof equipDimsSvg==='function'?equipDimsSvg(S.room, curUnits(), {blocked:opts.blocked}):''}${opts.inner?'':'</svg>'}`;
   scrK=null; PT_SH={t:0,r:0,b:0,l:0}; return out;
 }
 // единый план шага «План» (помещений больше одного): каждое помещение — planSvg в режиме inner, сдвинутый на room.x, room.y
@@ -5007,7 +5020,7 @@ function printPlanSvg(opts){
       <line x1="${-oL}" y1="0" x2="${-oL}" y2="${D}" stroke="${ink2}" stroke-width="1.2"/><line x1="${-oL-8}" y1="0" x2="${-oL+8}" y2="0" stroke="${ink2}" stroke-width="1.2"/><line x1="${-oL-8}" y1="${D}" x2="${-oL+8}" y2="${D}" stroke="${ink2}" stroke-width="1.2"/>
       <text x="${-oL-10}" y="${D/2}" text-anchor="middle" transform="rotate(-90 ${-oL-10} ${D/2})">${fmt0(S.room.d*1000)}</text></g>`;
     let walls=hasPoly(S.room)?wallsPathSvg(S.room,T,ink):`<g stroke="${ink}" stroke-width="${T}" stroke-linecap="square"><line x1="${-T/2}" y1="${-T/2}" x2="${W+T/2}" y2="${-T/2}"/><line x1="${W+T/2}" y1="${-T/2}" x2="${W+T/2}" y2="${D+T/2}"/><line x1="${-T/2}" y1="${D+T/2}" x2="${W+T/2}" y2="${D+T/2}"/><line x1="${-T/2}" y1="${-T/2}" x2="${-T/2}" y2="${D+T/2}"/></g>`;
-    walls=nicheWallsSvg(S.room,walls,true)+obstaclesSvg(S.room,'print');
+    walls=nicheWallsSvg(S.room,walls,true)+measuredOutlineSvg(S.room,ink,'#ffffff',2)+obstaclesSvg(S.room,'print');
     const ops=curGeom().openings.map(o=>openingSvg(o,'equip')).join('');   // подпись двери — снаружи помещения
     const ptsAll=S.points.filter(p=>p.type==='hood').map(p=>pointSvg(p,'view')).join('')+S.points.filter(p=>p.type!=='hood').map(p=>pointSvg(p,'view')).join('');
     const hoodsOnly=S.points.filter(p=>p.type==='hood').map(p=>pointSvg(p,'view')).join('');
@@ -5256,10 +5269,16 @@ REPORT.register({ id:'room-walls', title:'Стены и проёмы', group:'П
       const note = o.type==='window' ? `подоконник ${fmt0((o.sill||0.9)*1000)} мм` : o.type==='prot' ? o.niche ? `ниша, глубина ${fmt0((o.depth||0.3)*1000)} мм` : `глубина ${fmt0((o.depth||0.3)*1000)} мм`
         : `${doorLabelIn(r,o)}; открывается ${o.swing==='in'?'внутрь':'наружу'}, петли ${o.hinge==='l'?'слева':'справа'}${o.derived?' (дверь соседнего помещения)':''}`;
       return [opName(o), `${wallTitle(r,o.side).replace(/ стена$/,'')}, ${fmt0(wallLen(r,o.side)*1000)}`, `${fmt0(o.off*1000)} ${wallFrom(r,o.side)}`, fmt0(o.w*1000), note]; });
+    const measured=r.measured?[
+      {t:'table', cols:[{title:'Стена',w:.7},{title:'Замер, мм',w:1,align:'r'},{title:'На плане, мм',w:1,align:'r'},{title:'Ход, мм',w:1,align:'r'},{title:'Для расстановки',w:1.5}], rows:measuredRows(r).map(w=>[String(w.n),fmt0(w.real*1000),fmt0(w.plan*1000),fmt0(w.run*1000),w.straight?'прямая':'косая']),
+        note:'Размеры плана — рабочий контур: стены выровнены по самой выступающей точке. Штриховая линия на плане — реальный контур по замерам'},
+      ...(r.measured.diags.length?[{t:'p', text:'Диагонали: '+r.measured.diags.map(d=>{ const ws=roomWalls(r), corner=id=>{ const i=ws.findIndex(w=>w.id===id); return i<0?'':`угол стен ${ws[(i+ws.length-1)%ws.length].i+1} и ${ws[i].i+1}`; }; return `${corner(d.a)} — ${corner(d.b)}: ${fmt0(d.len*1000)} мм`; }).join('; ')}]:[]),
+      {t:'p', text:'Углы: '+measuredCorners(r).map(c=>`стены ${c.a} и ${c.b} — ${fmt1(c.deg)}°`).join('; ')}]:[];
     return [{t:'h2', text:`«${r.name}»: стены и проёмы`},
       {t:'kv', cols:2, rows:[['Длина × ширина', `${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм`],['Площадь', fmt1(roomArea(r))+' м²']]},
       rows.length?{t:'table', cols:[{title:'Проём',w:1},{title:'Стена, длина мм',w:1.6},{title:'Привязка, мм',w:1.8},{title:'Ширина, мм',w:1,align:'r'},{title:'Подоконник / куда ведёт / глубина',w:3.6}], rows,
         note:hasPoly(r)?'Стены пронумерованы по часовой стрелке от левого верхнего угла, номера — на плане. Привязка — до ближнего края проёма.':'Стены названы так, как они лежат на плане: верхняя, правая, нижняя, левая. Привязка — до ближнего края проёма.'}:{t:'p', text:'Проёмов не отмечено.', muted:true},
+      ...measured,
       ...roomObs(r).map(ob=>({t:'p', text:`${(OBS_NOM[ob.kind]||OBS_NOM.other).replace(/^./,c=>c.toUpperCase())} ${ob.shape==='round'?'⌀'+fmt0(ob.w*1000):fmt0(ob.w*1000)+'×'+fmt0(ob.d*1000)} мм, от левой стены ${fmt0(ob.x*1000)} мм, от верхней ${fmt0(ob.y*1000)} мм`})),
       ctx.plan.room(r,'walls')]; } });
 function doorLabelIn(r,o){ if(o.to&&o.to.startsWith('room:')) return 'ведёт в «'+roomName(S,o.to.slice(5))+'»'; return 'ведёт '+(DOOR_TO[o.to]||'—'); }

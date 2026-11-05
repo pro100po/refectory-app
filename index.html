@@ -1807,9 +1807,10 @@ function layoutScore(s, units, L){
 // приёмка → хранение → мытьё → чистка и разделка → нарезка → термообработка → сервировка → выдача; мойка посуды — после выдачи
 const ZFLOW=['san','store','cold','raw','hot','ready'];
 function subOrd(c){ const r=c.role||''; if(/^bath/.test(r)) return 0; if(/^table/.test(r)) return 1; return 2; }
+function insLen(len){ return Math.floor(Math.round(len*1000)/10)*10/1000; }
 function insC(len,dep,z){ const lm=Math.round(len*1000), dm=Math.round(dep*1000);
   return {id:'ins_'+lm+'x'+dm, n:`Стол-вставка ${lm}×${dm}`, lb:'Стол-вставка', lb2:'Вставка', s:'Вст', w:len, d:dep, h:0.87, z:z||'ready', mount:'floor', insert:1, kw:0, ph:1, role:'insert', p:Math.round((5000+len*9000)/500)*500}; }
-function insertUnits(list){ return (list||[]).map(i=>({key:i.key, c:insC(i.w,i.d,i.z), src:'buy'})); }
+function insertUnits(list){ return (list||[]).map(i=>({key:i.key, c:{...insC(i.w,i.d,i.z), gap:i.gap||0}, src:'buy'})); }
 function cwEdges(g,o){ return perimeterSpan(g.room,o.side,o.off,o.w); }
 function mirrorGeom(s){ return mirrorRoom(s); }
 function mirRect(W,r){ return {x:W-r.x-r.w, y:r.y, w:r.w, h:r.h}; }
@@ -1866,7 +1867,8 @@ function packForward(g, seq, startP, occ, out, reserve, runInit){
   const closeCorner=(sd,len,t0)=>{
     if(wallById(g.room,sd).axis===null) return 0;
     const rem=len-t0; if(run.side!==sd || rem<0.3) return 0;
-    const dep=Math.max(0.5,run.front), c=insC(rem,dep,run.z), pos=posAt(sd,t0,c,0); if(pos===null) return 0;
+    const pl=insLen(rem); if(pl<0.3) return 0;
+    const dep=Math.max(0.5,run.front), c={...insC(pl,dep,run.z), gap:+(rem-pl).toFixed(3)}, pos=posAt(sd,t0,c,0); if(pos===null) return 0;
     const b=bbox(c,pos);
     if(!free(b,NOF,c)) return 0;
     const key='ins:'+(out.n++); out.L[key]=pos; out.ins.push({key,c}); occ.push({b,f:NOF}); return dep; };
@@ -1917,8 +1919,8 @@ function fillGaps(s, all, L, ins, cnt){
       for(const o of hits(strip(a,e))){ const oa=(horiz?o.x:o.y)-O, oe=(horiz?o.x+o.w:o.y+o.h)-O; if(oa<=a+0.01) a=Math.max(a,oe); else if(oe>=e-0.01) e=Math.min(e,oa); }
       if(e-a<0.3 || hits(strip(a,e)).length) continue;
       if(wins.some(w=>ov(strip(a,e),w.r) && 0.87>w.sill+0.01)) continue;
-      const n=Math.ceil((e-a)/1.5-1e-6), pl=(e-a)/n;
-      for(let k=0;k<n;k++){ const a0=a+k*pl, c=insC(pl,dep,z), bd=wallBand(R,side,a0,pl,dep);
+      const n=Math.ceil((e-a)/1.5-1e-6), pl=insLen((e-a)/n); if(pl<0.3) continue;
+      for(let k=0;k<n;k++){ const a0=a+k*pl, c={...insC(pl,dep,z), gap:+((e-a)-n*pl).toFixed(3)}, bd=wallBand(R,side,a0,pl,dep);
         const pos={x:bd.x, y:bd.y, rot};
         pos.x=+pos.x.toFixed(3); pos.y=+pos.y.toFixed(3);
         if(!rectInRoom(R,bbox(c,pos))) continue;
@@ -2339,7 +2341,7 @@ function recompute(){
   if(P.manualConverted){ setTimeout(()=>toast('Ручной режим заменён правками — расчёт снова обновляется'),50); save(); }
   P.roomOf=assignRooms(S, real);
   const sig=JSON.stringify([real.map(u=>u.key+u.c.w+u.c.d+u.c.h+u.c.mount+(u.c.roomId||'')), S.rooms, S.unitRoom, S.norms.align, S.norms.work, [S.norms.elPanelDepth,S.norms.elPanelWidth,S.norms.elPanelLowH,S.norms.elWaterDist], S.norms.sewerMax, 'flow3']);
-  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ const r=layoutAll(S,real); S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room; S.inserts=r.inserts.map(i=>({key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, room:i.room})); S.layoutSig=sig; }
+  if(step>=4 && !S.layoutManual && S.layoutSig!==sig){ const r=layoutAll(S,real); S.layout=r.L; S.layoutRoom={}; for(const k in r.L) S.layoutRoom[k]=r.asg[k]||(r.inserts.find(i=>i.key===k)||{}).room; S.inserts=r.inserts.map(i=>({key:i.key, w:+i.c.w.toFixed(3), d:+i.c.d.toFixed(3), z:i.c.z, gap:i.c.gap||0, room:i.room})); S.layoutSig=sig; }
   S.inserts=(S.inserts||[]).filter(i=>S.layout[i.key]||i.off);
   const ins=insertUnits(S.inserts); S.inserts.forEach(i=>{ P.roomOf[i.key]=i.room&&S.rooms.some(r=>r.id===i.room)?i.room:S.rooms[0].id; });
   P.units=[...real, ...ins];
@@ -3926,7 +3928,7 @@ function stepSelect(){
   const q=addQuery.trim().toLowerCase();
   const addOpts=ZORDER.map(z=>{ const cs=CAT.filter(c=>c.z===z && (!q || c.n.toLowerCase().includes(q))); return cs.length?`<optgroup label="${ZONES[z]}">${cs.map(c=>`<option value="${c.id}">${esc(c.n)}</option>`).join('')}</optgroup>`:''; }).join('');
   const ins=insertItems();
-  const insHtml=ins.length?`<div class="zone-h"><span class="sw" style="background:var(--ink-2)"></span>Столы-вставки по плану</div><div class="rows">${ins.map(it=>`<div class="irow"><div class="nm">${esc(it.c.n)} <span class="muted">· заполняет угол или промежуток в линии</span></div><div class="meta"><span>${Math.round(it.c.w*1000)}×${Math.round(it.c.d*1000)}×870</span></div><div class="btns"><span class="tag buy">купить × ${it.qty}</span></div></div>`).join('')}</div>`:'';
+  const insHtml=ins.length?`<div class="zone-h"><span class="sw" style="background:var(--ink-2)"></span>Столы-вставки по плану</div><div class="rows">${ins.map(it=>`<div class="irow"><div class="nm">${esc(it.c.n)} <span class="muted">· заполняет угол или промежуток в линии${it.c.gap>=0.001?` · зазор ${Math.round(it.c.gap*1000)} мм`:''}</span></div><div class="meta"><span>${Math.round(it.c.w*1000)}×${Math.round(it.c.d*1000)}×870</span></div><div class="btns"><span class="tag buy">купить × ${it.qty}</span></div></div>`).join('')}</div>`:'';
   const n=editCount(S), stale=P.stale||[];
   const staleHtml=stale.length?`<ul class="notes" style="margin:0 0 12px">${stale.map(x=>`<li class="warn">${esc(shortName(x.c))}: правка «${x.d>0?'+':''}${x.d}» сделана, когда приложение ставило ${x.baseAt}; сейчас ставит ${x.now} — итог ${Math.max(0,x.now+x.d)}.
       <div class="btns" style="margin-top:6px"><button class="btn small tap" type="button" data-stale-keep="${x.id}">Оставить</button><button class="btn small tap" type="button" data-stale-drop="${x.id}">Убрать правку</button></div></li>`).join('')}</ul>`:'';
@@ -4284,7 +4286,7 @@ function stepEng(){
 }
 
 /* ---------- 7. Смета ---------- */
-function insertItems(){ const m=new Map(); P.units.filter(u=>u.c.insert).forEach(u=>{ const x=m.get(u.c.id); if(x) x.qty++; else m.set(u.c.id,{c:u.c, qty:1, src:'buy'}); }); return [...m.values()]; }
+function insertItems(){ const m=new Map(); P.units.filter(u=>u.c.insert).forEach(u=>{ const x=m.get(u.c.id); if(x){ x.qty++; x.c.gap=Math.max(x.c.gap||0,u.c.gap||0); } else m.set(u.c.id,{c:{...u.c}, qty:1, src:'buy'}); }); return [...m.values()]; }
 function costCalc(){
   const H=hoodsAll();
   const map=new Map(); [...P.items,...insertItems()].forEach(it=>{ const k=it.c.id+':'+it.src; const m=map.get(k); if(m) m.qty+=it.qty; else map.set(k,{...it}); });

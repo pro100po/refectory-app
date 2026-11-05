@@ -1332,6 +1332,104 @@ function shapeError(pts){
     const q1=(b.a.x-a.a.x)*ux+(b.a.y-a.a.y)*uy, q2=(b.b.x-a.a.x)*ux+(b.b.y-a.a.y)*uy;
     if(Math.min(a.len,Math.max(q1,q2))-Math.max(0,Math.min(q1,q2))>1e-9) return `Между стенами ${i+1} и ${j+1} меньше 600 мм`; }
   return null; }
+function solveMeasured(pts,lens,diags){
+  const bad='Проверьте размеры', impossible='Из таких размеров контур не складывается: проверьте диагонали и стены';
+  const fail=()=>({ok:false,error:bad,pts:[],free:0,redundant:0,items:[],maxDiff:0});
+  if(!Array.isArray(pts)||pts.length<4||pts.some(p=>!p||!Number.isFinite(p.x)||!Number.isFinite(p.y))||
+    !Array.isArray(lens)||lens.length!==pts.length||lens.some(v=>!Number.isFinite(v)||v<=0)||!Array.isArray(diags)) return fail();
+  const n=pts.length, size=2*n;
+  if(diags.some(d=>!d||!Number.isInteger(d.a)||!Number.isInteger(d.b)||d.a<0||d.b<0||d.a>=n||d.b>=n||
+    d.a===d.b||(d.a+1)%n===d.b||(d.b+1)%n===d.a||!Number.isFinite(d.len)||d.len<=0)) return fail();
+  const measures=lens.map((len,i)=>({kind:'wall',i,a:i,b:(i+1)%n,len})).concat(diags.map(d=>({kind:'diag',a:d.a,b:d.b,len:d.len})));
+  let anchor=0, longest=0;
+  for(let i=0;i<n;i++){ const p=pts[i], q=pts[(i+1)%n], len=Math.hypot(q.x-p.x,q.y-p.y);
+    if(!Number.isFinite(len)||len<=0) return fail(); if(len>longest){ longest=len; anchor=i; } }
+  const area=P=>P.reduce((s,p,i)=>{ const q=P[(i+1)%P.length], o=P[0]; return s+(p.x-o.x)*(q.y-o.y)-(q.x-o.x)*(p.y-o.y); },0);
+  const evaluate=coords=>{ const rows=[], residuals=[], actuals=[]; let cost=0, maxDiff=0;
+    for(const m of measures){ const dx=coords[2*m.b]-coords[2*m.a], dy=coords[2*m.b+1]-coords[2*m.a+1], len=Math.hypot(dx,dy), row=Array(size).fill(0);
+      if(len>0){ row[2*m.a]=-dx/len; row[2*m.a+1]=-dy/len; row[2*m.b]=dx/len; row[2*m.b+1]=dy/len; }
+      const r=m.len-len; rows.push(row); residuals.push(r); actuals.push(len); cost+=r*r; maxDiff=Math.max(maxDiff,Math.abs(r)); }
+    return {rows,residuals,actuals,cost,maxDiff}; };
+  const gauss=(matrix,rhs)=>{ const a=matrix.map((row,i)=>row.concat(rhs[i])), count=a.length;
+    for(let col=0;col<count;col++){ let pivot=col;
+      for(let i=col+1;i<count;i++) if(Math.abs(a[i][col])>Math.abs(a[pivot][col])) pivot=i;
+      if(!Number.isFinite(a[pivot][col])||Math.abs(a[pivot][col])<1e-15) return null;
+      [a[col],a[pivot]]=[a[pivot],a[col]];
+      for(let i=col+1;i<count;i++){ const factor=a[i][col]/a[col][col]; a[i][col]=0;
+        for(let j=col+1;j<=count;j++) a[i][j]-=factor*a[col][j]; } }
+    const result=Array(count).fill(0);
+    for(let i=count-1;i>=0;i--){ let v=a[i][count]; for(let j=i+1;j<count;j++) v-=a[i][j]*result[j]; result[i]=v/a[i][i]; }
+    return result.every(Number.isFinite)?result:null; };
+  const matrixRank=rows=>{ const a=rows.map(row=>row.slice()); let rank=0;
+    for(let col=0;col<size&&rank<a.length;col++){ let pivot=rank;
+      for(let i=rank+1;i<a.length;i++) if(Math.abs(a[i][col])>Math.abs(a[pivot][col])) pivot=i;
+      if(Math.abs(a[pivot][col])<=1e-7) continue;
+      [a[rank],a[pivot]]=[a[pivot],a[rank]];
+      for(let i=rank+1;i<a.length;i++){ const factor=a[i][col]/a[rank][col]; a[i][col]=0;
+        for(let j=col+1;j<size;j++) a[i][j]-=factor*a[rank][j]; } rank++; }
+    return rank; };
+  let coords=pts.flatMap(p=>[p.x,p.y]), state=evaluate(coords), lambda=0.001, moved=false;
+  if(!Number.isFinite(state.cost)) return fail();
+  // Минимальный шаг в координатах: Jᵀ (JJᵀ + λI)⁻¹ r.
+  for(let iter=0;iter<200&&state.maxDiff>=0.0001;iter++){
+    const rows=state.rows.map((row,i)=>row.map(v=>v*(measures[i].kind==='wall'?10:1))), residuals=state.residuals.map((r,i)=>r*(measures[i].kind==='wall'?10:1));
+    const matrix=rows.map((row,i)=>rows.map((other,j)=>row.reduce((s,v,k)=>s+v*other[k],0)+(i===j?lambda:0))), weights=gauss(matrix,residuals);
+    if(!weights){ lambda*=10; if(lambda>1e12) break; continue; }
+    const step=Array(size).fill(0); for(let i=0;i<rows.length;i++) for(let j=0;j<size;j++) step[j]+=rows[i][j]*weights[i];
+    if(Math.max(...step.map(Math.abs))<1e-12) break;
+    const trial=coords.map((v,i)=>v+step[i]), next=evaluate(trial);
+    const nextCost=next.residuals.reduce((s,r,i)=>s+r*r*(measures[i].kind==='wall'?100:1),0), cost=residuals.reduce((s,r)=>s+r*r,0);
+    if(Number.isFinite(nextCost)&&nextCost<cost){ coords=trial; state=next; moved=true; lambda=Math.max(1e-12,lambda*0.3); }
+    else { lambda*=10; if(lambda>1e12) break; } }
+  let result=pts.map((p,i)=>({...p,x:coords[2*i],y:coords[2*i+1]}));
+  if(moved){
+    // Возвращаем исходные начало и направление самой длинной стены.
+    const end=(anchor+1)%n, p=result[anchor], q=result[end], len=Math.hypot(q.x-p.x,q.y-p.y);
+    if(len>0){ const ux=(q.x-p.x)/len, uy=(q.y-p.y)/len, vx=(pts[end].x-pts[anchor].x)/longest, vy=(pts[end].y-pts[anchor].y)/longest;
+      const co=ux*vx+uy*vy, si=ux*vy-uy*vx;
+      result=result.map(r=>({...r,x:pts[anchor].x+(r.x-p.x)*co-(r.y-p.y)*si,y:pts[anchor].y+(r.x-p.x)*si+(r.y-p.y)*co})); } }
+  state=evaluate(result.flatMap(p=>[p.x,p.y]));
+  const rank=matrixRank(state.rows), free=2*n-3-rank, redundant=measures.length-rank;
+  const items=measures.map((m,i)=>({kind:m.kind,...(m.kind==='wall'?{i:m.i}:{a:m.a,b:m.b}),target:m.len,actual:state.actuals[i],diff:state.actuals[i]-m.len}));
+  let error=null;
+  if(!Number.isFinite(state.maxDiff)||state.maxDiff>(redundant>0?0.2:0.001)) error=impossible;
+  else if(Math.sign(area(result))!==Math.sign(area(pts))) error=impossible;
+  else error=shapeError(result);
+  return {ok:!error,error,pts:result,free,redundant,items,maxDiff:state.maxDiff}; }
+function visibleDiagonals(pts){
+  if(!Array.isArray(pts)||pts.length<4||pts.some(p=>!p||!Number.isFinite(p.x)||!Number.isFinite(p.y))) return [];
+  const n=pts.length, eps=1e-9, result=[];
+  const cross=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
+  const on=(a,b,p)=>Math.abs(cross(a,b,p))<=eps&&p.x>=Math.min(a.x,b.x)-eps&&p.x<=Math.max(a.x,b.x)+eps&&p.y>=Math.min(a.y,b.y)-eps&&p.y<=Math.max(a.y,b.y)+eps;
+  const intersects=(a,b,c,d)=>{ const c1=cross(a,b,c), c2=cross(a,b,d), c3=cross(c,d,a), c4=cross(c,d,b);
+    return ((c1>eps&&c2< -eps)||(c1< -eps&&c2>eps))&&((c3>eps&&c4< -eps)||(c3< -eps&&c4>eps))||on(a,b,c)||on(a,b,d)||on(c,d,a)||on(c,d,b); };
+  // Проверка лучом работает и для вогнутых контуров.
+  const inside=p=>{ let hit=false;
+    for(let i=0;i<n;i++){ const a=pts[i], b=pts[(i+1)%n]; if(on(a,b,p)) return false;
+      if((a.y>p.y)!==(b.y>p.y)&&p.x<a.x+(p.y-a.y)*(b.x-a.x)/(b.y-a.y)) hit=!hit; } return hit; };
+  for(let a=0;a<n;a++) for(let b=a+1;b<n;b++){
+    if(b===a+1||(a===0&&b===n-1)) continue;
+    const p=pts[a], q=pts[b]; let clear=true;
+    for(let i=0;i<n&&clear;i++){ const j=(i+1)%n, shared=i===a||i===b?i:j===a||j===b?j:-1;
+      if(shared<0){ if(intersects(p,q,pts[i],pts[j])) clear=false; }
+      else { const s=pts[shared], other=pts[shared===i?j:i], end=pts[shared===a?b:a];
+        if(Math.abs(cross(p,q,other))<=eps&&(other.x-s.x)*(end.x-s.x)+(other.y-s.y)*(end.y-s.y)>eps) clear=false; } }
+    if(clear&&inside({x:(p.x+q.x)/2,y:(p.y+q.y)/2})) result.push({a,b,len:Math.hypot(q.x-p.x,q.y-p.y)}); }
+  return result; }
+function triangulationDiagonals(pts){
+  const visible=visibleDiagonals(pts), n=Array.isArray(pts)?pts.length:0;
+  if(n<4||!visible.length) return [];
+  const byPair=new Map(visible.map(d=>[d.a+':'+d.b,d])), remaining=pts.map((_,i)=>i), result=[], eps=1e-9;
+  const cross=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
+  const sign=Math.sign(pts.reduce((s,p,i)=>{ const q=pts[(i+1)%n], o=pts[0]; return s+(p.x-o.x)*(q.y-o.y)-(q.x-o.x)*(p.y-o.y); },0));
+  while(remaining.length>3){ let clipped=false;
+    for(let i=0;i<remaining.length;i++){ const a=remaining[(i+remaining.length-1)%remaining.length], b=remaining[i], c=remaining[(i+1)%remaining.length];
+      const diagonal=byPair.get(Math.min(a,c)+':'+Math.max(a,c));
+      if(!diagonal||sign*cross(pts[a],pts[b],pts[c])<=eps) continue;
+      if(remaining.some(j=>j!==a&&j!==b&&j!==c&&sign*cross(pts[a],pts[b],pts[j])>=-eps&&sign*cross(pts[b],pts[c],pts[j])>=-eps&&sign*cross(pts[c],pts[a],pts[j])>=-eps)) continue;
+      result.push({...diagonal}); remaining.splice(i,1); clipped=true; break; }
+    if(!clipped) return []; }
+  return result; }
 function shapeParamsError(tpl,p){
   if(!p) return 'Не заданы размеры формы'; const W=Number(p.W), D=Number(p.D);
   if(tpl==='quad'){

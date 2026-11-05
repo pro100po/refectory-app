@@ -4693,13 +4693,15 @@ function stepEng(){
 
 /* ---------- 7. Смета ---------- */
 function insertItems(){ const m=new Map(); P.units.filter(u=>u.c.insert).forEach(u=>{ const x=m.get(u.c.id); if(x){ x.qty++; x.c.gap=Math.max(x.c.gap||0,u.c.gap||0); } else m.set(u.c.id,{c:{...u.c}, qty:1, src:'buy'}); }); return [...m.values()]; }
+function extraRows(s){ return Array.isArray(s.extras)?s.extras:[]; }
 function costCalc(){
   const H=hoodsAll();
   const map=new Map(); [...P.items,...insertItems()].forEach(it=>{ const k=it.c.id+':'+it.src; const m=map.get(k); if(m) m.qty+=it.qty; else map.set(k,{...it}); });
   const rows=[...map.values()].sort((a,b)=>ZORDER.indexOf(a.c.z)-ZORDER.indexOf(b.c.z));
   const eq=rows.filter(r=>r.src==='buy').reduce((s,r)=>s+priceOf(r.c)*r.qty,0);
   const hoodLen=Math.ceil(H.len*10)/10, hoodSum=hoodLen*S.hoodPrice, mont=(eq+hoodSum)*S.montage/100;
-  return {rows, eq, hoodLen, hoodSum, mont, total:eq+hoodSum+mont};
+  const extra=extraRows(S), extras=extra.reduce((sum,r)=>sum+r.qty*r.price,0);
+  return {rows, eq, hoodLen, hoodSum, mont, extras, extraRows:extra, total:eq+hoodSum+mont+extras};
 }
 function stepCost(){
   const C=costCalc();
@@ -4709,11 +4711,14 @@ function stepCost(){
   <div class="stack">
   <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Наименование</th><th class="r">Кол-во</th>${hasGas?'<th class="r">Газ, кВт тепл.</th>':''}<th class="r">Цена, ₽</th><th class="r">Сумма</th></tr></thead><tbody>${rows}
     <tr><td>Зонт вытяжной пристенный, погонный метр</td><td class="r num">${fmt1(C.hoodLen)} м</td>${hasGas?'<td></td>':''}<td class="r"><input type="text" inputmode="decimal" data-num autocomplete="off" class="num" id="hood-price" value="${S.hoodPrice}" step="1000" min="0" aria-label="Цена погонного метра зонта"></td><td class="r num">${rub(C.hoodSum)}</td></tr>
+    ${C.extraRows.map((r,i)=>`<tr><td><input type="text" data-extra-name="${i}" value="${esc(r.name)}" placeholder="Без названия" aria-label="Наименование"></td><td class="r"><input type="text" inputmode="decimal" data-num autocomplete="off" class="num" data-extra-qty="${i}" value="${r.qty}" min="0" aria-label="Количество"></td>${hasGas?'<td></td>':''}<td class="r"><input type="text" inputmode="decimal" data-num autocomplete="off" class="num" data-extra-price="${i}" value="${r.price}" min="0" aria-label="Цена за единицу"></td><td class="r num">${rub(r.qty*r.price)} <button class="btn" type="button" data-extra-del="${i}" aria-label="Удалить строку: ${esc(r.name.trim()||'Без названия')}">×</button></td></tr>`).join('')}
   </tbody></table></div>
+  <div class="btns" style="margin-top:10px"><button class="btn" type="button" id="extra-add">+ Своя строка</button></div>
   <div style="margin-top:14px;max-width:440px;margin-left:auto">
     <div class="sum-line"><span>Оборудование к закупке</span><span class="num">${rub(C.eq)}</span></div>
     <div class="sum-line"><span>Зонты</span><span class="num">${rub(C.hoodSum)}</span></div>
     <div class="sum-line"><span>Монтаж и пусконаладка, <input type="text" inputmode="decimal" data-num autocomplete="off" class="num" id="montage" value="${S.montage}" step="1" min="0" max="100" style="width:64px;padding:3px 6px" aria-label="Процент монтажа"> %</span><span class="num">${rub(C.mont)}</span></div>
+    ${C.extraRows.length?`<div class="sum-line"><span>Свои строки</span><span class="num">${rub(C.extras)}</span></div>`:''}
     <div class="sum-line total"><span>Итого</span><span class="num">${rub(C.total)}</span></div>
   </div></section>
   <section class="panel"><h3>Передать дальше</h3>
@@ -4727,6 +4732,10 @@ function stepCost(){
 async function copyText(t,okMsg){ try{ await navigator.clipboard.writeText(t); toast(okMsg); }catch(e){ const io=document.getElementById('io'); io.value=t; io.focus(); io.select(); toast('Текст выделен в поле — скопируйте вручную'); } }
 bind[6]=()=>{ bindFit(); };
 bind[7]=()=>{
+  document.getElementById('extra-add').addEventListener('click',()=>{ S.extras=[...extraRows(S),{id:uid('x'),name:'',qty:1,price:0}]; touch(); render(); });
+  main.querySelectorAll('[data-extra-name]').forEach(i=>i.addEventListener('change',()=>{ const r=extraRows(S)[+i.dataset.extraName]; if(r){ r.name=i.value; touch(); render(); } }));
+  for(const k of ['qty','price']) main.querySelectorAll('[data-extra-'+k+']').forEach(i=>i.addEventListener('change',()=>{ const v=parseFloat(i.value), r=extraRows(S)[+i.getAttribute('data-extra-'+k)]; if(r&&isFinite(v)&&v>=0){ r[k]=v; touch(); render(); } }));
+  main.querySelectorAll('[data-extra-del]').forEach(b=>b.addEventListener('click',()=>{ const rows=extraRows(S).filter((r,i)=>i!==+b.dataset.extraDel); if(rows.length) S.extras=rows; else delete S.extras; touch(); render(); }));
   main.querySelectorAll('[data-price]').forEach(i=>i.addEventListener('change',()=>{ const v=parseFloat(i.value); if(isFinite(v)&&v>=0){ S.prices[i.dataset.price]=v; touch(); render(); } }));
   const hp=document.getElementById('hood-price'); hp.addEventListener('change',()=>{ const v=parseFloat(hp.value); if(isFinite(v)&&v>=0){ S.hoodPrice=v; touch(); render(); } });
   const mo=document.getElementById('montage'); mo.addEventListener('change',()=>{ const v=parseFloat(mo.value); if(isFinite(v)&&v>=0){ S.montage=v; touch(); render(); } });
@@ -4735,7 +4744,9 @@ bind[7]=()=>{
     const lines=[['Наименование','Модель','Кол-во','Ед.','Цена, ₽','Сумма, ₽','Статус','Мощность, кВт',...(hasGas?['Газ, кВт тепл.']:[]),'Габариты Ш×Г×В, мм'].join('\t')];
     C.rows.forEach(r=>lines.push([r.c.n, r.c.model||'', r.qty, 'шт', r.src==='have'?0:priceOf(r.c), r.src==='have'?0:priceOf(r.c)*r.qty, r.src==='have'?'имеется':'закупка', fmt1(r.c.kw*r.qty), ...(hasGas?[r.c.gas&&r.c.gkw>0?fmt1(r.c.gkw*r.qty):'']:[]), Math.round(r.c.w*1000)+'×'+Math.round(r.c.d*1000)+'×'+Math.round(r.c.h*1000)].join('\t')));
     lines.push(['Зонт вытяжной пристенный','',String(C.hoodLen).replace('.',','),'м',S.hoodPrice,Math.round(C.hoodSum),'закупка','',''].join('\t'));
+    C.extraRows.forEach(r=>lines.push([r.name.trim()||'Без названия','',r.qty,'шт',r.price,r.qty*r.price,'закупка','',...(hasGas?['']:[]),''].join('\t')));
     lines.push(['Монтаж и пусконаладка, '+S.montage+' %','','','','',Math.round(C.mont),'','',''].join('\t'));
+    if(C.extraRows.length) lines.push(['Свои строки','','','','',Math.round(C.extras),'','',...(hasGas?['']:[]),''].join('\t'));
     lines.push(['Итого','','','','',Math.round(C.total),'','',''].join('\t'));
     copyText(lines.join('\n'),'Спецификация скопирована'); });
   document.getElementById('imp').addEventListener('click',()=>{ const t=document.getElementById('io').value; if(typeof importProjectText==='function') importProjectText(t); });
@@ -5441,9 +5452,10 @@ REPORT.register({ id:'cost', title:'Смета', group:'Справочно', ord
   build(ctx){ const C=costCalc(), pos=ctx.pos, custom=C.rows.some(r=>S.prices[r.c.id]!=null);
     const rows=C.rows.map(r=>{ const p=pos.of(r.c,r.src); return [p?String(p.no):'', r.c.n, String(r.qty), r.src==='have'?'имеется':fmt0(priceOf(r.c)), r.src==='have'?'—':fmt0(priceOf(r.c)*r.qty)]; });
     rows.push(['','Зонт вытяжной пристенный, погонный метр', fmt1(C.hoodLen)+' м', fmt0(S.hoodPrice), fmt0(C.hoodSum)]);
+    C.extraRows.forEach(r=>rows.push(['',r.name.trim()||'Без названия',String(r.qty),fmt0(r.price),fmt0(r.qty*r.price)]));
     return [{t:'h1', text:'Смета'},
       {t:'table', cols:[{title:'Поз.',w:.6,align:'r'},{title:'Наименование',w:5},{title:'Кол-во',w:.9,align:'r'},{title:'Цена, ₽',w:1.2,align:'r'},{title:'Сумма, ₽',w:1.3,align:'r'}], rows,
-        foot:[['','Оборудование к закупке','','',fmt0(C.eq)],['','Зонты','','',fmt0(C.hoodSum)],['',`Монтаж и пусконаладка, ${S.montage} %`,'','',fmt0(C.mont)],['','Итого','','',fmt0(C.total)]],
+        foot:[['','Оборудование к закупке','','',fmt0(C.eq)],['','Зонты','','',fmt0(C.hoodSum)],['',`Монтаж и пусконаладка, ${S.montage} %`,'','',fmt0(C.mont)],...(C.extraRows.length?[['','Свои строки','','',fmt0(C.extras)]]:[]),['','Итого','','',fmt0(C.total)]],
         note: custom?'Цены ориентировочные; часть цен введена пользователем.':'Цены ориентировочные, из справочника приложения. Впишите цены поставщика на шаге «Смета».'}]; } });
 
 REPORT.register({ id:'rules', title:'Правила и допущения', group:'Справочно', order:1600, audience:['full'],
@@ -5998,6 +6010,13 @@ function sanitizeProject(d){
   for(const k of ['heat','norms','feats','res','gas','report','edits','prices']) if(!obj(d[k])){ d[k]=defaults[k]; messages.push('Восстановлены настройки: '+k); }
   for(const k of Object.keys(defaults.heat)) if(!obj(d.heat[k])){ d.heat[k]=defaults.heat[k]; messages.push('Восстановлены настройки теплового оборудования: '+k); }
   if(!Array.isArray(d.existing)){ d.existing=[]; messages.push('Сброшен список имеющегося оборудования'); }
+  if(own(d,'extras')){
+    if(!Array.isArray(d.extras)) drop(d,'extras','Удалён повреждённый список своих строк сметы');
+    else { const rows=extraRows(d), filtered=rows.filter(r=>obj(r)&&num(r.qty)&&r.qty>=0&&num(r.price)&&r.price>=0);
+      if(filtered.length!==rows.length) messages.push('Удалены повреждённые свои строки сметы');
+      filtered.forEach(r=>{ if(typeof r.name!=='string'){ r.name=''; messages.push('Сброшено повреждённое наименование своей строки сметы'); } });
+      if(filtered.length) d.extras=filtered; else delete d.extras; }
+  }
   if(!pos(d.people)){ d.people=defaults.people; messages.push('Восстановлено количество людей'); }
   return messages;
 }

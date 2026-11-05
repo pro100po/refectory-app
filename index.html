@@ -387,12 +387,12 @@ html.set-lock,html.set-lock body{overflow:hidden}
 .rmp-wide{grid-column:1/-1}
 .rmp-warn{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:var(--r);font-size:13.5px}
 .shp-controls{display:flex;flex-direction:column;gap:12px}
-.shp-template-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:6px;align-items:stretch}
+.shp-template-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:stretch}
 .shp-template{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-width:0;min-height:64px;padding:5px 3px;font-size:12.5px;line-height:1.15;white-space:normal;overflow-wrap:anywhere}
 .shp-handle{touch-action:none}
 .shp-template[aria-pressed="true"],.shp-rot[aria-pressed="true"]{background:var(--steel-soft);border-color:var(--steel);color:var(--ink)}
 .shp-svg{width:40px;height:28px;flex:0 0 auto}
-.shp-custom-label{align-self:center;color:var(--ink-2);font-size:13px}
+.shp-custom-label{grid-column:1/-1;align-self:center;color:var(--ink-2);font-size:13px}
 .shp-rotation{display:flex;flex-direction:column;gap:6px}
 .shp-rot-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .shp-rot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;min-height:58px;padding:3px;font-size:12px}
@@ -423,7 +423,7 @@ html.set-lock,html.set-lock body{overflow:hidden}
   .rmp-foot{display:flex;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule)}
   .rmp-foot .btn{flex:1 1 auto}
   html:has(#rmp-side) main{padding-bottom:62vh} }
-@media (max-width:390px){ .shp-fields{grid-template-columns:minmax(0,1fr)} .shp-template-row{grid-template-columns:repeat(5,minmax(0,1fr))} .shp-custom-label{grid-column:1/-1;justify-self:end} }
+@media (max-width:390px){ .shp-fields{grid-template-columns:minmax(0,1fr)} .shp-template-row{grid-template-columns:repeat(3,minmax(0,1fr))} .shp-custom-label{grid-column:1/-1;justify-self:end} }
 /* окно «Новое помещение» */
 .nr-dlg{width:min(600px,100%)}
 .nr-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1240,15 +1240,25 @@ function trapGeom(p){
   else { const c=Number(p.c), d=Number(p.d); to=kind==='iso'?(a-b)/2:(c*c-d*d)/(2*(a-b))+(a-b)/2;
     const sq=c*c-to*to; if(!Number.isFinite(c)||(kind==='free'&&!Number.isFinite(d))||sq<=0) return null; D=Math.sqrt(sq); }
   return [a,b,to,D].every(Number.isFinite)&&D>0?{a,b,to,D}:null; }
+function quadGeom(p){
+  if(!p) return null;
+  const a=Number(p.a), b=Number(p.b), c=Number(p.c), d=Number(p.d), e=Number(p.e);
+  if(![a,b,c,d,e].every(v=>Number.isFinite(v)&&v>0)) return null;
+  const cx=(a*a+e*e-b*b)/(2*a), cy2=e*e-cx*cx, x=(d*d+e*e-c*c)/(2*e), h2=d*d-x*x;
+  if(![cx,cy2,x,h2].every(Number.isFinite)||cy2<=0||h2<=0) return null;
+  const A={x:0,y:0}, B={x:a,y:0}, C={x:cx,y:Math.sqrt(cy2)}, ux=C.x/e, uy=C.y/e, h=Math.sqrt(h2), sign=Math.sign(-a*uy);
+  const D={x:ux*x+uy*sign*h,y:uy*x-ux*sign*h}, bd=Math.hypot(B.x-D.x,B.y-D.y);
+  return [D.x,D.y,bd].every(Number.isFinite)?{A,B,C,D,bd}:null; }
 function shapeDefaults(tpl,W,D){ const r=v=>Math.round(v*10)/10, cw=r(W/3), cd=r(D/3);
   if(tpl==='rect') return {W,D};
   if(tpl==='L') return {W,D,cw,cd};
   if(tpl==='U') return {W,D,cw,cd,co:(W-cw)/2};
   if(tpl==='T'){ const lw=cw, ll=cd; return {W,D,lw,lo:(W-lw)/2,ll}; }
   if(tpl==='trap'){ const a=W, b=r(W*2/3); return {kind:'right',side:'l',a,b,h:D,c:Math.round(D*1000)/1000,d:Math.round(Math.hypot(a-b,D)*1000)/1000}; }
+  if(tpl==='quad') return {a:W,b:D,c:W,d:D,e:Math.round(Math.hypot(W,D)*1000)/1000};
   return null; }
 function shapeTemplate(tpl,rot,p){
-  if(!p||(tpl!=='trap'&&(!Number.isFinite(Number(p.W))||!Number.isFinite(Number(p.D))))) return {pts:[],roles:[]};
+  if(!p||(tpl!=='trap'&&tpl!=='quad'&&(!Number.isFinite(Number(p.W))||!Number.isFinite(Number(p.D))))) return {pts:[],roles:[]};
   const W=Number(p.W), D=Number(p.D); let pts=[], roles=[];
   if(tpl==='rect'){ pts=[{x:0,y:0},{x:W,y:0},{x:W,y:D},{x:0,y:D}]; roles=['top','right','bottom','left']; }
   else if(tpl==='L'){
@@ -1263,6 +1273,9 @@ function shapeTemplate(tpl,rot,p){
   } else if(tpl==='trap'){
     const g=trapGeom(p); if(!g) return {pts:[],roles:[]};
     pts=[{x:0,y:0},{x:g.a,y:0},{x:g.to+g.b,y:g.D},{x:g.to,y:g.D}]; roles=['long','sideR','short','sideL'];
+  } else if(tpl==='quad'){
+    const g=quadGeom(p); if(!g) return {pts:[],roles:[]};
+    pts=[g.A,g.B,g.C,g.D]; roles=['ab','bc','cd','da'];
   } else return {pts:[],roles:[]};
   let turn=((Math.trunc(Number(rot)||0)%4)+4)%4;
   while(turn--) pts=pts.map(q=>({x:-q.y,y:q.x}));
@@ -1309,6 +1322,13 @@ function shapeError(pts){
   return null; }
 function shapeParamsError(tpl,p){
   if(!p) return 'Не заданы размеры формы'; const W=Number(p.W), D=Number(p.D);
+  if(tpl==='quad'){
+    if(['a','b','c','d'].some(k=>!Number.isFinite(Number(p[k]))||Number(p[k])<0.3||Number(p[k])>30)) return 'Размеры должны быть от 300 до 30 000 мм';
+    if(!Number.isFinite(Number(p.e))||Number(p.e)<0.3||Number(p.e)>45) return 'Размеры должны быть от 300 до 45 000 мм';
+    const g=quadGeom(p); if(!g) return 'Из таких длин четырёхугольник не складывается: проверьте диагональ А–В и стены';
+    const pts=[g.A,g.B,g.C,g.D];
+    if(Math.max(...pts.map(q=>q.x))-Math.min(...pts.map(q=>q.x))>30||Math.max(...pts.map(q=>q.y))-Math.min(...pts.map(q=>q.y))>30) return 'Размеры должны быть от 300 до 30 000 мм';
+    return null; }
   if(tpl==='trap'){
     const kind=p.kind==='iso'||p.kind==='free'?p.kind:'right', keys=['a','b',...(kind==='right'?['h']:kind==='iso'?['c']:['c','d'])];
     if(keys.some(k=>!Number.isFinite(Number(p[k]))||Number(p[k])<0.3||Number(p[k])>30)) return 'Размеры должны быть от 300 до 30 000 мм';
@@ -2775,6 +2795,15 @@ function shapeSvg(tpl,rot,p){
 function shapeCurrentTpl(r){ return r.shape?r.shape.tpl:(hasPoly(r)?'custom':'rect'); }
 function shapeCurrentParams(r,tpl){ return r.shape&&r.shape.tpl===tpl&&r.shape.p?{...r.shape.p}:shapeDefaults(tpl,r.w,r.d); }
 function shapeFieldHtml(tpl,p,r){
+  if(tpl==='quad'){
+    const g=quadGeom(p), pts=g?[g.A,g.B,g.C,g.D]:[{x:0,y:0},{x:3,y:0},{x:3,y:2},{x:0,y:2}], letters=['А','Б','В','Г'];
+    const minX=Math.min(...pts.map(q=>q.x)), maxX=Math.max(...pts.map(q=>q.x)), minY=Math.min(...pts.map(q=>q.y)), maxY=Math.max(...pts.map(q=>q.y)), scale=Math.min(138/(maxX-minX),96/(maxY-minY));
+    const xy=pts.map(q=>({x:85+(q.x-(minX+maxX)/2)*scale,y:64+(q.y-(minY+maxY)/2)*scale})), center={x:xy.reduce((s,q)=>s+q.x,0)/4,y:xy.reduce((s,q)=>s+q.y,0)/4};
+    const diagram=`<svg width="170" viewBox="0 0 170 128" style="max-width:100%;align-self:center" role="img" aria-label="Углы А, Б, В, Г и диагонали помещения"><polygon points="${xy.map(q=>`${q.x},${q.y}`).join(' ')}" fill="var(--steel-soft)" stroke="currentColor" stroke-width="1.5"/>${[[0,2],[1,3]].map(([i,j])=>`<line x1="${xy[i].x}" y1="${xy[i].y}" x2="${xy[j].x}" y2="${xy[j].y}" stroke="currentColor" stroke-dasharray="4 3"/>`).join('')}${xy.map((q,i)=>{ const dx=q.x-center.x, dy=q.y-center.y, len=Math.hypot(dx,dy)||1; return `<text x="${q.x+dx/len*11}" y="${q.y+dy/len*11}" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-size="12">${letters[i]}</text>`; }).join('')}</svg>`;
+    const label=(text,role)=>{ const id=r&&r.shape&&r.shape.roles&&r.shape.roles[role]; return text+(id?' — '+wallName(r,id):'')+', мм'; };
+    const specs=[['a',label('Стена А–Б','ab')],['b',label('Стена Б–В','bc')],['c',label('Стена В–Г','cd')],['d',label('Стена Г–А','da')],['e','Диагональ А–В, мм'],['f','Диагональ Б–Г по замеру (для проверки), мм']];
+    const angles=g?pts.map((q,i)=>{ const prev=pts[(i+3)%4], next=pts[(i+1)%4], ux=prev.x-q.x, uy=prev.y-q.y, vx=next.x-q.x, vy=next.y-q.y, angle=Math.acos(Math.max(-1,Math.min(1,(ux*vx+uy*vy)/(Math.hypot(ux,uy)*Math.hypot(vx,vy)))))*180/Math.PI; return `${letters[i]} ${Math.round(ux*vy-uy*vx>0?360-angle:angle)}°`; }):[];
+    return diagram+`<div class="fields shp-fields">${specs.map(([key,text])=>num(`shp-${key}`,text,key==='f'&&!p.f?'':Math.round(p[key]*1000),10,300,key==='e'||key==='f'?45000:30000,'',`data-shp-param="${key}"${key==='f'?' data-optional':''}`)).join('')}</div>`+(g?`<p class="hint">Диагональ Б–Г по расчёту — ${fmt0(g.bd*1000)} мм · углы: ${angles.join(', ')}</p>`:'')+(g&&p.f&&Math.abs(p.f-g.bd)>0.03?`<p class="rmp-warn">Замер диагонали Б–Г расходится с расчётом на ${fmt0(Math.abs(p.f-g.bd)*1000)} мм — перемерьте стены и диагонали</p>`:''); }
   if(tpl==='trap'){
     const kind=p.kind==='iso'||p.kind==='free'?p.kind:'right', side=p.side==='r'?'r':'l', built=shapeTemplate(tpl,r&&r.shape&&r.shape.rot||0,p);
     const label=(text,role,required)=>{ const id=r&&r.shape&&r.shape.roles&&r.shape.roles[role]; return text+(id?' — '+wallName(r,id):required?' — стена '+(built.roles.indexOf(role)+1):'')+', мм'; };
@@ -2791,8 +2820,8 @@ let tiltWallSel=null;
 let tiltEndSel='end';
 let tiltDirSel='short';
 function shapeSecHtml(r){
-  const tpl=shapeCurrentTpl(r), curRot=r.shape&&r.shape.rot||0, p=shapeCurrentParams(r,tpl), templates=[['rect','Прямо&shy;угольник'],['L','Г'],['U','П'],['T','Т'],['trap','Трапе&shy;ция']];
-  const choices=`<div class="shp-template-row">${templates.map(([key,label])=>`<button type="button" class="btn tap shp-template" data-shape-tpl="${key}" aria-pressed="${tpl===key}">${shapeSvg(key,0,shapeDefaults(key,3,2))}<span>${label}</span></button>`).join('')}${tpl==='custom'?'<span class="shp-custom-label">Своя форма</span>':''}</div>`;
+  const tpl=shapeCurrentTpl(r), curRot=r.shape&&r.shape.rot||0, p=shapeCurrentParams(r,tpl), templates=[['rect','Прямо&shy;угольник'],['L','Г'],['U','П'],['T','Т'],['trap','Трапе&shy;ция'],['quad','По заме&shy;рам']];
+  const choices=`<div class="shp-template-row">${templates.map(([key,label])=>`<button type="button" class="btn tap shp-template" data-shape-tpl="${key}" aria-pressed="${tpl===key}">${shapeSvg(key,0,key==='quad'?{a:3,b:2.1,c:2.4,d:2,e:3.5}:shapeDefaults(key,3,2))}<span>${label}</span></button>`).join('')}${tpl==='custom'?'<span class="shp-custom-label">Своя форма</span>':''}</div>`;
   const rotation=tpl!=='custom'&&tpl!=='rect'?`<div class="shp-rotation"><span class="lbl">Поворот</span><div class="shp-rot-row">${[0,1,2,3].map(rot=>`<button type="button" class="btn tap shp-rot" data-shape-rot="${rot}" aria-pressed="${Number(curRot)===rot}" aria-label="Поворот ${rot*90} градусов">${shapeSvg(tpl,rot,p)}<span>${rot*90}°</span></button>`).join('')}</div></div>`:'';
   const walls=tpl==='custom'?`<div class="shp-wall-list">${roomWalls(r).map(w=>`<div class="shp-wall-row"><b>Стена ${w.i+1}</b>${num(`shp-wall-${esc(w.id)}`,'Длина, мм',Math.round(w.len*1000),10,300,30000,'',`data-wall-len="${esc(w.id)}"`)}</div>`).join('')}</div>`:'';
   const stepWalls=roomWalls(r), stepWall=stepWalls.find(w=>w.id===stepWallSel)||stepWalls[0];
@@ -2840,7 +2869,9 @@ function bindShapeEditor(){
     lastPush=0; touch(); recompute(); render(); toast('Стена наклонена'+(result.moved.length?'. '+result.moved.join('. '):'')); });
   sec.querySelectorAll('[data-shape-tpl]').forEach(b=>b.addEventListener('click',()=>{ const r=S.room, tpl=b.dataset.shapeTpl; applyRoomShape(r,{tpl,rot:0,p:shapeDefaults(tpl,r.w,r.d)},sec,b); }));
   sec.querySelectorAll('[data-shape-rot]').forEach(b=>b.addEventListener('click',()=>{ const r=S.room, tpl=shapeCurrentTpl(r); applyRoomShape(r,{tpl,rot:Number(b.dataset.shapeRot),p:shapeCurrentParams(r,tpl)},sec,b); }));
-  sec.querySelectorAll('[data-shp-param]').forEach(el=>el.addEventListener('change',()=>{ const r=S.room, tpl=shapeCurrentTpl(r), value=Number(String(el.value).replace(/\s+/g,'').replace(',','.')); if(!Number.isFinite(value)||value<300||value>30000){ shapeShowError(sec,el,'Введите размер от 300 до 30 000 мм.'); return; }
+  sec.querySelectorAll('[data-shp-param]').forEach(el=>el.addEventListener('change',()=>{ const r=S.room, tpl=shapeCurrentTpl(r), value=Number(String(el.value).replace(/\s+/g,'').replace(',','.')), diagonal=tpl==='quad'&&(el.dataset.shpParam==='e'||el.dataset.shpParam==='f');
+    if(tpl==='quad'&&el.dataset.shpParam==='f'&&!el.value.trim()){ const p=shapeCurrentParams(r,tpl); delete p.f; applyRoomShape(r,{tpl,rot:r.shape&&r.shape.rot||0,p},sec,el); return; }
+    if(!Number.isFinite(value)||value<300||value>(diagonal?45000:30000)){ shapeShowError(sec,el,diagonal?'Введите размер от 300 до 45 000 мм.':'Введите размер от 300 до 30 000 мм.'); return; }
     const p=shapeCurrentParams(r,tpl); p[el.dataset.shpParam]=value/1000; applyRoomShape(r,{tpl,rot:r.shape&&r.shape.rot||0,p},sec,el); }));
   sec.querySelectorAll('[data-wall-len]').forEach(el=>el.addEventListener('change',()=>{ const r=S.room, value=Number(String(el.value).replace(/\s+/g,'').replace(',','.')); if(!Number.isFinite(value)||value<300||value>30000){ shapeShowError(sec,el,'Введите длину от 300 до 30 000 мм.'); return; }
     const walls=roomWalls(r), w=walls.find(q=>q.id===el.dataset.wallLen); if(!w) return; const pts=r.poly.map(p=>({...p})), n=pts.length, delta=value/1000-w.len, dx=w.dir.x*delta, dy=w.dir.y*delta;

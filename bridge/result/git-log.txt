@@ -1,0 +1,21 @@
+﻿
+warning: in the working copy of 'versions.html', LF will be replaced by CRLF the next time Git touches it
+[main ae9f3d3] Пункт аудита 35: длина стола-вставки округляется вниз до 10 мм — не заходит на соседей; остаток зазора виден в «Подборе»
+ 20 files changed, 6817 insertions(+), 13 deletions(-)
+ create mode 100644 notes/handoff-after-44.md
+ create mode 100644 notes/tasks/33.commit
+ create mode 100644 notes/tasks/33.md
+ create mode 100644 notes/tasks/35.commit
+ create mode 100644 notes/tasks/35.md
+ create mode 100644 notes/tasks/36.commit
+ create mode 100644 notes/tasks/36.md
+ create mode 100644 notes/tasks/37.commit
+ create mode 100644 notes/tasks/37.md
+ create mode 100644 notes/tools/count-test.js
+ create mode 100644 notes/tools/door-shot.js
+ create mode 100644 notes/tools/drag-test.js
+ create mode 100644 notes/tools/ins-test.js
+ create mode 100755 notes/tools/wait-and-run.sh
+ create mode 100644 versions/2026-11-05_1137.html
+To https://github.com/pro100po/refectory-app.git
+   c48f598..ae9f3d3  main -> main

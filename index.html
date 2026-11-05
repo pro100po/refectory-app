@@ -1455,6 +1455,7 @@ function segOf(s, o){ return wallSeg(s.room, o.side, o.off, o.w); }
 function bandOf(s, o, depth){ return wallBand(s.room, o.side, o.off, o.w, depth); }
 function doorBlock(s,o){ return bandOf(s,o, o.swing==='in' ? Math.max(o.w,0.9) : 0.9); }
 function clampRoom(s){
+  for(const ob of roomObs(s.room)){ ob.w=Math.min(Math.max(0.05,ob.w),s.room.w); ob.d=ob.shape==='round'?Math.min(ob.w,s.room.d):Math.min(Math.max(0.05,ob.d),s.room.d); if(ob.shape==='round') ob.w=ob.d; ob.x=Math.min(Math.max(0,ob.x),s.room.w-ob.w); ob.y=Math.min(Math.max(0,ob.y),s.room.d-ob.d); }
   for(const o of s.openings){ const L=sideLen(s,o.side); o.w=Math.min(Math.max(o.type==='prot'?0.05:0.3,o.w),L); o.off=Math.min(Math.max(0,o.off),L-o.w); if(o.type==='prot') o.depth=Math.min(Math.max(0.05,o.depth||0.3),o.niche?3:wallInward(s.room,o.side,o.off,o.w)-0.5); }
   for(const p of s.points){
     if(!p.side) migratePoint(s,p);
@@ -2721,6 +2722,7 @@ function deleteSummary(r){
   if(nd+nn) parts.push(`${nd+nn} ${plural(nd+nn,'дверь','двери','дверей')}${nn?` (${nn} из них — в соседних помещениях)`:''}`);
   if(nw) parts.push(`${nw} ${plural(nw,'окно','окна','окон')}`);
   if(np) parts.push(`${np} ${plural(np,'выступ','выступа','выступов')}`);
+  const nob=roomObs(r).length; if(nob) parts.push(`${nob} ${plural(nob,'препятствие','препятствия','препятствий')}`);
   if(npt) parts.push(`${npt} ${plural(npt,'точка','точки','точек')} подключения`);
   return parts.length ? 'Пропадут: '+parts.join(', ')+'.' : 'Дверей, окон и точек подключения в нём нет.';
 }
@@ -2759,13 +2761,13 @@ function roomIssues(){
 }
 /* ---------- шаг «Помещения» (пункт 30.1.1): одно поле плана, боковая панель помещения, окно «Новое помещение» ---------- */
 function stepRoom(){
-  const many=S.rooms.length>1, OPN={door:'Дверь',window:'Окно',prot:'Выступ / ниша'}, OPA={door:'дверь',window:'окно',prot:'выступ'};
+  const many=S.rooms.length>1, OPN={door:'Дверь',window:'Окно',prot:'Выступ / ниша',ob:'Препятствие'}, OPA={door:'дверь',window:'окно',prot:'выступ'};
   const arrUi = confirmArrange ? `<div class="confirm-box" role="alert"><p>Помещения будут переставлены вокруг «${esc((S.rooms.find(q=>q.roles.includes('hot'))||S.rooms[0]).name)}» по связям, а двери между помещениями — поставлены заново. Ручные правки этих дверей пропадут; окна, наружные двери и точки подключения останутся.</p>
       <div class="btns"><button class="btn primary tap" type="button" id="arrange-ok">Расставить</button><button class="btn tap" type="button" id="arrange-no">Отмена</button></div></div>` : '';
-  const hint = !addMode ? '' : `<div class="example" data-fs="plan" style="margin-bottom:10px">Коснитесь стены${many?' любого помещения':''}, на которой нужно ${OPA[addMode]}.${addMode==='door'&&many?' На общей стене двух помещений дверь сразу поведёт в соседнее.':''} <button class="btn small" type="button" id="add-cancel">Отмена</button></div>`;
+  const hint = !addMode ? '' : `<div class="example" data-fs="plan" style="margin-bottom:10px">${addMode==='ob'?'Коснитесь места в помещении':`Коснитесь стены${many?' любого помещения':''}, на которой нужно ${OPA[addMode]}.`}${addMode==='door'&&many?' На общей стене двух помещений дверь сразу поведёт в соседнее.':''} <button class="btn small" type="button" id="add-cancel">Отмена</button></div>`;
   return `${stepHead('Помещения', `Нарисуйте помещения трапезной: стены, двери, окна и выступы. Нажмите на помещение — откроются его размеры, назначение и связи.`)}${exampleBar()}
   <section class="rooms-field" aria-label="План помещений">
-    <div class="plan-bar">${layersBarHtml('room')}<div class="plan-bar-actions"><span class="rt-g" role="group" aria-label="Добавить на стену">${['door','window','prot'].map(k=>`<button class="btn" type="button" data-add="${k}" aria-pressed="${addMode===k}">+ ${OPN[k]}</button>`).join('')}</span><span class="rt-g rt-r">${many?`<button class="btn" type="button" id="room-arrange" aria-expanded="${confirmArrange}">Расставить по связям</button>`:''}<button class="btn primary" type="button" id="room-add" aria-haspopup="dialog">+ Помещение</button></span></div>${zoomCtl()}</div>${arrUi}${hint}
+    <div class="plan-bar">${layersBarHtml('room')}<div class="plan-bar-actions"><span class="rt-g" role="group" aria-label="Добавить на стену">${['door','window','prot','ob'].map(k=>`<button class="btn" type="button" data-add="${k}" aria-pressed="${addMode===k}">+ ${OPN[k]}</button>`).join('')}</span><span class="rt-g rt-r">${many?`<button class="btn" type="button" id="room-arrange" aria-expanded="${confirmArrange}">Расставить по связям</button>`:''}<button class="btn primary" type="button" id="room-add" aria-haspopup="dialog">+ Помещение</button></span></div>${zoomCtl()}</div>${arrUi}${hint}
     <div class="plan-box ${addMode?'adding':''} ${VZ('plan')>1.001?'zbig':''}" id="pbox" data-fs="plan" style="--pz:${VZ('plan')}">${roomsPlanSvg()}</div>
     ${touchHintHtml('room')}
     <p class="hint rooms-hint">Нажмите на помещение или на ⚙ у названия — откроются его настройки.${many?` Помещения перетаскивайте: стены прилипают друг к другу с зазором ${fmt0(WALL_GAP*1000)} мм под перегородку.`:''} Двери, окна и выступы двигайте вдоль стен.</p>
@@ -2934,6 +2936,7 @@ addRoomSection({id:'links', title:'Связи', html:r=>{
     ${miss.map(([t,n])=>`<p class="rmp-warn">Связь с «${esc(n)}» есть, а двери нет. ${LINK_EXT[t]?`Нажмите «+ Дверь», коснитесь наружной стены и в настройке двери «Ведёт» выберите «${esc(n.toLowerCase())}».`:'Нажмите «+ Дверь» и коснитесь общей стены — дверь сразу поведёт в соседнее помещение.'}</p>`).join('')}
     <small class="rmp-note">Связь — это задуманное движение, дверь ставится на стене.</small>`; }});
 addRoomSection({id:'walls', title:'Стены', html:r=>S.openings.length?wallRows():'<p class="hint">Пока на стенах ничего нет. Нажмите «+ Дверь» или «+ Окно» над планом и коснитесь стены; «+ Выступ / ниша» добавится сразу.</p>'});
+addRoomSection({id:'obst', title:'Препятствия', html:r=>roomObs(r).length?roomObs(r).map(ob=>`<div class="chain-row" aria-current="${!!(selRoom&&selRoom.k==='ob'&&selRoom.id===ob.id)}"><button type="button" class="ttl" data-pick="ob:${ob.id}">${(OBS_NOM[ob.kind]||OBS_NOM.other).replace(/^./,c=>c.toUpperCase())} <span class="muted">${ob.shape==='round'?'⌀'+fmt0(ob.w*1000):fmt0(ob.w*1000)+'×'+fmt0(ob.d*1000)} мм · настроить</span></button></div>${selRoom&&selRoom.k==='ob'&&selRoom.id===ob.id?roomPanel().replace(' data-fs="plan"',''):''}`).join(''):'<p class="hint">Препятствий пока нет. Нажмите «+ Препятствие» над планом и коснитесь места в помещении.</p>'}, 'walls');
 addRoomSection({id:'del', title:'', show:()=>S.rooms.length>1, html:r=>confirmRoomDel
   ? `<div class="confirm-box" role="alert"><p>Удалить «${esc(r.name)}»? ${esc(deleteSummary(r))} Двери соседних помещений, ведущие сюда, тоже удалятся.</p><div class="btns"><button class="btn danger tap" type="button" id="room-del-yes">Да, удалить</button><button class="btn tap" type="button" id="room-del-no">Отмена</button></div></div>`
   : `<button class="btn danger tap" type="button" id="room-del">Удалить помещение</button>`});
@@ -2946,7 +2949,7 @@ function roomSideHtml(){ const r=S.room;
 function openRoomPanel(id, opId){
   const changed=id!==S.cur; if(changed||!rpOpen) rpScroll=0;
   S.cur=id; rpOpen=true; addMode=null; confirmRoomDel=false;
-  if(opId){ selRoom={k:'op', id:opId}; rpFocus=opId; } else if(changed||(selRoom&&!S.openings.some(o=>o.id===selRoom.id))) selRoom=null;
+  if(opId){ selRoom={k:'op', id:opId}; rpFocus=opId; } else if(changed||(selRoom&&!(selRoom.k==='ob'?roomObs(S.room):selRoom.k==='op'?S.openings:S.points).some(o=>o.id===selRoom.id))) selRoom=null;
   if(changed) touch(); render(); }
 function closeRoomPanel(){ rpOpen=false; selRoom=null; confirmRoomDel=false; render(); }
 // верх панели — под лентой шагов (на весь экран плана — от верха окна)
@@ -2959,7 +2962,7 @@ window.addEventListener('scroll',rpPos,{passive:true}); window.addEventListener(
 function roomsCapture(e){ const gr=e.target.closest('g[data-rg]'); let rid=gr?gr.dataset.rg:null;
   if(!rid && addMode){ const p=svgPtG(e); let bd=0.6;
     for(const r of S.rooms){ const dx=Math.max(r.x-p.x,0,p.x-(r.x+r.w)), dy=Math.max(r.y-p.y,0,p.y-(r.y+r.d)), d=Math.hypot(dx,dy); if(d<=bd+1e-9){ bd=d; rid=r.id; } } }
-  if(rid && rid!==S.cur){ S.cur=rid; rpScroll=0; confirmRoomDel=false; if(selRoom && !S.openings.some(o=>o.id===selRoom.id)) selRoom=null; }
+  if(rid && rid!==S.cur){ S.cur=rid; rpScroll=0; confirmRoomDel=false; if(selRoom && !(selRoom.k==='ob'?roomObs(S.room):selRoom.k==='op'?S.openings:S.points).some(o=>o.id===selRoom.id)) selRoom=null; }
   e.__room=rid; }
 function roomPress(e, rid){
   const r=rById(rid); if(!r) return; const el=e.target.closest('g[data-rg]').querySelector('.rm-bg');
@@ -3013,9 +3016,11 @@ function wallDragFinish(cancel){
   if(st.error){ wallDragReset(st); toast(st.error); return; }
   const xs=st.pts.map(p=>p.x), ys=st.pts.map(p=>p.y), dx=Math.min(...xs), dy=Math.min(...ys), pts=st.pts.map(p=>({...p,x:p.x-dx,y:p.y-dy}));
   const shape=pts.length===4&&pts.every((p,i)=>{ const q=pts[(i+1)%pts.length]; return Math.abs(p.x-q.x)<1e-9||Math.abs(p.y-q.y)<1e-9; })?{tpl:'rect',rot:0,p:{W:Math.max(...pts.map(p=>p.x)),D:Math.max(...pts.map(p=>p.y))}}:{tpl:'custom',pts};
+  const obs=roomObs(st.room).map(ob=>({...ob}));
   const result=setRoomShape(st.room,shape,{x:dx,y:dy});
   if(result.error){ wallDragReset(st); toast(result.error); return; }
   st.room.x+=dx; st.room.y+=dy;
+  if(obs.length){ st.room.obstacles=obs.map(ob=>({...ob,x:ob.x-dx,y:ob.y-dy})); clampRoom({room:st.room,openings:st.room.openings,points:st.room.points}); }
   for(const key of Object.keys(S.layout||{})) if((P&&P.roomOf&&P.roomOf[key]===st.room.id)||(S.layoutRoom&&S.layoutRoom[key]===st.room.id)){
     const pos=S.layout[key]; if(pos){ pos.x=(Number(pos.x)||0)-dx; pos.y=(Number(pos.y)||0)-dy; } }
   lastPush=0; touch(); recompute(); render(); if(result.moved.length) toast(result.moved.join('. '));
@@ -3153,7 +3158,7 @@ bind[1]=()=>{
   // панель: прокрутка сохраняется между перерисовками; проём с плана — показать его настройку
   const rb=document.getElementById('rmp-body');
   if(rb){ rb.scrollTop=rpScroll;
-    if(rpFocus){ const row=rb.querySelector(`[data-pick="op:${CSS.escape(rpFocus)}"]`); rpFocus=null; if(row){ const c=row.closest('.chain-row'), bt=rb.getBoundingClientRect(), ct=c.getBoundingClientRect(); rb.scrollTop+=ct.top-bt.top-8; } }
+    if(rpFocus){ const row=rb.querySelector(`[data-pick="op:${CSS.escape(rpFocus)}"], [data-pick="ob:${CSS.escape(rpFocus)}"]`); rpFocus=null; if(row){ const c=row.closest('.chain-row'), bt=rb.getBoundingClientRect(), ct=c.getBoundingClientRect(); rb.scrollTop+=ct.top-bt.top-8; } }
     rpScroll=rb.scrollTop; rb.addEventListener('scroll',()=>{ rpScroll=rb.scrollTop; },{passive:true}); rpPos(); }
   bindShapeEditor(); bindRoomEditor();
 };
@@ -3232,6 +3237,16 @@ function roomPanel(){
       :num('o-sill','Высота подоконника, мм',Math.round((o.sill||0.9)*1000),10,0,2500,'оборудование выше подоконника под окно не ставится','data-of="sillmm"')}
     </div>${btns}</div>`;
   }
+  if(selRoom.k==='ob'){ const ob=roomObs(S.room).find(x=>x.id===selRoom.id); if(!ob) return '';
+    return `<div class="panel" id="rpanel" data-fs="plan" style="margin-top:10px"><h3>Препятствие</h3><div class="fields">
+      <div class="field"><span>Что это</span>${seg('ob-kind',ob.kind,[['column','Колонна'],['stove','Печь'],['box','Короб'],['stair','Лестница'],['other','Другое']])}</div>
+      <div class="field"><span>Форма</span>${seg('ob-shape',ob.shape,[['rect','Прямоугольник'],['round','Круг']])}</div>
+      ${num('ob-w',ob.shape==='round'?'Диаметр, мм':'Ширина, мм',Math.round(ob.w*1000),10,50,Math.round((ob.shape==='round'?Math.min(S.room.w,S.room.d):S.room.w)*1000),'','data-obf="w"')}
+      ${ob.shape==='round'?'':num('ob-d','Глубина, мм',Math.round(ob.d*1000),10,50,Math.round(S.room.d*1000),'','data-obf="d"')}
+      ${num('ob-x','От левой стены, мм',Math.round(ob.x*1000),10,0,Math.round((S.room.w-ob.w)*1000),'','data-obf="x"')}
+      ${num('ob-y','От верхней стены, мм',Math.round(ob.y*1000),10,0,Math.round((S.room.d-ob.d)*1000),'','data-obf="y"')}
+    </div>${hasPoly(S.room)&&!rectInRoom(S.room,{x:ob.x,y:ob.y,w:ob.w,h:ob.d})?'<p class="rmp-warn">Препятствие выходит за стены помещения</p>':''}${btns}</div>`;
+  }
   const p=S.points.find(x=>x.id===selRoom.id); if(!p) return '';
   const hood=p.type==='hood';
   return `<div class="panel" id="rpanel" data-fs="plan" style="margin-top:10px"><h3>${PT[p.type].n}</h3><div class="fields">
@@ -3253,7 +3268,7 @@ function bindRoomEditor(){
   main.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>{ const a=b.dataset.add; const v=a; /* тип точки — в самой кнопке палитры: data-add="pt:<тип>" */ if(a==='prot'){ addMode=null; const ws=roomWalls(S.room).slice().sort((x,y)=>y.len-x.len); let side=null, off=null; for(const w of ws){ const q=freeSpot(S,w.id,w.len/2,0.6,null); if(q!==null){ side=w.id; off=q; break; } } if(side===null){ toast('Нет свободного места на стенах'); render(); return; } const o={id:uid('o'),type:'prot',side,off,w:0.6,depth:0.6}; S.openings.push(o); clampRoom(S); selRoom={k:'op',id:o.id}; if(step===1){ rpOpen=true; rpFocus=o.id; } touch(); render(); return; } addMode = addMode===v?null:v; selRoom=null; render(); }));
   const ac=document.getElementById('add-cancel'); ac&&ac.addEventListener('click',()=>{ addMode=null; render(); });
   main.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{ const [k,id]=b.dataset.pick.split(':'); selRoom={k,id}; addMode=null; render(); document.getElementById('rpanel')&&document.getElementById('rpanel').scrollIntoView({block:'nearest'}); }));
-  const del=document.getElementById('del-room'); del&&del.addEventListener('click',()=>{ if(selRoom.k==='op') S.openings=S.openings.filter(o=>o.id!==selRoom.id); else S.points=S.points.filter(p=>p.id!==selRoom.id); selRoom=null; touch(); render(); toast('Удалено'); });
+  const del=document.getElementById('del-room'); del&&del.addEventListener('click',()=>{ if(selRoom.k==='op') S.openings=S.openings.filter(o=>o.id!==selRoom.id); else if(selRoom.k==='ob'){ S.room.obstacles=roomObs(S.room).filter(ob=>ob.id!==selRoom.id); if(!S.room.obstacles.length) delete S.room.obstacles; } else S.points=S.points.filter(p=>p.id!==selRoom.id); selRoom=null; touch(); render(); toast('Удалено'); });
   const ds=document.getElementById('desel'); ds&&ds.addEventListener('click',()=>{ selRoom=null; render(); });
   const rp=document.getElementById('rpanel');
   if(rp && selRoom.k==='op'){ const o=S.openings.find(x=>x.id===selRoom.id);
@@ -3267,6 +3282,10 @@ function bindRoomEditor(){
         if(f==='sillmm') o.sill=v/1000; if(f==='depthmm') o.depth=v/1000;
         if(f==='wmm'){ const n=neighbors(S,o); o.w=Math.max(0.05,v/1000); if(o.off+o.w>n.hi+1e-6){ o.w=Math.max(0.05,n.hi-o.off); fieldMsg(el,`Шире ${fmt0(o.w*1000)} мм не получится — мешает ${n.next?OP_NOM[n.next.type]:'угол'}`); } } }
       clampRoom(S); touch(); render(); }));
+  }
+  if(rp && selRoom.k==='ob'){ const ob=roomObs(S.room).find(x=>x.id===selRoom.id);
+    segBind(rp,(k,v)=>{ if(k==='ob-kind') ob.kind=v; if(k==='ob-shape'){ ob.shape=v; if(v==='round') ob.d=ob.w; } clampRoom(S); touch(); render(); });
+    rp.querySelectorAll('[data-obf]').forEach(el=>el.addEventListener('change',()=>{ const v=parseFloat(el.value); if(!isFinite(v)) return; ob[el.dataset.obf]=v/1000; if(ob.shape==='round') ob.d=ob.w; clampRoom(S); touch(); render(); }));
   }
   if(rp && selRoom.k==='pt'){ const p=S.points.find(x=>x.id===selRoom.id);
     rp.querySelectorAll('[data-pf]').forEach(el=>el.addEventListener('change',()=>{ const f=el.dataset.pf;
@@ -3386,6 +3405,24 @@ function issueBadgeSvg(t,w,r,ang){
   const x=w-r-1, y=r+1;
   return `<g class="iss-badge" style="pointer-events:none" transform="translate(${x},${y}) rotate(${-ang})">${t==='bad'?`<circle r="${r}" fill="var(--bad)"/>`:`<polygon points="0,${-r} ${r*Math.sqrt(3)/2},${r/2} ${-r*Math.sqrt(3)/2},${r/2}" fill="var(--warn)"/>`}<text x="0" y="${r*(t==='bad'?.08:.05)}" text-anchor="middle" dominant-baseline="central" font-size="${r*(t==='bad'?1.6:1.2)}" font-weight="bold" fill="${t==='bad'?'#fff':'var(--ink)'}">!</text></g>`;
 }
+function obstaclesSvg(room, mode){
+  return roomObs(room).map(ob=>{
+    const x=ob.x*100, y=ob.y*100, w=ob.w*100, h=ob.d*100, cx=x+w/2, cy=y+h/2, name=(OBS_NOM[ob.kind]||OBS_NOM.other).replace(/^./,c=>c.toUpperCase());
+    const selected=mode==='room'&&selRoom&&selRoom.k==='ob'&&selRoom.id===ob.id&&room.id===S.cur, fs=mode==='print'?12:Math.max(12,10/(scrK||1));
+    const shape=ob.shape==='round'?`<circle cx="${cx}" cy="${cy}" r="${w/2}"`:`<rect x="${x}" y="${y}" width="${w}" height="${h}"`;
+    let out=`<g ${mode==='room'?`data-ob="${ob.id}"`:'style="pointer-events:none"'}>${shape} fill="var(--sheet)" stroke="${selected?'var(--accent)':'var(--ink)'}" stroke-width="${selected?4:2}"/>${shape} fill="#888888" fill-opacity=".25"/><title>${esc(name)}</title>${name.length*fs*0.6+8<=w&&fs+8<=h?`<text x="${cx}" y="${cy}" font-size="${fs}" text-anchor="middle" dominant-baseline="central" fill="var(--ink)" style="pointer-events:none">${esc(name)}</text>`:''}</g>`;
+    if(selected||mode==='print'){
+      const b={x:ob.x,y:ob.y,w:ob.w,h:ob.d};
+      for(const axis of ['v','h']){ const vert=axis==='v', center=(vert?cy:cx)/100;
+        const walls=roomWalls(room).filter(a=>a.axis===axis&&center>=Math.min(vert?a.y1:a.x1,vert?a.y2:a.x2)-1e-9&&center<=Math.max(vert?a.y1:a.x1,vert?a.y2:a.x2)+1e-9);
+        const near=walls.map(a=>({a,d:backDist(room,a,b)})).filter(a=>a.d>=-1e-9).sort((a,b)=>a.d-b.d)[0]; if(!near||near.d<=1e-6) continue;
+        const a=near.a, start=(vert?a.x1:a.y1)*100, end=vert?(a.nx>0?x:x+w):(a.ny>0?y:y+h), mid=(start+end)/2, col='var(--ink-2)';
+        out+=`<g style="pointer-events:none" stroke="${col}" stroke-width="1.1"><line x1="${vert?start:cx}" y1="${vert?cy:start}" x2="${vert?end:cx}" y2="${vert?cy:end}" stroke-dasharray="5 3"/>${[start,end].map(v=>`<line x1="${vert?v:cx-6}" y1="${vert?cy-6:v}" x2="${vert?v:cx+6}" y2="${vert?cy+6:v}"/>`).join('')}</g>`+dimText(vert?mid:cx-5,vert?cy-5:mid,fmt0(near.d*1000),fs,{col,rot:!vert});
+      }
+    }
+    return out;
+  }).join('');
+}
 function planSvg(mode, iss, opts){
   opts=opts||{};
   // помещение можно передать явно: на время отрисовки S.room указывает на него, потом всё возвращается
@@ -3441,7 +3478,7 @@ function planSvg(mode, iss, opts){
       ${BL.has('l')&&BL.has('r')?'':`<g ${BL.has('l')?`transform="translate(${W+oR+oL},0)"`:''}><line x1="${-oL}" y1="0" x2="${-oL}" y2="${D}" stroke="var(--ink-2)" stroke-width="1.2"/><line x1="${-oL-8}" y1="0" x2="${-oL+8}" y2="0" stroke="var(--ink-2)" stroke-width="1.2"/><line x1="${-oL-8}" y1="${D}" x2="${-oL+8}" y2="${D}" stroke="var(--ink-2)" stroke-width="1.2"/>
       </g><g ${BL.has('l')?`transform="translate(${W+oR+oL+20+dimFs*0.9},0)"`:''}>${showDim?`<text x="${-oL-10}" y="${D/2}" text-anchor="middle" transform="rotate(-90 ${-oL-10} ${D/2})">${fmt0(S.room.d*1000)}</text>`:''}</g>`}</g>`:''}
     ${!layerOn('dims')?'':mode==='room'?chainsSvg(false,BL):mode==='points'?chainsSvg(true):''}
-    ${zonesSvg}${hoodsSvg}${eq}${mode==='equip'&&!bare?groupOutlineSvg():''}${swSvg}${mode==='equip'&&!bare&&needOn()?needLayerSvg(scrK):''}${nicheWallsSvg(S.room,walls,false)}${ops}${pts}${mode==='equip'&&!bare&&typeof equipDimsSvg==='function'?equipDimsSvg(S.room, curUnits(), {blocked:opts.blocked}):''}${opts.inner?'':'</svg>'}`;
+    ${zonesSvg}${hoodsSvg}${obstaclesSvg(S.room,mode)}${eq}${mode==='equip'&&!bare?groupOutlineSvg():''}${swSvg}${mode==='equip'&&!bare&&needOn()?needLayerSvg(scrK):''}${nicheWallsSvg(S.room,walls,false)}${ops}${pts}${mode==='equip'&&!bare&&typeof equipDimsSvg==='function'?equipDimsSvg(S.room, curUnits(), {blocked:opts.blocked}):''}${opts.inner?'':'</svg>'}`;
   scrK=null; PT_SH={t:0,r:0,b:0,l:0}; return out;
 }
 // единый план шага «План» (помещений больше одного): каждое помещение — planSvg в режиме inner, сдвинутый на room.x, room.y
@@ -3587,8 +3624,10 @@ function bindPlanPointer(){
       else if(tch) G(e,null,null,()=>{ if(!planEdit&&sel){ sel=null; render(); } });
       else if(e.button===0 && !e.target.closest('[data-gap],[data-wid],.gap-ed')) startMarquee(e);
       return; }
-    if(addMode){ if(step===1 && !e.__room){ if(!tch) toast('Коснитесь стены помещения'); return; }
+    if(addMode){ if(step===1 && !e.__room){ if(!tch) toast(addMode==='ob'?'Коснитесь места в помещении':'Коснитесь стены помещения'); return; }
       if(tch){ G(e,null,null,()=>addAt(svgPt(e))); return; } e.preventDefault(); addAt(svgPt(e)); return; }
+    const ob=e.target.closest('[data-ob]');
+    if(ob){ G(e,ob,()=>{ e.preventDefault(); startRoomDrag(e,'ob',ob.dataset.ob); },()=>{ selRoom={k:'ob',id:ob.dataset.ob}; rpFocus=ob.dataset.ob; openRoomPanel(S.cur); }); return; }
     const op=e.target.closest('[data-op]'), pt=e.target.closest('[data-pt]');
     if(op){ G(e,op,()=>{ e.preventDefault(); startRoomDrag(e,'op',op.dataset.op); },()=>{ if(step===1){ openRoomPanel(S.cur, op.dataset.op); return; } selRoom={k:'op',id:op.dataset.op}; addMode=null; render(); }); return; }
     if(pt){ G(e,pt,()=>{ e.preventDefault(); startRoomDrag(e,'pt',pt.dataset.pt); },()=>{ selRoom={k:'pt',id:pt.dataset.pt}; addMode=null; render(); }); return; }
@@ -3600,7 +3639,10 @@ function bindPlanPointer(){
 function addAt(p){
   const W=S.room.w, D=S.room.d;
   const nw=nearestWall(S.room,p.x,p.y,hasPoly(S.room)?null:['t','b','l','r'],'abs'), side=nw.id, along=nw.off;   // ближайшая стена (у прямоугольника — прежний порядок при равенстве)
-  if(addMode==='door'||addMode==='window'||addMode==='prot'){
+  if(addMode==='ob'){
+    const ob={id:uid('b'),kind:'column',shape:'rect',x:Math.round((p.x-0.2)*100)/100,y:Math.round((p.y-0.2)*100)/100,w:0.4,d:0.4};
+    if(!S.room.obstacles) S.room.obstacles=[]; S.room.obstacles.push(ob); clampRoom(S); selRoom={k:'ob',id:ob.id}; rpOpen=true; rpFocus=ob.id;
+  } else if(addMode==='door'||addMode==='window'||addMode==='prot'){
     const w={door:0.9, window:1.2, prot:0.4}[addMode];
     const off=freeSpot(S,side,along,w,null);
     if(off===null){ toast('На этой стене нет свободного места'); addMode=null; render(); return; }
@@ -3621,10 +3663,18 @@ function addAt(p){
 function startRoomDrag(e,k,id){
   selRoom={k,id}; const s0=svgPt(e), tgt=e.target; let moved=false;
   const o=k==='op'?S.openings.find(x=>x.id===id):null, p=k==='pt'?S.points.find(x=>x.id===id):null;
-  const st=o?{off:o.off}:p.side==='floor'?{x:p.x,y:p.y}:{off:p.off}; let nb=o?neighbors(S,o):null;
+  const ob=k==='ob'?roomObs(S.room).find(x=>x.id===id):null;
+  const st=ob?{x:ob.x,y:ob.y}:o?{off:o.off}:p.side==='floor'?{x:p.x,y:p.y}:{off:p.off}; let nb=o?neighbors(S,o):null;
   const horiz=s=>wallById(S.room,s).axis!=='v';
   const mv=ev=>{ const q=svgPt(ev), dx=q.x-s0.x, dy=q.y-s0.y; if(!moved && Math.hypot(dx,dy)<0.03) return; moved=true;
-    if(o){
+    if(ob){
+      ob.x=Math.round((st.x+dx)*100)/100; ob.y=Math.round((st.y+dy)*100)/100;
+      for(const axis of ['v','h']){ let best=0.05, at=null;
+        for(const w of roomWalls(S.room).filter(w=>w.axis===axis)){ const vert=axis==='v', lo=vert?ob.y:ob.x, hi=lo+(vert?ob.d:ob.w), a=vert?w.y1:w.x1, b=vert?w.y2:w.x2; if(hi<Math.min(a,b)||lo>Math.max(a,b)) continue;
+          const target=vert?w.x1-(w.nx<0?ob.w:0):w.y1-(w.ny<0?ob.d:0), dist=Math.abs((vert?ob.x:ob.y)-target); if(dist<best){ best=dist; at=target; } }
+        if(at!==null) ob[axis==='v'?'x':'y']=at;
+      }
+    } else if(o){
       if(o.type==='prot'){
         const ids=hasPoly(S.room)?roomWalls(S.room).map(w=>w.id):['t','b','l','r'], dist={}; for(const wall of ids) dist[wall]=wallDist(S.room,wall,q.x,q.y,'seg');
         const ns=nearestWall(S.room,q.x,q.y,ids,'seg').id;
@@ -3647,7 +3697,7 @@ function startRoomDrag(e,k,id){
     const hlSide=o&&o.type==='prot'?o.side:p&&p.side!=='floor'?p.side:null;
     if(hlSide){ const svg=document.getElementById('plan'), i=4, L=[...wallInU(S.room,hlSide,0,i), ...wallInU(S.room,hlSide,wallLen(S.room,hlSide)*100,i)], col=o?'var(--accent)':`var(${PT[p.type].col})`;
       svg&&svg.insertAdjacentHTML('beforeend',`<line class="pt-wall-hl" x1="${L[0]}" y1="${L[1]}" x2="${L[2]}" y2="${L[3]}" stroke="${col}" stroke-width="5" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity=".75" style="pointer-events:none"/>`); } };
-  const up=()=>{ window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); window.removeEventListener('pointercancel',up); if(!moved && o && step===1){ openRoomPanel(S.cur, id); return; } touch(); render(); };
+  const up=()=>{ window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); window.removeEventListener('pointercancel',up); if(ob && step===1){ rpOpen=true; rpFocus=id; } if(!moved && o && step===1){ openRoomPanel(S.cur, id); return; } touch(); render(); };
   window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); window.addEventListener('pointercancel',up);
 }
 // прилипание: по каждой оси — ближайшая цель в пределах порога. Цели: стены; выступы стен и соседние аппараты того же рода
@@ -4646,7 +4696,7 @@ function printPlanSvg(opts){
       <line x1="${-oL}" y1="0" x2="${-oL}" y2="${D}" stroke="${ink2}" stroke-width="1.2"/><line x1="${-oL-8}" y1="0" x2="${-oL+8}" y2="0" stroke="${ink2}" stroke-width="1.2"/><line x1="${-oL-8}" y1="${D}" x2="${-oL+8}" y2="${D}" stroke="${ink2}" stroke-width="1.2"/>
       <text x="${-oL-10}" y="${D/2}" text-anchor="middle" transform="rotate(-90 ${-oL-10} ${D/2})">${fmt0(S.room.d*1000)}</text></g>`;
     let walls=hasPoly(S.room)?wallsPathSvg(S.room,T,ink):`<g stroke="${ink}" stroke-width="${T}" stroke-linecap="square"><line x1="${-T/2}" y1="${-T/2}" x2="${W+T/2}" y2="${-T/2}"/><line x1="${W+T/2}" y1="${-T/2}" x2="${W+T/2}" y2="${D+T/2}"/><line x1="${-T/2}" y1="${D+T/2}" x2="${W+T/2}" y2="${D+T/2}"/><line x1="${-T/2}" y1="${-T/2}" x2="${-T/2}" y2="${D+T/2}"/></g>`;
-    walls=nicheWallsSvg(S.room,walls,true);
+    walls=nicheWallsSvg(S.room,walls,true)+obstaclesSvg(S.room,'print');
     const ops=curGeom().openings.map(o=>openingSvg(o,'equip')).join('');   // подпись двери — снаружи помещения
     const ptsAll=S.points.filter(p=>p.type==='hood').map(p=>pointSvg(p,'view')).join('')+S.points.filter(p=>p.type!=='hood').map(p=>pointSvg(p,'view')).join('');
     const hoodsOnly=S.points.filter(p=>p.type==='hood').map(p=>pointSvg(p,'view')).join('');
@@ -4667,7 +4717,7 @@ function printPlanSvg(opts){
         const pp=pos&&pos.unit(u); if(pp) nums+=numCircle(b.x*100+(posAng(p)?b.w*100:w)/2, b.y*100+(posAng(p)?b.h*100:h)/2, pp.no); }
       let hs=H.list.map(r=>`${r.poly?`<polygon points="${r.poly.map(p=>`${p.x*100},${p.y*100}`).join(' ')}"`:`<rect x="${r.x*100}" y="${r.y*100}" width="${r.w*100}" height="${r.h*100}"`} fill="none" stroke="${mono?ink:'var(--z-hot)'}" stroke-width="2.5" stroke-dasharray="10 7"/>`).join('');
       if(gridClip && hasPoly(S.room) && roomWalls(S.room).some(w=>!w.axis)) hs=`<g clip-path="url(#rcp-${S.room.id||'r'})">${hs}</g>`;
-      body=zones+eq+hs+walls+ops+hoodsOnly+nums+(typeof equipDimsSvg==='function'?equipDimsSvg(S.room, curUnits(), {print:true}):'');
+      body=zones+(roomObs(S.room).length?walls+eq+hs:eq+hs+walls)+ops+hoodsOnly+nums+(typeof equipDimsSvg==='function'?equipDimsSvg(S.room, curUnits(), {print:true}):'');
     } else if(layer==='need'){
       let eq='', marks='', nums=''; const avoid=[];   // подписи длины слива не закрывают метки подключений и номера
       for(const u of units){ const p=S.layout[u.key], skew=posAng(p), b=bbox(u.c,p), bs=skew?baseSize(u.c,p):b, w=bs.w*100, h=bs.h*100, X=skew?0:b.x*100, Y=skew?0:b.y*100;
@@ -4732,6 +4782,7 @@ function printOverviewSvg(opts){
         const tx=sx+nx*22, ty=sy+ny*22, vert=nx!==0;
         arrows+=`<text x="${tx}" y="${ty}" font-size="18" font-weight="700" fill="var(--accent)" text-anchor="${vert?(nx>0?'start':'end'):'middle'}" dominant-baseline="central">${lab}</text>`; }
     }
+    if(roomObs(r).length) out+=`<g transform="translate(${X(r.x)},${Y(r.y)})">${obstaclesSvg(r,'print')}</g>`;
     const ir=hasPoly(r)?innerRect(r):null, cx=X(r.x+(ir?ir.x+ir.w/2:r.w/2)), cy=Y(r.y+(ir?ir.y+ir.h/2:r.d/2)), fs=Math.max(14,Math.min(28,(ir?ir.w:r.w)*k/(r.name.length*0.62+1)));
     out+=`<text x="${cx}" y="${cy-fs*0.5}" font-size="${fs}" font-weight="700" text-anchor="middle" fill="${ink}">${esc(r.name)}</text>
       <text x="${cx}" y="${cy+fs*0.6}" font-size="15" font-family="var(--f-mono)" text-anchor="middle" fill="${ink2}">${ir?`габарит ${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм · ${fmt1(roomArea(r))} м²`:`${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм · ${fmt1(roomArea(r))} м²`}</text>
@@ -4898,6 +4949,7 @@ REPORT.register({ id:'room-walls', title:'Стены и проёмы', group:'П
       {t:'kv', cols:2, rows:[['Длина × ширина', `${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм`],['Площадь', fmt1(roomArea(r))+' м²']]},
       rows.length?{t:'table', cols:[{title:'Проём',w:1},{title:'Стена, длина мм',w:1.6},{title:'Привязка, мм',w:1.8},{title:'Ширина, мм',w:1,align:'r'},{title:'Подоконник / куда ведёт / глубина',w:3.6}], rows,
         note:hasPoly(r)?'Стены пронумерованы по часовой стрелке от левого верхнего угла, номера — на плане. Привязка — до ближнего края проёма.':'Стены названы так, как они лежат на плане: верхняя, правая, нижняя, левая. Привязка — до ближнего края проёма.'}:{t:'p', text:'Проёмов не отмечено.', muted:true},
+      ...roomObs(r).map(ob=>({t:'p', text:`${(OBS_NOM[ob.kind]||OBS_NOM.other).replace(/^./,c=>c.toUpperCase())} ${ob.shape==='round'?'⌀'+fmt0(ob.w*1000):fmt0(ob.w*1000)+'×'+fmt0(ob.d*1000)} мм, от левой стены ${fmt0(ob.x*1000)} мм, от верхней ${fmt0(ob.y*1000)} мм`})),
       ctx.plan.room(r,'walls')]; } });
 function doorLabelIn(r,o){ if(o.to&&o.to.startsWith('room:')) return 'ведёт в «'+roomName(S,o.to.slice(5))+'»'; return 'ведёт '+(DOOR_TO[o.to]||'—'); }
 
@@ -5780,7 +5832,7 @@ function flashPlanFor(el){
   let sel=null; const d=el.dataset||{};
   if(d.chain) sel=`#plan [data-op="${qv(d.chain.split(':')[0])}"]`;
   else if(d.pchain) sel=`#plan [data-pt="${qv(d.pchain.split(':')[0])}"]`;
-  else if((d.of||d.pf) && selRoom) sel=selRoom.k==='op'?`#plan [data-op="${qv(selRoom.id)}"]`:`#plan [data-pt="${qv(selRoom.id)}"]`;
+  else if((d.of||d.pf||d.obf) && selRoom) sel=selRoom.k==='ob'?`#plan [data-ob="${qv(selRoom.id)}"]`:selRoom.k==='op'?`#plan [data-op="${qv(selRoom.id)}"]`:`#plan [data-pt="${qv(selRoom.id)}"]`;
   else if(['rw','rd','rname'].includes(el.id)) sel=`#plan [data-rbg="${qv(S.cur)}"]`;
   if(!sel) return; setTimeout(()=>{ document.querySelectorAll(sel).forEach(n=>{ n.classList.add('flash'); setTimeout(()=>n.classList.remove('flash'),1000); }); },25);
 }

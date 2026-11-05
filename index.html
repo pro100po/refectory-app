@@ -5490,7 +5490,7 @@ window.addEventListener('storage',e=>{ if(!S.pid) return;
   if(e.key===STORE.IX && document.getElementById('pj-screen')) renderProjects(); });
 
 /* ---- открыть проект ---- */
-function resetUiState(){ sel=null; selRoom=null; addMode=null; editUid=null; draft=null; confirmRoomDel=false; rpOpen=false; confirmArrange=false; otherTabChange=false; }
+function resetUiState(){ planRebuilt=false; sel=null; selRoom=null; addMode=null; editUid=null; draft=null; confirmRoomDel=false; rpOpen=false; confirmArrange=false; otherTabChange=false; }
 function openProjectData(data, opts){
   opts=opts||{}; const m=migrate(data); if(!m) throw new Error('bad');
   ensureIds(m, opts.id); S=m; resetUiState();

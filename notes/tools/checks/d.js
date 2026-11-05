@@ -1,0 +1,24 @@
+const {chromium}=require('playwright');
+(async()=>{ const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1400,height:1000}});
+  const errs=[]; p.on('pageerror',e=>errs.push('PE '+String(e).slice(0,200))); p.on('console',m=>{ if(m.type()==='error') errs.push('console: '+m.text().slice(0,200)); });
+  await p.goto('file://'+process.cwd()+'/index.html'); await p.waitForTimeout(400);
+  const setup=async()=>p.evaluate(()=>{ closeProjects(); const R=S.rooms[0]; S.cur=R.id; R.x=0; R.y=0; setRoomShape(R,{tpl:'trap',rot:0,p:{kind:'right',side:'l',a:6,b:4,h:4}});
+    const sk=roomWalls(R).find(w=>!w.axis), d=R.openings.find(o=>o.type==='door'); R.openings=R.openings.filter(o=>o.id!=='dx1'); R.openings.push({...d,id:'dx1',side:sk.id,off:1.5,w:0.9});
+    step=1; rpOpen=true; render(); return true; });
+  const state=()=>p.evaluate(()=>{ const R=S.rooms[0], ws=roomWalls(R), o=R.openings.find(x=>x.id==='dx1'), w=wallById(R,o.side), q=wallPoint(R,o.side,o.off);
+    return {poly:R.poly.map(v=>[+(v.x+R.x).toFixed(3),+(v.y+R.y).toFixed(3)]), tpl:R.shape&&R.shape.tpl, skew:ws.filter(x=>!x.axis).map(x=>[+x.dir.x.toFixed(4),+x.dir.y.toFixed(4),+x.len.toFixed(3)]), door:[o.side===w.id&&!w.axis, +(q.x+R.x).toFixed(3), +(q.y+R.y).toFixed(3)], handles:[...document.querySelectorAll('.shp-handle')].map(h=>h.dataset.wallHandle).map(id=>wallById(R,id).axis)}; });
+  const drag=async(role,dx,dy)=>{ const id=await p.evaluate(r=>S.rooms[0].shape.roles[r],role); const h=await p.$(`.shp-handle[data-wall-handle="${id}"] circle`); const bb=await h.boundingBox();
+    const x=bb.x+bb.width/2, y=bb.y+bb.height/2; await p.mouse.move(x,y); await p.mouse.down(); for(let i=1;i<=10;i++) await p.mouse.move(x+dx*i/10,y+dy*i/10); await p.mouse.up(); await p.waitForTimeout(150); };
+  await setup(); console.log('start', JSON.stringify(await state()));
+  await drag('short',0,90); console.log('bottom down', JSON.stringify(await state()));
+  await setup(); await drag('sideL',-50,0); console.log('left left', JSON.stringify(await state()));
+  await setup(); await drag('long',0,-60); console.log('top up', JSON.stringify(await state()));
+  // ввод длины в своей форме
+  await setup(); await drag('short',0,90);
+  const r2=await p.evaluate(()=>{ const R=S.rooms[0]; render(); const ws=roomWalls(R), top=ws.find(w=>w.axis==='h'&&w.ny>0); const el=document.querySelector(`[data-wall-len="${top.id}"]`); if(!el) return 'no field';
+    el.value='7000'; el.dispatchEvent(new Event('change')); const ws2=roomWalls(S.rooms[0]); return {poly:S.rooms[0].poly.map(v=>[v.x,v.y]), axes:ws2.map(w=>w.axis), err:(document.querySelector('.shp-warn')||{}).textContent||null}; });
+  console.log('len top 7000', JSON.stringify(r2));
+  const r3=await p.evaluate(()=>{ const R=S.rooms[0], ws=roomWalls(R), left=ws.find(w=>w.axis==='v'); const el=document.querySelector(`[data-wall-len="${left.id}"]`); if(!el) return 'no field';
+    el.value=String(Math.round(left.len*1000)+500); el.dispatchEvent(new Event('change')); const ws2=roomWalls(S.rooms[0]); return {poly:S.rooms[0].poly.map(v=>[v.x,v.y]), axes:ws2.map(w=>w.axis), err:(document.querySelector('.shp-warn')||{}).textContent||null}; });
+  console.log('len left +500', JSON.stringify(r3));
+  console.log('errors',errs); await b.close(); })();

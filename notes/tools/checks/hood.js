@@ -1,0 +1,13 @@
+const {chromium}=require('playwright');
+(async()=>{ const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1400,height:1000}});
+  const errs=[]; p.on('pageerror',e=>errs.push('PE '+String(e).slice(0,200))); p.on('console',m=>{ if(m.type()==='error') errs.push('console: '+m.text().slice(0,200)); });
+  await p.goto('file://'+process.cwd()+'/index.html'); await p.waitForTimeout(400);
+  const r=await p.evaluate(()=>{ closeProjects(); const R=S.rooms[0]; S.cur=R.id; setRoomShape(R,{tpl:'trap',rot:0,p:{kind:'right',side:'l',a:3,b:1.5,h:6}}); S.layoutManual=false; S.layoutSig=null; step=5; recompute(); render();
+    const H=hoodsAll(), hot=curUnitsOf(R).filter(u=>u.c.hot&&S.layout[u.key]); const o=S.norms.hoodOver;
+    const expLen=hot.reduce((a,u)=>a+u.c.w,0)+2*o, expDep=Math.max(...hot.map(u=>u.c.d))+o;
+    return {hot:hot.map(u=>u.c.s+(S.layout[u.key].sw?'@skew':'')), list:H.list.map(h=>({poly:!!h.poly, len:+h.len.toFixed(3), area:+h.area.toFixed(3), dep:h.poly?+(h.area/h.len).toFixed(3):null})), expLen:+expLen.toFixed(3), expDep:+expDep.toFixed(3), area:+H.area.toFixed(3), len:+H.len.toFixed(3), under:hot.map(u=>H.list.some(h=>{ const bb=bbox(u.c,S.layout[u.key]); return h.poly?pointInPoly(h.poly,bb.x+bb.w/2,bb.y+bb.h/2):false; }))}; });
+  console.log(JSON.stringify(r));
+  await p.screenshot({path:'shots/hood-plan.png',clip:{x:150,y:330,width:1100,height:650},fullPage:true});
+  await p.evaluate(()=>{ step=6; render(); }); await p.waitForTimeout(200);
+  console.log('eng', JSON.stringify(await p.evaluate(()=>{ const t=document.body.innerText; const m=t.match(/Новых зонтов[^\n]*\n?[^\n]*/); return m?m[0].slice(0,120):null; })));
+  console.log('errors',errs); await b.close(); })();

@@ -450,15 +450,15 @@ html.set-lock,html.set-lock body{overflow:hidden}
 .plan-bar>.zbar{margin-left:auto}
 @media (max-width:899px){ .plan-bar-actions{order:-1;flex:0 0 100%} }
 @media (min-width:900px){ .plan-bar .plan-layers .btn,.plan-bar-actions>.btn,.plan-bar-actions .rt-g>.btn,.plan-bar>.zbar>.btn{padding-inline:5px;font-size:13px} }
-/* переключатель «Сети есть / проектируем»: на телефоне — в две строки */
+/* состояния инженерных сетей: на телефоне — строка на сеть */
+.nets-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.nets-grid .lbl{display:block;margin-bottom:6px}
 .nets-panel .seg button{min-height:44px;white-space:normal;line-height:1.25}
-@media (max-width:640px){ .nets-panel .seg{flex-direction:column} }
+@media (min-width:900px){ .nets-grid{grid-template-columns:repeat(5,minmax(0,1fr))} }
 .nets-panel .notes{margin-top:10px}
-.nets-inline{display:flex;align-items:center;gap:8px}
-.nets-inline .seg button{min-height:44px;white-space:nowrap}
 .pt-pal-row{margin-bottom:10px}
-@media (min-width:900px){ .nets-panel{display:none} .points-tools>.plan-bar>.lay-menu{margin-left:auto} .points-tools>.plan-bar>.zbar{margin-left:0} }
-@media (max-width:899px){ .nets-inline,.nets-inline-info{display:none} .points-tools{display:flex;flex-direction:column} .points-tools>.pt-pal-row{order:-1} }
+@media (min-width:900px){ .points-tools>.plan-bar>.lay-menu{margin-left:auto} .points-tools>.plan-bar>.zbar{margin-left:0} }
+@media (max-width:899px){ .points-tools{display:flex;flex-direction:column} .points-tools>.pt-pal-row{order:-1} }
 /* резерв и полоса «Убрать в резерв» */
 .tray .chip{min-height:44px;padding:8px 14px;touch-action:auto;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .tray .chip.rsv-src{opacity:.5}
@@ -2926,7 +2926,7 @@ bind[0]=()=>{
     if(!HEAT.some(h=>h.main&&next[h.k]&&next[h.k].on)){ heatRecErr=true; render(); return; }   // основное тепловое обязательно
     const onlyMine=T.msgs.filter(m=>d.some(x=>!heatRecOff.has(x.k)&&m.includes(GAS_GEN[x.k]||'\u0000')));
     S.heat=next; heatRecOpen=false; heatRecErr=false; touch(); render(); toast('Тепловое подобрано по числу человек'+(onlyMine.length?'. '+onlyMine.join('. '):'')); });
-  document.getElementById('gas-on').addEventListener('change',e=>{ S.gas=S.gas||{on:false,src:'main'}; S.gas.on=e.target.checked; const m=S.gas.on?fixGasHeat():[]; touch(); render();
+  document.getElementById('gas-on').addEventListener('change',e=>{ S.gas=S.gas||{on:false,src:'main'}; S.gas.on=e.target.checked; if(S.gas.on&&netState(S,'gas')==='none') S.nets={...S.nets,gas:'unk'}; const m=S.gas.on?fixGasHeat():[]; touch(); render();
     toast(S.gas.on?(m.length?m.join('. '):'Газ есть: у пароконвектомата, плиты, котла и сковороды можно выбрать газовое исполнение'):'Газа нет: всё тепловое считается электрическим, выбор «Газ» сохранён'); });
   document.getElementById('cold-on').addEventListener('change',e=>{ S.coldOn=e.target.checked; touch(); recompute(); });
   ['fish','meat'].forEach(k=>document.getElementById('f-'+k).addEventListener('change',e=>{ S.feats[k]=e.target.checked; touch(); recompute(); }));
@@ -3500,13 +3500,18 @@ bind[1]=()=>{
 };
 
 function resChips(){
-  return `<div class="res">${['cw','hw','sewer','vent','gas','el','sock'].map(t=>{ const on=hasPt(S,t)||(t==='vent'&&hasPt(S,'hood')); return `<span class="${on?'on':''}"><i class="pt-dot" style="background:var(${PT[t].col})">${PT[t].l}</i>${PT[t].n}: ${on?'отмечено':'нет'}</span>`; }).join('')}</div>`;
+  return `<div class="res">${['cw','hw','sewer','vent','gas','el','sock'].map(t=>{ const on=hasPt(S,t)||(t==='vent'&&hasPt(S,'hood')); return `<span class="${on?'on':''}"><i class="pt-dot" style="background:var(${PT[t].col})">${PT[t].l}</i>${PT[t].n}: ${on?'отмечено':'не отмечено'}</span>`; }).join('')}</div>`;
+}
+function netsPanelHtml(){
+  const labels={water:'Вода',sewer:'Канализация',vent:'Вентиляция',el:'Электрика',gas:'Газ'};
+  return `<div class="nets-grid">${NET_KEYS.map(k=>`<div><span class="lbl">${labels[k]}</span>${seg('net-'+k,netState(S,k),[['have','Есть'],['none','Нет'],['unk','Неизвестно']])}</div>`).join('')}</div>
+    <p class="hint" style="margin-top:8px">Нет — спроектируем: будет задание в PDF. Неизвестно — уточним позже</p>
+    ${netState(S,'gas')==='have'&&S.gas.on===false?'<p class="hint" style="margin-top:8px">Включите «Есть газ» на шаге «Исходные»: снизит электронагрузку</p>':''}
+    ${netsAllNone(S)?notesHtml([{t:'info', m:NETS_INFO}]):''}`;
 }
 function stepPoints(){
   return `${stepHead('Точки подключения', `Отметьте, что уже есть: вода, канализация, газ, вентиляция, электрощит. Точки привязываются размерами от углов.`)}${exampleBar()}
-  <section class="panel nets-panel" aria-label="Инженерные сети">${seg('utilities',netsAllNone(S)?'design':'existing',[['existing','Сети уже есть — отмечу их на плане'],['design','Сетей пока нет — проектируем']])}
-    <p class="hint" style="margin-top:8px">${netsOpen(S)?'Приложение расставит оборудование по технологии и покажет, куда вывести воду, канализацию, электрику и вентиляцию. Уже известные точки (например, стояк канализации) можно отметить — они будут учтены.':'Отметьте вводы воды, канализацию, вентиляцию и электрощит — расстановка подстроится под них.'}</p>
-    ${netsOpen(S)?notesHtml([{t:'info', m:NETS_INFO}]):''}</section>
+  <section class="panel nets-panel" aria-label="Инженерные сети">${netsPanelHtml()}</section>
   <div class="stack"><section>${roomTabs()}${roomEditor()}</section>
   ${elPanels(curGeom()).length?(()=>{ const li=checkLayout(curGeom(),[]).filter(i=>!i.key&&/электрощит/.test(i.m)); return `<section class="panel"><h3>Проверка точек</h3>${li.length?notesHtml(li):`<p class="hint">Краны холодной и горячей воды — не ближе ${fmtM(elN(S).wd)} от электрощита. Выберите щит на плане, чтобы увидеть его зону.</p>`}</section>`; })():''}
   <section class="panel"><h3>Ресурсы по плану</h3>${resChips()}</section></div>${pager()}`;
@@ -3516,7 +3521,7 @@ function isBare(){ return step===1||step===2; }
 function roomEditor(){
   const tools=`<div class="pt-pal" role="group" aria-label="Добавить точку подключения">${PT_PAL.map(([k,nm,sh])=>`<button class="btn pt-pb" type="button" data-add="pt:${k}" aria-pressed="${addMode==='pt:'+k}" title="${nm}" aria-label="Добавить точку: ${nm}"><i class="pt-dot" style="background:var(${PT[k].col})" aria-hidden="true">${PT[k].l}</i><span class="pt-pn" aria-hidden="true">${sh}</span></button>`).join('')}<button class="btn pt-hood" type="button" data-add="pt:hood" aria-pressed="${addMode==='pt:hood'}" title="Существующий вытяжной зонт" aria-label="Добавить существующий вытяжной зонт">+ Зонт</button></div>`;
   const hint = !addMode ? '' : `<div class="example" data-fs="plan" style="margin-bottom:10px">Коснитесь плана у стены, где находится «${PT[addMode.slice(3)].n.toLowerCase()}». Если точка в полу или на потолке — коснитесь внутри помещения. <button class="btn small" type="button" id="add-cancel">Отмена</button></div>`;
-  return `${step===2?`<div class="points-tools"><div class="plan-bar"><div class="nets-inline" title="${netsOpen(S)?'Приложение расставит оборудование по технологии и покажет, куда вывести воду, канализацию, электрику и вентиляцию. Уже известные точки (например, стояк канализации) можно отметить — они будут учтены.':'Отметьте вводы воды, канализацию, вентиляцию и электрощит — расстановка подстроится под них.'}"><span class="lbl">Сети:</span>${seg('utilities',netsAllNone(S)?'design':'existing',[['existing','Уже есть'],['design','Проектируем']])}</div>${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div><div class="pt-pal-row">${tools}</div>${netsOpen(S)?`<div class="nets-inline-info">${notesHtml([{t:'info', m:NETS_INFO}])}</div>`:''}</div>`:`<div class="plan-bar"><div class="plan-bar-actions">${tools}</div>${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div>`}${hint}
+  return `${step===2?`<div class="points-tools"><div class="plan-bar">${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div><div class="pt-pal-row">${tools}</div></div>`:`<div class="plan-bar"><div class="plan-bar-actions">${tools}</div>${typeof layersBarHtml==='function'?layersBarHtml('points'):''}${zoomCtl()}</div>`}${hint}
     <div class="plan-box ${addMode?'adding':''} ${VZ('plan')>1.001?'zbig':''}" id="pbox" data-fs="plan" style="--pz:${VZ('plan')}">${planSvg('points',[],{bare:isBare()})}</div>
     ${typeof touchHintHtml==='function'?touchHintHtml('points'):''}${roomPanel()}
     <div class="panel" style="margin-top:12px"><h3>Точки и привязки</h3>${S.points.length?pointRows():'<p class="hint">Точек пока нет. Выберите тип в списке, нажмите «+ Точка» и коснитесь плана у нужной стены.</p>'}</div>`;
@@ -3664,7 +3669,7 @@ function nicheOutEdge(room, edge, openings){
 }
 function bindZoom(){}   // кнопки масштаба обрабатывает модуль «Масштаб и план»
 bind[2]=()=>{ bindRoomTabs(); bindRoomEditor();
-  segBind(main,(k,v)=>{ if(k!=='utilities') return; S.utilities=v==='design'?'design':'existing'; S.nets=normNets({...S, nets:null}); touch(); render(); toast(v==='design'?'Сети проектируются — точки не обязательны':'Сети уже есть — отметьте их на плане'); }); };
+  segBind(main,(k,v)=>{ if(!k.startsWith('net-')) return; S.nets={...S.nets,[k.slice(4)]:v}; S.utilities=netsAllNone(S)?'design':'existing'; touch(); render(); }); };
 
 /* ---------- SVG плана ---------- */
 function svgPt(e){ const svg=document.getElementById('plan'); const m=svg.getScreenCTM().inverse(); const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(m);

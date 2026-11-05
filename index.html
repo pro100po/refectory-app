@@ -1503,7 +1503,7 @@ function wallEndNames(room,id){ const walls=roomWalls(room), i=walls.findIndex(w
   if(w.axis==='h') return {a:'Слева',b:'Справа'}; if(w.axis==='v') return {a:'Сверху',b:'Снизу'};
   return {a:'У стены '+((i+walls.length-1)%walls.length+1),b:'У стены '+((i+1)%walls.length+1)}; }
 function wallFrom(room,id){ if(!hasPoly(room)) return SIDE_FROM[id]; const w=wallById(room,id); if(w&&w.axis===null){ const walls=roomWalls(room), i=walls.findIndex(w=>w.id===id); return 'от угла со стеной '+((i+walls.length-1)%walls.length+1); } return w&&w.axis==='v'?'от верхнего угла':'от левого угла'; }
-function setRoomShape(room,shape,shift){
+function setRoomShape(room,shape,shift,keepMeasured){
   const shiftX=Number(shift&&shift.x)||0, shiftY=Number(shift&&shift.y)||0;
   const tpl=shape&&shape.tpl, paramsError=tpl==='custom'?null:shapeParamsError(tpl,shape&&shape.p); if(paramsError) return {error:paramsError};
   const built=tpl==='custom'?normPoly(shape.pts,shape.pts.map(p=>p.wid||null)):shapeTemplate(tpl,shape&&shape.rot,shape&&shape.p), pts=built.pts, roles=built.roles, error=shapeError(pts);
@@ -1526,6 +1526,7 @@ function setRoomShape(room,shape,shift){
     } else { const width=p.type==='hood'?(Number(p.w)||0):0, q=wallPoint(old,p.side,(Number(p.off)||0)+width/2), hit=nearestWall(room,q.x,q.y), proj=projectToWall(room,hit.id,q.x,q.y);
       p.side=hit.id; p.off=proj.off-width/2; const label=p.name||(PT[p.type]&&PT[p.type].n)||p.spec||p.type||'точка'; moved.push(`Точка «${label}» перенесена ${dest(hit.id)}`); } }
   clampRoom({room,openings:room.openings,points:room.points});
+  if(room.measured&&!keepMeasured){ delete room.measured; moved.push('Уточнение по замерам снято: форма изменена'); }
   return {ok:true,moved}; }
 const MEASURED_STRAIGHT_RUN=0.1, MEASURED_STRAIGHT_ANGLE=5;
 function measuredStraight(dx,dy){ const run=Math.min(Math.abs(dx),Math.abs(dy)), along=Math.max(Math.abs(dx),Math.abs(dy));
@@ -1555,7 +1556,7 @@ function shiftMeasuredRoom(room,dx,dy,obs){
   for(const key of Object.keys(S.layout||{})) if((P&&P.roomOf&&P.roomOf[key]===room.id)||(S.layoutRoom&&S.layoutRoom[key]===room.id)){
     const pos=S.layout[key]; if(pos){ pos.x=(Number(pos.x)||0)-dx; pos.y=(Number(pos.y)||0)-dy; } } }
 function applyMeasured(room,{lens,diags}){
-  const bad='Проверьте размеры', base=room.measured?room.measured.base:JSON.parse(JSON.stringify({poly:room.poly,shape:room.shape,w:room.w,d:room.d,x:room.x,y:room.y}));
+  const at=room.measured&&room.measured.at, bad='Проверьте размеры', base=room.measured?{...room.measured.base,x:room.measured.base.x+(at?room.x-at.x:0),y:room.measured.base.y+(at?room.y-at.y:0)}:JSON.parse(JSON.stringify({poly:room.poly,shape:room.shape,w:room.w,d:room.d,x:room.x,y:room.y}));
   const pts=roomPoly(base).map((p,i)=>({...p,wid:p.wid||(hasPoly(base)?'w'+i:['t','r','b','l'][i])})), indices=new Map(pts.map((p,i)=>[p.wid,i]));
   if(!lens||typeof lens!=='object'||Array.isArray(lens)||!Array.isArray(diags)||Object.keys(lens).some(id=>!indices.has(id))||
     diags.some(d=>!d||!indices.has(d.a)||!indices.has(d.b))) return {error:bad};
@@ -1564,17 +1565,17 @@ function applyMeasured(room,{lens,diags}){
   const rectified=rectifyContour(solved.pts), contour=rectified||solved.pts, dx0=Math.min(...contour.map(p=>p.x)), dy0=Math.min(...contour.map(p=>p.y));
   const work=contour.map(p=>({...p,x:p.x-dx0,y:p.y-dy0})), real=solved.pts.map(p=>({...p,x:p.x-dx0,y:p.y-dy0})), error=shapeError(normPoly(work).pts);
   if(error) return {error};
-  const dx=base.x+dx0-room.x, dy=base.y+dy0-room.y, obs=roomObs(room).map(ob=>({...ob})), result=setRoomShape(room,{tpl:'custom',pts:work},{x:dx,y:dy});
+  const dx=base.x+dx0-room.x, dy=base.y+dy0-room.y, obs=roomObs(room).map(ob=>({...ob})), result=setRoomShape(room,{tpl:'custom',pts:work},{x:dx,y:dy},true);
   if(result.error) return {error:result.error};
   shiftMeasuredRoom(room,dx,dy,obs);
-  room.measured={pts:real,lens:{...lens},diags:diags.map(d=>({...d})),base}; delete room.wallEntered;
+  room.measured={pts:real,lens:{...lens},diags:diags.map(d=>({...d})),base,at:{x:room.x,y:room.y}}; delete room.wallEntered;
   return {ok:true,moved:result.moved,solve:solved,work:rectified?work:null}; }
 function clearMeasured(room){
   if(!room.measured) return {ok:true,moved:[]};
   const base=room.measured.base, poly=hasPoly(base), pts=roomPoly(base), error=shapeError(normPoly(pts).pts);
   if(error) return {error};
-  const dx=base.x-room.x, dy=base.y-room.y, obs=roomObs(room).map(ob=>({...ob}));
-  const result=setRoomShape(room,poly?{tpl:'custom',pts:base.poly}:{tpl:'rect',p:{W:base.w,D:base.d}},{x:dx,y:dy});
+  const at=room.measured.at, dx=base.x+(at?room.x-at.x:0)-room.x, dy=base.y+(at?room.y-at.y:0)-room.y, obs=roomObs(room).map(ob=>({...ob}));
+  const result=setRoomShape(room,poly?{tpl:'custom',pts:base.poly}:{tpl:'rect',p:{W:base.w,D:base.d}},{x:dx,y:dy},true);
   if(result.error) return {error:result.error};
   if(poly){ if(base.shape) room.shape=JSON.parse(JSON.stringify(base.shape)); else delete room.shape; }
   shiftMeasuredRoom(room,dx,dy,obs); delete room.measured;
@@ -3369,7 +3370,11 @@ function openMeasure(){
   ov.addEventListener('click',e=>{
     if(e.target===ov||e.target.closest('[data-measure-close]')){ close(); return; }
     if(!e.target.closest('[data-measure-apply]')) return;
-    const values=preview(); if(!values) return; const result=applyMeasured(S.room,values); if(result.error){ fail(result.error); return; }
+    const values=preview(); if(!values) return; const doors=[];
+    for(const d of r.openings) if(d.type==='door'&&!d.derived&&d.to&&d.to.startsWith('room:')){ const other=rById(d.to.slice(5)); if(other&&mapDoor(r,d,other)) doors.push({room:r,door:d,other}); }
+    for(const other of S.rooms) if(other!==r) for(const d of other.openings) if(d.type==='door'&&!d.derived&&d.to==='room:'+r.id&&mapDoor(other,d,r)) doors.push({room:other,door:d,other:r});
+    const result=applyMeasured(S.room,values); if(result.error){ fail(result.error); return; }
+    for(const d of doors) if(!mapDoor(d.room,d.door,d.other)) result.moved.push(`Дверь в «${roomName(S,d.other.id)}» больше не совпадает с соседним помещением: проверьте расположение помещений`);
     close(); lastPush=0; touch(); recompute(); render(); const button=document.querySelector('[data-measure-open]'); if(button) button.focus({preventScroll:true}); toast('Форма уточнена по замерам'+(result.moved.length?'. '+result.moved.join('. '):'')); });
   ov.addEventListener('focusin',e=>{ focused=e.target.hasAttribute('data-measure-diag')?Number(e.target.dataset.measureDiag):-1; draw(); });
   ov.addEventListener('focusout',()=>{ focused=-1; draw(); });

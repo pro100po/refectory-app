@@ -1506,6 +1506,56 @@ function setRoomShape(room,shape,shift){
       p.side=hit.id; p.off=proj.off-width/2; const label=p.name||(PT[p.type]&&PT[p.type].n)||p.spec||p.type||'точка'; moved.push(`Точка «${label}» перенесена ${dest(hit.id)}`); } }
   clampRoom({room,openings:room.openings,points:room.points});
   return {ok:true,moved}; }
+const MEASURED_STRAIGHT_RUN=0.1, MEASURED_STRAIGHT_ANGLE=5;
+function rectifyContour(pts){
+  if(!Array.isArray(pts)||pts.length<4||pts.some(p=>!p||!Number.isFinite(p.x)||!Number.isFinite(p.y))) return null;
+  const n=pts.length, lines=[];
+  for(let i=0;i<n;i++){ const a=pts[i], b=pts[(i+1)%n], dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
+    if(len<=1e-9) return null;
+    if(Math.abs(dy)<=MEASURED_STRAIGHT_RUN&&Math.abs(dx)>Math.abs(dy)&&Math.atan2(Math.abs(dy),Math.abs(dx))*180/Math.PI<=MEASURED_STRAIGHT_ANGLE)
+      lines.push({x:a.x,y:dx>0?Math.max(a.y,b.y):Math.min(a.y,b.y),ux:Math.sign(dx),uy:0});
+    else if(Math.abs(dx)<=MEASURED_STRAIGHT_RUN&&Math.abs(dy)>Math.abs(dx)&&Math.atan2(Math.abs(dx),Math.abs(dy))*180/Math.PI<=MEASURED_STRAIGHT_ANGLE)
+      lines.push({x:dy<0?Math.max(a.x,b.x):Math.min(a.x,b.x),y:a.y,ux:0,uy:Math.sign(dy)});
+    else lines.push({x:a.x,y:a.y,ux:dx/len,uy:dy/len}); }
+  const out=[];
+  for(let i=0;i<n;i++){ const a=lines[(i+n-1)%n], b=lines[i], cross=a.ux*b.uy-a.uy*b.ux;
+    if(Math.abs(cross)<=1e-9) return null;
+    const t=((b.x-a.x)*b.uy-(b.y-a.y)*b.ux)/cross, x=a.x+t*a.ux, y=a.y+t*a.uy;
+    if(!Number.isFinite(x)||!Number.isFinite(y)||Math.hypot(x-pts[i].x,y-pts[i].y)>0.3) return null;
+    out.push({...pts[i],x,y}); }
+  for(let i=0;i<n;i++){ const j=(i+1)%n;
+    if((out[j].x-out[i].x)*(pts[j].x-pts[i].x)+(out[j].y-out[i].y)*(pts[j].y-pts[i].y)<=0) return null; }
+  return shapeError(normPoly(out).pts)?null:out; }
+function shiftMeasuredRoom(room,dx,dy,obs){
+  room.x+=dx; room.y+=dy;
+  if(obs.length){ room.obstacles=obs.map(ob=>({...ob,x:ob.x-dx,y:ob.y-dy})); clampRoom({room,openings:room.openings,points:room.points}); }
+  for(const key of Object.keys(S.layout||{})) if((P&&P.roomOf&&P.roomOf[key]===room.id)||(S.layoutRoom&&S.layoutRoom[key]===room.id)){
+    const pos=S.layout[key]; if(pos){ pos.x=(Number(pos.x)||0)-dx; pos.y=(Number(pos.y)||0)-dy; } } }
+function applyMeasured(room,{lens,diags}){
+  const bad='Проверьте размеры', base=room.measured?room.measured.base:JSON.parse(JSON.stringify({poly:room.poly,shape:room.shape,w:room.w,d:room.d,x:room.x,y:room.y}));
+  const pts=roomPoly(base).map((p,i)=>({...p,wid:p.wid||(hasPoly(base)?'w'+i:['t','r','b','l'][i])})), indices=new Map(pts.map((p,i)=>[p.wid,i]));
+  if(!lens||typeof lens!=='object'||Array.isArray(lens)||!Array.isArray(diags)||Object.keys(lens).some(id=>!indices.has(id))||
+    diags.some(d=>!d||!indices.has(d.a)||!indices.has(d.b))) return {error:bad};
+  const solved=solveMeasured(pts,pts.map(p=>Object.prototype.hasOwnProperty.call(lens,p.wid)?lens[p.wid]:undefined),diags.map(d=>({a:indices.get(d.a),b:indices.get(d.b),len:d.len})));
+  if(!solved.ok) return {error:solved.error};
+  const rectified=rectifyContour(solved.pts), contour=rectified||solved.pts, dx0=Math.min(...contour.map(p=>p.x)), dy0=Math.min(...contour.map(p=>p.y));
+  const work=contour.map(p=>({...p,x:p.x-dx0,y:p.y-dy0})), real=solved.pts.map(p=>({...p,x:p.x-dx0,y:p.y-dy0})), error=shapeError(normPoly(work).pts);
+  if(error) return {error};
+  const dx=base.x+dx0-room.x, dy=base.y+dy0-room.y, obs=roomObs(room).map(ob=>({...ob})), result=setRoomShape(room,{tpl:'custom',pts:work},{x:dx,y:dy});
+  if(result.error) return {error:result.error};
+  shiftMeasuredRoom(room,dx,dy,obs);
+  room.measured={pts:real,lens:{...lens},diags:diags.map(d=>({...d})),base}; delete room.wallEntered;
+  return {ok:true,moved:result.moved,solve:solved,work:rectified?work:null}; }
+function clearMeasured(room){
+  if(!room.measured) return {ok:true,moved:[]};
+  const base=room.measured.base, poly=hasPoly(base), pts=roomPoly(base), error=shapeError(normPoly(pts).pts);
+  if(error) return {error};
+  const dx=base.x-room.x, dy=base.y-room.y, obs=roomObs(room).map(ob=>({...ob}));
+  const result=setRoomShape(room,poly?{tpl:'custom',pts:base.poly}:{tpl:'rect',p:{W:base.w,D:base.d}},{x:dx,y:dy});
+  if(result.error) return {error:result.error};
+  if(poly){ if(base.shape) room.shape=JSON.parse(JSON.stringify(base.shape)); else delete room.shape; }
+  shiftMeasuredRoom(room,dx,dy,obs); delete room.measured;
+  return {ok:true,moved:result.moved}; }
 function stepRoomWall(room,id,off,h,far){
   const walls=roomWalls(room), i=walls.findIndex(w=>w.id===id); if(i<0) return {error:'Выберите стену для уступа'};
   const w=walls[i], P=roomPoly(room).map((q,j)=>({...q,wid:q.wid||walls[j].id})), n=P.length, a=P[i], b=P[(i+1)%n], u=w.dir, nv={x:w.nx,y:w.ny}, t=w.offFrom==='start'?off:w.len-off;

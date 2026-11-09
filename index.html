@@ -1,4 +1,5 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}[role="dialog"] :focus-visible{outline:3px solid var(--steel);outline-offset:2px}
+</style></head><body>
 <title>Кухня трапезной</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -642,12 +643,12 @@ function exampleData(){
     ]}], cur:'r1', unitRoom:{}, links:[],
     res:{kw:30, ph:3, max:null, phMax:3, fit:false},
     gas:{on:false, src:'main'},
-    report:{meta:{parish:'', address:'', author:'', contact:'', note:''}, preset:'full', sections:{}, mono:false},
+    report:{meta:{parish:'', address:'', author:'', contact:'', note:'', revision:'', date:''}, preset:'full', sections:{}, mono:false},
     existing:[
       {uid:'e1', qty:1, n:'Шкаф холодильный 700 л', model:'', w:700, d:850, h:2030, kw:0.5, ph:1, z:'cold', mount:'floor', hot:false, wat:false, gas:false, role:'fridge', cap:700, plate:null, roomId:'auto', cat:null, zOverride:null},
       {uid:'e2', qty:2, n:'Стеллаж кухонный', model:'1000×500, 4 полки', w:1000, d:500, h:1800, kw:0, ph:0, z:'store', mount:'floor', hot:false, wat:false, gas:false, role:'shelf', cap:null, plate:null, roomId:'auto', cat:null, zOverride:null}
     ],
-    manual:null, edits:{delta:{}, off:{}, pref:{}, skipHave:{}}, prices:{}, hoodPrice:38000, montage:10,
+    manual:null, edits:{qtySemantics:'total-v1', delta:{}, off:{}, pref:{}, skipHave:{}}, prices:{}, hoodPrice:38000, montage:10,
     norms:{work:0.9, passage:1.2, hoodV:0.3, hoodOver:0.15, waterTotal:12, waterHot:4, kArea:0.35, cos:0.95, gasHose:2, align:true, strict:false, elPanelDepth:0.8, elPanelWidth:0.6, elPanelLowH:0.95, elWaterDist:1.0, sewerMax:5, snap:0.05},
     layout:{}, inserts:[], layoutManual:false, layoutSig:'', planDims:'all', utilities:'existing', nets:{water:'have', sewer:'have', vent:'have', el:'have', gas:'none'}
   };
@@ -811,7 +812,7 @@ function itemOf(e){
 }
 // что запись меняет в закупке: расчёт с ней и без неё, с правками пользователя
 function haveList(s){ const E=s.edits||{}, sk=E.skipHave||{}; return s.existing.map(e=>({c:itemOf(e), qty:Math.max(0,e.qty|0), uid:e.uid})).filter(h=>h.qty>0&&!sk[h.uid]); }
-function buyWith(s, have){ const r=baseBuy(s,have); return applyEdits(r.buy,s).buy; }
+function buyWith(s, have){ const marker=(s.edits||{}).qtySemantics, migration=(s.edits||{}).qtyMigration, unknown=(marker!=null&&!['total-v1','purchase-v1'].includes(marker))||(migration!=null&&!['auto-v1','reviewed-v1'].includes(migration)); if(unknown) return baseBuy(s,have).buy; const legacy=marker!=='total-v1', r=baseBuy(s,have,legacy); if(legacy) return applyLegacyEdits(r.buy,s).buy; const gross=baseBuy(s,[]); return applyEdits(r.buy,s,have,gross.buy).buy; }
 function haveEffect(e, withBuy, have){
   if(e.role==null) return {t:'warn', m:'Укажите, что это — иначе подбор её не учтёт'};
   if(S.edits&&S.edits.skipHave&&S.edits.skipHave[e.uid]) return {t:'skip', m:e.role==='burners'?'Не учитывается в подборе — вместо неё в закупке индукционная плита':'Не учитывается в подборе — недостающее докупается'};
@@ -826,7 +827,7 @@ function haveEffect(e, withBuy, have){
     const word={fridge:'холода', freezer:'морозильников', heater:'водонагревателей'}[e.role];
     if(L>0) return {t:'ok', m:`Засчитан как ${what} — закупка ${word} уменьшена на ${fmt0(L)} л`}; }
   const heatIds=new Set(heatChoice(S).map(x=>x.c.id)), heat=red.filter(x=>heatIds.has(x.c.id)), rest=red.filter(x=>!heatIds.has(x.c.id));
-  for(const x of heat) parts.push(`Закрывает выбор «${x.c.lb}» — в закупку не входит`);
+  for(const x of heat) parts.push(`Уменьшает закупку «${x.c.lb}» на ${x.d} шт.`);
   if(rest.length) parts.push(`Заменяет в закупке: ${rest.map(x=>`${lc1(shortName(x.c))} ×${x.d}`).join(', ')}`);
   return {t:'ok', m:parts.join('. ')};
 }
@@ -858,20 +859,19 @@ function heatId(k,v,fuel){ if(fuel==='gas'&&hasGasVer(k,v)) return {combi:'gcomb
 function heatRecommend(N){ const o={}; for(const h of HEAT) o[h.k]={on:!!h.recOn(N), v:h.rec(N), q:1, fuel:'el'}; return o; }
 // роль аппарата карточки (у плиты — burners, у кипятильника — tea)
 function heatRole(s,k){ const h=HEATI[k], st=(s.heat||{})[k]||{}, c=CATI[heatId(k, st.v||h.opts[0][0], 'el')]||CATI[heatId(k, h.opts[0][0], 'el')]; return c?c.role:null; }
-// закрывает ли имеющееся выбор теплового: ёмкость имеющегося той же роли (по «Что это» и cap записи) против выбранной × количество.
-// have — список учитываемого имеющегося (как в buildBuy); без него — из S.existing без отмеченных «не используется».
-// Плита любого типа (индукционная, ТЭН, газовая) закрывает выбор плиты — как в подборе
+// Тепловые аппараты засчитываются поштучно только при совпадении роли,
+// ёмкости и топлива; для плиты также требуется известный совпадающий тип.
 function heatCoverage(s,k,have){
-  const st=(s.heat||{})[k]||{}, role=heatRole(s,k), on=!!st.on, q=Math.max(1,st.q||1), c=on?CATI[heatId(k,st.v,heatFuel(s,k))]:null;
+  const st=(s.heat||{})[k]||{}, role=heatRole(s,k), on=!!st.on, q=Math.max(0,Math.floor(st.q==null?1:+st.q||0)), c=on?CATI[heatId(k,st.v,heatFuel(s,k))]:null;
   const sk=(s.edits&&s.edits.skipHave)||{}, recs=new Map((s.existing||[]).map(e=>[e.uid,e]));
-  const all=(s.existing||[]).map(e=>({c:itemOf(e), qty:Math.max(0,e.qty|0), uid:e.uid})).filter(h=>h.qty>0&&h.c.role&&h.c.role===role);
-  const list=have ? have.filter(h=>h.c&&h.c.role&&h.c.role===role) : all.filter(h=>!sk[h.uid]);
+  const all=(s.existing||[]).map(e=>({c:itemOf(e), qty:Math.max(0,e.qty|0), uid:e.uid})).filter(h=>h.qty>0&&h.c.role===role);
+  const list=have ? have.filter(h=>h.c&&h.c.role===role) : all.filter(h=>!sk[h.uid]);
   const hv=list.map(h=>({uid:h.uid, name:h.c.n, cap:h.c.cap, qty:h.qty, c:h.c, plate:(recs.get(h.uid)||{}).plate||null}));
-  const skipped=all.filter(h=>sk[h.uid]).map(h=>h.uid);
-  const haveCap=hv.reduce((a,h)=>a+h.cap*h.qty,0), needCap=c?c.cap*q:0;
-  const covered=on&&!!c&&haveCap>0&&haveCap>=needCap-1e-6;
-  return {have:hv, haveCap, needCap, covered, partial:on&&!!c&&haveCap>0&&!covered, skipped, role, c, q, on}; }
-function heatChoice(s){ const out=[]; for(const h of HEAT){ const st=(s.heat||{})[h.k]; if(!st||!st.on) continue; const c=CATI[heatId(h.k,st.v,heatFuel(s,h.k))]; if(c) out.push({h, c, q:Math.max(1,st.q||1)}); } return out; }
+  const compatible=x=>!!c && Math.abs(x.cap-c.cap)<1e-6 && !!x.c.gas===!!c.gas && (role!=='burners'||x.plate===(c.gas?'gas':'ind')) && (role!=='tea'||(recs.get(x.uid)||{}).cat===c.id);
+  const matched=hv.filter(compatible).reduce((a,x)=>a+x.qty,0), credited=Math.min(q,matched), buy=Math.max(0,q-credited);
+  const haveCap=hv.reduce((a,x)=>a+x.cap*x.qty,0), needCap=c?c.cap*q:0;
+  return {have:hv, haveCap, needCap, covered:on&&!!c&&q>0&&buy===0, partial:on&&credited>0&&buy>0, matched, credited, buy, unmatched:hv.filter(x=>!compatible(x)), skipped:all.filter(h=>sk[h.uid]).map(h=>h.uid), role,c,q,on}; }
+function heatChoice(s){ const out=[]; for(const h of HEAT){ const st=(s.heat||{})[h.k]; if(!st||!st.on) continue; const c=CATI[heatId(h.k,st.v,heatFuel(s,h.k))]; if(c) out.push({h, c, q:Math.max(0,Math.floor(st.q==null?1:+st.q||0))}); } return out; }
 
 // типовой набор с сохранённым топливом и той же поправкой «газового такого нет», что и раньше при подборе
 function heatTarget(s){ const t=heatRecommend(s.people), cur=s.heat||{}; for(const k in t) if(cur[k]&&cur[k].fuel) t[k].fuel=cur[k].fuel;
@@ -879,7 +879,7 @@ function heatTarget(s){ const t=heatRecommend(s.people), cur=s.heat||{}; for(con
 // что изменит типовой набор: по каждому аппарату HEAT, в порядке карточек; топливо не сравнивается
 function heatDiff(cur, rec){ const out=[]; cur=cur||{};
   for(const h of HEAT){ const a=cur[h.k]||{on:false, v:h.opts[0][0], q:1}, b=rec[h.k]; if(!b) continue;
-    const lbl=v=>(h.opts.find(o=>o[0]===String(v))||[null,String(v)])[1], qa=Math.max(1,a.q||1), qb=Math.max(1,b.q||1);
+    const lbl=v=>(h.opts.find(o=>o[0]===String(v))||[null,String(v)])[1], qa=Math.max(0,a.q==null?1:a.q), qb=Math.max(0,b.q==null?1:b.q);
     let t=null;
     if(!a.on && b.on) t=`включится, ${lbl(b.v)}${qb>1?`, ${qb} шт.`:''}`;
     else if(a.on && !b.on) t='выключится';
@@ -914,7 +914,7 @@ const STEPS = [
 // роли, где исполнение — это ёмкость: при выборе другого исполнения количество пересчитывается под нужный объём
 const CAP_ROLES=['fridge','freezer','heater'];
 const pl=(n,a,b,c)=>`${fmt0(n)} ${plural(n,a,b,c)}`;
-function buildBuy(s, k, have){
+function buildBuy(s, k, have, legacy=false){
   const N=s.people, notes=[], out=new Map(), why=new Map(), need3=new Set(), pref=(s.edits&&s.edits.pref)||{};
   const reason=(id,t)=>{ if(!t) return; const a=why.get(id)||[]; if(!a.includes(t)) a.push(t); why.set(id,a); };
   const add = (c,q=1,r)=>{ out.set(c.id,(out.get(c.id)||0)+q); reason(c.id,r); };
@@ -941,9 +941,9 @@ function buildBuy(s, k, have){
 
   // тепловое — ровно то, что выбрано; если такое уже есть в имеющемся, не докупается
   for(const {h,c,q} of heatChoice(s)){
-    if(heatCoverage(s,h.k,have).covered){ notes.push({t:'info', m:`${h.n}: подходящий уже есть в имеющемся оборудовании, в закупку не включён.`}); continue; }
-    if(!phOk(c)) need3.add(c.s||shortName(c));
-    add(c,q,'выбрано на шаге «Исходные»');
+    const cov=heatCoverage(s,h.k,have);
+    if(legacy){ const oldCap=have.filter(x=>x.c.role===c.role).reduce((a,x)=>a+x.c.cap*x.qty,0); if(oldCap>0&&oldCap>=c.cap*q-1e-6) continue; if(q>0){if(!phOk(c)) need3.add(c.s||shortName(c)); add(c,q,'выбрано на шаге «Исходные»');} continue; }
+    if(cov.buy>0){ if(!phOk(c)) need3.add(c.s||shortName(c)); add(c,cov.buy,'выбрано на шаге «Исходные»'); }
   }
   if(s.coldOn!==false){
     const g0 = s.norms.strict ? [Math.max(500, N*5), Math.max(300, N*3)] : [Math.max(500, N*7)];
@@ -981,19 +981,58 @@ function buildBuy(s, k, have){
   return {buy:[...out].map(([id,qty])=>({c:CATI[id], qty, why:why.get(id)||[]})), notes};
 }
 // правки пользователя поверх свежего расчёта: delta — добавка, off — убрано, pref — исполнение (уже в buildBuy), skipHave — в computeProject
-function applyEdits(base, s){
+function compatibleCount(c,have,s){ return have.filter(h=>h.c.role===c.role && Math.abs(h.c.cap-c.cap)<1e-6 && !!h.c.gas===!!c.gas && (c.role!=='burners'||h.c.plate===(c.gas?'gas':'ind')) && (c.role!=='tea'||(s.existing.find(e=>e.uid===h.uid)||{}).cat===c.id)).reduce((a,h)=>a+h.qty,0); }
+function targetBases(base,gross,have,s){
+  const targets=new Map(gross.map(b=>[b.c.id,b]));
+  for(const b of base) if(!targets.has(b.c.id)) targets.set(b.c.id,{...b,qty:b.qty+compatibleCount(b.c,have,s)});
+  return targets;
+}
+function applyEdits(base, s, have=[], gross=base){
   const E=s.edits||{}, D=E.delta||{}, O=E.off||{}, out=[], removed=[], stale=[], dropped=[];
-  const by=new Map(base.map(b=>[b.c.id,b]));
-  for(const b of base){ const id=b.c.id;
-    if(O[id]){ removed.push({c:b.c, qty:b.qty, why:b.why, baseAt:O[id].baseAt}); continue; }
-    const d=D[id]; let q=b.qty, edit=null;
-    if(d){ q=Math.max(0,b.qty+d.d); edit={d:d.d}; if(d.baseAt!=null && d.baseAt!==b.qty) stale.push({id, c:b.c, d:d.d, baseAt:d.baseAt, now:b.qty}); }
-    if(q>0) out.push({c:b.c, qty:q, why:b.why, baseQty:b.qty, edit}); }
-  for(const [id,d] of Object.entries(D)){ if(by.has(id)||!CATI[id]) continue; const q=Math.max(0,d.d);
-    if(d.baseAt>0) stale.push({id, c:CATI[id], d:d.d, baseAt:d.baseAt, now:0});
-    if(q>0) out.push({c:CATI[id], qty:q, why:[], baseQty:0, edit:{d:d.d, added:true}}); }
-  for(const id of Object.keys(O)) if(!by.has(id)) dropped.push(id);
-  return {buy:out, removed, stale, dropped};
+  const net=new Map(base.map(b=>[b.c.id,b])), targets=targetBases(base,gross,have,s);
+  for(const [id,d] of Object.entries(D)) if(!targets.has(id)&&CATI[id]) targets.set(id,{c:CATI[id],qty:0,why:[]});
+  // Явная ручная цель ёмкостной роли задаёт выбранные исполнения в штуках.
+  // Автоматические остатки иных исполнений этой роли больше не добавляются.
+  const explicitRoles=new Set(Object.keys(D).filter(id=>CATI[id]&&CAP_ROLES.includes(CATI[id].role)).map(id=>CATI[id].role));
+  for(const [id,b] of targets){ const n=net.get(id), bq=b.qty, d=D[id];
+    if(explicitRoles.has(b.c.role)&&!d) continue;
+    if(O[id]){ removed.push({c:b.c,qty:bq,why:b.why,baseAt:O[id].baseAt}); continue; }
+    let qty=n?n.qty:0, edit=null;
+    if(d){
+      // Сначала правим общую потребность, затем вычитаем совместимое наличие.
+      // Базовое покрытие сохраняет прежний алгоритм ёмкостных ролей.
+      const available=compatibleCount(b.c,have,s);
+      const other=[...targets.values()].filter(x=>x.c.id!==id&&x.c.role===b.c.role&&Math.abs(x.c.cap-b.c.cap)<1e-6&&!!x.c.gas===!!b.c.gas).reduce((a,x)=>a+x.qty,0);
+      const credit=CAP_ROLES.includes(b.c.role) ? Math.max(0,available-other) : Math.max(Math.max(0,bq-qty),Math.max(0,available-other));
+      qty=Math.max(0,bq+d.d-credit); edit={d:d.d,added:bq===0};
+      if(d.baseAt!=null&&d.baseAt!==bq) stale.push({id,c:b.c,d:d.d,baseAt:d.baseAt,now:bq});
+    }
+    if(qty>0) out.push({c:b.c,qty,why:b.why,baseQty:bq,edit});
+  }
+  for(const id of Object.keys(O)) if(!targets.has(id)) dropped.push(id);
+  return {buy:out,removed,stale,dropped};
+}
+// Покупки старой версии: сохраняем delta/off и их базу до успешного перевода.
+function applyLegacyEdits(base,s){
+  const E=s.edits,D=E.delta,O=E.off,out=[],removed=[],stale=[],dropped=[],by=new Map(base.map(b=>[b.c.id,b]));
+  for(const b of base){ const id=b.c.id;if(O[id]){removed.push({c:b.c,qty:b.qty,why:b.why,baseAt:O[id].baseAt});continue;}
+    const d=D[id],q=d?Math.max(0,b.qty+d.d):b.qty;if(d&&d.baseAt!=null&&d.baseAt!==b.qty) stale.push({id,c:b.c,d:d.d,baseAt:d.baseAt,now:b.qty});
+    if(q>0) out.push({c:b.c,qty:q,why:b.why,baseQty:b.qty,edit:d?{d:d.d}:null}); }
+  for(const [id,d] of Object.entries(D)) if(!by.has(id)&&CATI[id]){const q=Math.max(0,d.d);if(d.baseAt>0) stale.push({id,c:CATI[id],d:d.d,baseAt:d.baseAt,now:0});if(q>0)out.push({c:CATI[id],qty:q,why:[],baseQty:0,edit:{d:d.d,added:true}});}
+  return {buy:out,removed,stale,dropped};
+}
+function tryTranslateEdits(s,have,oldBase,newBase,gross){
+  const E=s.edits, entries=Object.entries(E.delta), old=applyLegacyEdits(oldBase,s);
+  if(Object.keys(E.off).length||entries.some(([id,d])=>!CATI[id]||CAP_ROLES.includes(CATI[id].role)||!d||!Number.isFinite(d.d)||d.baseAt!=null&&d.baseAt!==(oldBase.find(b=>b.c.id===id)?.qty||0))) return false;
+  const targets=targetBases(newBase,gross,have,s), newDelta={};
+  for(const [id,d] of entries){ const c=CATI[id],b=targets.get(id)||{c,qty:0}, net=newBase.find(x=>x.c.id===id)?.qty||0;
+    const available=compatibleCount(c,have,s), other=[...targets.values()].filter(x=>x.c.id!==id&&x.c.role===c.role&&Math.abs(x.c.cap-c.cap)<1e-6&&!!x.c.gas===!!c.gas).reduce((a,x)=>a+x.qty,0);
+    const credit=Math.max(Math.max(0,b.qty-net),Math.max(0,available-other)), wanted=old.buy.find(x=>x.c.id===id)?.qty||0;
+    newDelta[id]={...d,d:wanted+credit-b.qty,baseAt:b.qty}; }
+  const candidate={...s,edits:{...E,delta:newDelta,qtySemantics:'total-v1'}}, next=applyEdits(newBase,candidate,have,gross);
+  const signature=rows=>JSON.stringify(rows.map(x=>[x.c.id,x.qty]).sort((a,b)=>a[0].localeCompare(b[0])));
+  if(signature(old.buy)!==signature(next.buy)) return false;
+  E.delta=newDelta; E.qtySemantics='total-v1'; E.qtyMigration='auto-v1'; return true;
 }
 function editCount(s){ const E=s.edits||{}; return ['delta','off','pref','skipHave'].reduce((a,k)=>a+Object.keys(E[k]||{}).length,0); }
 function powerCalc(items, s){
@@ -1009,7 +1048,7 @@ function powerCalc(items, s){
 
 function gasSavings(s){ const out=[];
   for(const h of HEAT){ if(!GAS_K.includes(h.k)) continue; const st=(s.heat||{})[h.k]; if(!st||!st.on||heatFuel(s,h.k)==='gas'||!hasGasVer(h.k,st.v)) continue;
-    const e=CATI[heatId(h.k,st.v,'el')], g=CATI[heatId(h.k,st.v,'gas')], d=(e.kw-g.kw)*Math.max(1,st.q||1); if(d>0.05) out.push(`${GAS_NAME[h.k]} — на ${fmt1(d)} кВт`); }
+    const e=CATI[heatId(h.k,st.v,'el')], g=CATI[heatId(h.k,st.v,'gas')], d=(e.kw-g.kw)*Math.max(0,st.q==null?1:st.q); if(d>0.05) out.push(`${GAS_NAME[h.k]} — на ${fmt1(d)} кВт`); }
   return out; }
 function gasHint(s, X, A, B){
   const over=(A!=null&&X>A+1e-6)||(B!=null&&X>B+1e-6); if(!over) return '';
@@ -1032,18 +1071,32 @@ function computeProject(s){
   s.edits=normEdits(s.edits);
   const E=s.edits, allHave=s.existing.map(e=>({c:itemOf(e), qty:Math.max(0,e.qty|0), uid:e.uid})).filter(h=>h.qty>0);
   const have=allHave.filter(h=>!E.skipHave[h.uid]), skipped=allHave.filter(h=>E.skipHave[h.uid]);
-  let manualConverted=false;
-  // старый ручной режим → правки поверх расчёта (один раз)
-  if(s.manual){ const m=s.manual; s.manual=null; const base=baseBuy(s, have).buy, bq=new Map(base.map(b=>[b.c.id,b.qty]));
+  let manualConverted=false, qtyConverted=false;
+  const unknownMigration=E.qtyMigration!=null && !['auto-v1','reviewed-v1'].includes(E.qtyMigration);
+  const unknown=(E.qtySemantics!=null && !['total-v1','purchase-v1'].includes(E.qtySemantics)) || unknownMigration;
+  // Неизвестную версию, включая старый manual, сохраняем без миграции.
+  if(s.manual && !unknown && !unknownMigration){ const m=s.manual; s.manual=null; E.qtySemantics='purchase-v1'; const base=baseBuy(s, have, true).buy, bq=new Map(base.map(b=>[b.c.id,b.qty]));
     for(const x of m){ if(!CATI[x.cat]) continue; const d=x.qty-(bq.get(x.cat)||0); if(d) E.delta[x.cat]={d, baseAt:bq.get(x.cat)||0}; }
     for(const b of base) if(!m.some(x=>x.cat===b.c.id&&x.qty>0)){ E.off[b.c.id]={baseAt:b.qty}; delete E.delta[b.c.id]; }
     manualConverted=true; }
-  const r=baseBuy(s, have); notes.push(...r.notes);
+  let legacy=unknown || E.qtySemantics!=='total-v1';
+  const newR=baseBuy(s,have), gross=baseBuy(s,[]).buy;
+  let r=legacy&&!unknown?baseBuy(s,have,true):newR;
+  if(legacy && !unknown && !unknownMigration && (E.qtySemantics==null||E.qtySemantics==='purchase-v1') && tryTranslateEdits(s,have,r.buy,newR.buy,gross)){ legacy=false;qtyConverted=true;r=newR; }
+  const oldHeat=legacy&&!unknown?HEAT.map(h=>{const c=heatCoverage(s,h.k,have);if(!c.c)return null;const before=r.buy.filter(x=>x.c.id===c.c.id).reduce((a,x)=>a+x.qty,0),after=newR.buy.filter(x=>x.c.id===c.c.id).reduce((a,x)=>a+x.qty,0);return before!==after?{name:h.n,before,after}:null;}).filter(Boolean):[];
+  if(E.qtySemantics!=null && !['total-v1','purchase-v1'].includes(E.qtySemantics)) notes.push({t:'warn',step:4,m:`Неизвестная версия семантики количества «${String(E.qtySemantics)}». Ручные количества и исключения не применены к предварительному расчёту; данные сохранены и требуют пересмотра.`});
+  else if(legacy && !unknown) notes.push({t:'warn',step:4,m:oldHeat.length?`Старый расчёт теплового сохранён: ${oldHeat.map(x=>x.name+': закупка '+x.before+' → '+x.after).join('; ')} при переходе к общей потребности. Пересмотрите на шаге «Подбор».`:'Старые ручные количества пока относятся к закупке. Автоматически сохранить их смысл не удалось; пересмотрите правки на шаге «Подбор».'});
+  else if(E.qtyMigration==='auto-v1') notes.push({t:'info',step:4,m:'Старые ручные количества автоматически переведены в общую потребность с сохранением текущей закупки. Проверьте правки на шаге «Подбор».'});
+  if(unknownMigration) notes.push({t:'warn',step:4,m:`Неизвестная отметка миграции «${String(E.qtyMigration)}» сохранена; ручные количества и исключения не применены к предварительному расчёту, переход заблокирован.`});
+  notes.push(...r.notes);
   const nNull=s.existing.filter(e=>e.role==null&&(e.qty|0)>0).length;
   if(nNull) notes.push({t:'warn', step:3, m:`${nNull} ${plural(nNull,'запись','записи','записей')} имеющегося оборудования без «Что это» — ${plural(nNull,'не учтена','не учтены','не учтены')} в подборе. Укажите, что это, на шаге «Имеющееся оборудование».`, go:3});
   for(const e of s.existing) if(e.role==='burners'&&e.plate==='ten'&&!E.skipHave[e.uid]&&(e.qty|0)>0)
     notes.push({t:'info', step:3, m:`«${(e.n||'Плита').trim()}» — электрическая плита с ТЭНами. Разумнее заменить на индукционную: готовит быстрее, меньше жара на кухне, меньше расход электричества.`, go:3});
-  const ed=applyEdits(r.buy, s);
+  const ed=unknown?{buy:r.buy,removed:[],stale:[],dropped:[]}:legacy?applyLegacyEdits(r.buy,s):applyEdits(r.buy, s, have, gross);
+  const reviewBuy=legacy&&!unknown?applyEdits(newR.buy,{...s,edits:{...E,qtySemantics:'total-v1'}},have,gross).buy:[];
+  const reviewIds=new Set([...ed.buy,...reviewBuy].map(x=>x.c.id));
+  const review=[...reviewIds].map(id=>({id,name:CATI[id]?.n||id,before:ed.buy.find(x=>x.c.id===id)?.qty||0,after:reviewBuy.find(x=>x.c.id===id)?.qty||0})).filter(x=>x.before!==x.after);
   for(const id of ed.dropped){ delete E.off[id]; notes.push({t:'info', m:`Правка «убрано вами» для «${shortName(CATI[id]||{n:id})}» снята сама: по расчёту позиция больше не нужна.`}); }
   const buy=ed.buy;
   if(netsAllNone(s)) notes.push({t:'info', m:NETS_INFO});
@@ -1064,13 +1117,13 @@ function computeProject(s){
   notes.unshift({t:power.verdict.t, m:power.verdict.m});
   const foot=items.reduce((a,it)=>a+(it.c.mount==='floor'?it.c.w*it.c.d*it.qty:0),0);
   return {items, notes, power, foot, area:s.rooms?s.rooms.reduce((a,r)=>a+roomArea(r),0):roomArea(s.room),
-    base:new Map(r.buy.map(b=>[b.c.id,b])), removed:ed.removed, stale:ed.stale, skipped, manualConverted};
+    base:legacy?new Map(r.buy.map(b=>[b.c.id,b])):targetBases(r.buy,gross,have,s), removed:ed.removed, stale:ed.stale, skipped, manualConverted, qtyConverted, legacy, unknown, oldHeat, review};
 }
 // расчёт закупки без правок (кроме выбранных исполнений) — с урезанием под мощность, если его просили
-function baseBuy(s, have){
+function baseBuy(s, have, legacy=false){
   const notes=[], R=resEff(s), k=initialKnobs(s); let idx=0, steps=[], r;
   for(;;){
-    r=buildBuy(s,k,have);
+    r=buildBuy(s,k,have,legacy);
     if(!R.fit) break;
     const p=powerCalc([...have,...r.buy], s);
     if(p.demand <= R.lim+1e-6) break;
@@ -1082,7 +1135,7 @@ function baseBuy(s, have){
   notes.push(...r.notes);
   return {buy:r.buy, notes};
 }
-function normEdits(e){ e=e&&typeof e==='object'?e:{}; const o=x=>x&&typeof x==='object'&&!Array.isArray(x)?x:{}; return {delta:o(e.delta), off:o(e.off), pref:o(e.pref), skipHave:o(e.skipHave)}; }
+function normEdits(e){ e=e&&typeof e==='object'&&!Array.isArray(e)?e:{}; const o=x=>x&&typeof x==='object'&&!Array.isArray(x)?x:{}; return {...e,delta:o(e.delta), off:o(e.off), pref:o(e.pref), skipHave:o(e.skipHave)}; }
 
 /* ======================================================================
    ГЕОМЕТРИЯ ПОМЕЩЕНИЯ — контур из стен-отрезков (пункт 30.1)
@@ -2525,22 +2578,44 @@ const STORE=(()=>{
     list(){ return (readIx()||[]).slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))); },
     load(id){ try{ const t=get(PK+id); return t?JSON.parse(t):null; }catch(e){ return null; } },
     raw(id){ return get(PK+id); },
-    save(id, data, summary){
-      try{ const txt=typeof data==='string'?data:JSON.stringify(data); localStorage.setItem(PK+id, txt);
-        const ix=readIx()||[], i=ix.findIndex(x=>x.id===id), row=Object.assign({}, i>=0?ix[i]:{}, summary||{}, {id});
-        if(i>=0) ix[i]=row; else ix.push(row); localStorage.setItem(IX, JSON.stringify(ix)); st.error=null; return true; }
-      catch(e){ st.error=isQuota(e)?'quota':'other'; return false; } },
-    remove(id){ try{ localStorage.removeItem(PK+id); localStorage.setItem(IX, JSON.stringify((readIx()||[]).filter(x=>x.id!==id))); if(get(LAST)===id) localStorage.removeItem(LAST); return true; }catch(e){ return false; } },
-    mark(id, patch){ try{ const ix=readIx()||[], r=ix.find(x=>x.id===id); if(!r) return false; Object.assign(r, patch); localStorage.setItem(IX, JSON.stringify(ix)); return true; }catch(e){ return false; } },
+    async locked(fn){
+      if(!navigator.locks || typeof navigator.locks.request!=='function') return {ok:false,error:'locks'};
+      try { return await navigator.locks.request('trapeznaya:storage', {mode:'exclusive'}, fn); }
+      catch(e){ return {ok:false,error:'other'}; }
+    },
+    async save(id, data, summary, expected, valid){
+      return st.locked(()=>{
+        if(valid && !valid()) return {ok:false,error:'cancelled'};
+        let written;
+        try { if(localStorage.getItem(PK+id)!==expected) return {ok:false,error:'conflict'};
+          const txt=typeof data==='string'?data:JSON.stringify(data); localStorage.setItem(PK+id,txt); written=txt;
+          const ix=readIx()||[], i=ix.findIndex(x=>x.id===id), row=Object.assign({},i>=0?ix[i]:{},summary||{},{id});
+          if(i>=0) ix[i]=row; else ix.push(row); localStorage.setItem(IX,JSON.stringify(ix));
+          return {ok:true,written};
+        } catch(e){ return {ok:false,error:isQuota(e)?'quota':'other',written}; }
+      });
+    },
+    async remove(id, expected){ return st.locked(()=>{ try{
+      if(localStorage.getItem(PK+id)!==expected) return {ok:false,error:'conflict'};
+      localStorage.removeItem(PK+id); localStorage.setItem(IX,JSON.stringify((readIx()||[]).filter(x=>x.id!==id))); if(get(LAST)===id) localStorage.removeItem(LAST); return {ok:true};
+    }catch(e){return {ok:false,error:isQuota(e)?'quota':'other'};} }); },
+    async mark(id,patch){ return st.locked(()=>{try{ const ix=readIx()||[], r=ix.find(x=>x.id===id); if(!r) return {ok:false,error:'other'}; Object.assign(r,patch); localStorage.setItem(IX,JSON.stringify(ix)); return {ok:true}; }catch(e){return {ok:false,error:'other'};} }); },
     meta(id){ return (readIx()||[]).find(x=>x.id===id)||null; },
     last(){ return get(LAST); },
     setLast(id){ try{ if(id) localStorage.setItem(LAST,id); else localStorage.removeItem(LAST); }catch(e){} },
     hasIndex(){ return readIx()!==null; },
     // перенос: был один проект под старым ключом, индекса ещё нет — он становится первым проектом списка
-    migrateOld(){ if(st.hasIndex()) return null; const t=get(KEY); if(!t) return null;
-      try{ const m=migrate(JSON.parse(t)); if(!m) return null; ensureIds(m); m.updatedAt=m.updatedAt||new Date().toISOString();
-        const ok=st.save(m.pid, m, {name:m.name, org:(m.report&&m.report.meta&&m.report.meta.parish)||'', people:m.people, kw:null, total:null, createdAt:m.createdAt, updatedAt:m.updatedAt, variantOf:null});
-        if(ok) st.setLast(m.pid); return ok?m.pid:null; }catch(e){ return null; } }
+    async migrateOld(){
+      return st.locked(()=>{
+        if(st.hasIndex()) return {ok:true}; const t=get(KEY); if(!t) return {ok:true};
+        try { const m=migrate(JSON.parse(t)); if(!m) return {ok:false,error:'other'}; ensureIds(m); m.updatedAt=m.updatedAt||new Date().toISOString();
+          if(localStorage.getItem(PK+m.pid)!==null) return {ok:false,error:'conflict'};
+          localStorage.setItem(PK+m.pid,JSON.stringify(m));
+          localStorage.setItem(IX,JSON.stringify([{id:m.pid,name:m.name,org:(m.report&&m.report.meta&&m.report.meta.parish)||'',people:m.people,kw:null,total:null,createdAt:m.createdAt,updatedAt:m.updatedAt,variantOf:null}]));
+          st.setLast(m.pid); return {ok:true,id:m.pid};
+        }catch(e){return {ok:false,error:isQuota(e)?'quota':'other'};}
+      });
+    }
   };
   return st;
 })();
@@ -2548,7 +2623,13 @@ function newPid(){ return 'p'+Date.now().toString(36)+Math.random().toString(36)
 function ensureIds(o, id){ o.pid=o.pid||id||newPid(); const now=new Date().toISOString(); o.createdAt=o.createdAt||now; o.variantOf=o.variantOf||null; return o; }
 function projectSummary(){ let kw=null, total=null; try{ if(P&&P.power) kw=Math.round(P.power.demand*10)/10; }catch(e){} try{ if(P) total=Math.round(costCalc().total); }catch(e){}
   return {name:S.name||'Без названия', org:(S.report&&S.report.meta&&(S.report.meta.org||S.report.meta.parish))||'', people:S.people, kw, total, createdAt:S.createdAt, updatedAt:S.updatedAt, variantOf:S.variantOf||null}; }
-STORE.migrateOld();
+// Миграция выполняется под тем же межвкладочным lock. Не менять активный проект,
+// если пользователь уже начал работу, пока lock был занят.
+setTimeout(async()=>{
+  const intent=transitionIntent, initial=S, epoch=projectEpoch, snapshot=JSON.stringify(S), history=JSON.stringify([undoStack,redoStack,lastSnap]);
+  const r=await STORE.migrateOld();
+  if(r.ok&&r.id&&!S.pid&&S===initial&&epoch===projectEpoch&&intent===transitionIntent&&JSON.stringify(S)===snapshot&&JSON.stringify([undoStack,redoStack,lastSnap])===history) openProjectId(r.id);
+},0);
 let S = (()=>{ const id=STORE.last()||((STORE.list()[0]||{}).id); const d=id&&STORE.load(id);
   if(d){ try{ const m=migrate(d); if(m){ ensureIds(m,id); return m; } }catch(e){} }
   const e=exampleState(); e.pid=''; return e; })();   // pid пустой — проект не выбран, ничего не сохраняется
@@ -2580,7 +2661,7 @@ const bind=[];
 // электроснабжение: kw — сейчас выделено, max — можно увеличить до (оба необязательны), phMax — ввод после увеличения, fit — уложиться в мощность
 // данные выгрузки задания: титул, набор, галочки, ч/б
 function normReport(r){ r=r||{}; const m=r.meta||{}, PR=['full','electric','plumbing','vent','gas','cost','custom'];
-  return {meta:{parish:m.parish||'', address:m.address||'', author:m.author||'', contact:m.contact||'', note:m.note||''},
+  return {meta:{parish:m.parish||'', address:m.address||'', author:m.author||'', contact:m.contact||'', note:m.note||'', revision:typeof m.revision==='string'?m.revision:'', date:typeof m.date==='string'?m.date:''},
     preset:PR.includes(r.preset)?r.preset:'full', sections:Object.assign({}, r.sections||{}), mono:!!r.mono}; }
 function normGas(g){ g=g||{}; return {on:!!g.on, src:g.src==='bottle'?'bottle':'main'}; }
 function normNets(o){
@@ -2601,10 +2682,31 @@ function migrate(o){
     n.nets=normNets({...o, existing:n.existing}); n.utilities=netsAllNone(n)?'design':'existing'; clampAll(n); return n; }
   return null;
 }
+let savedRaw=S.pid?STORE.raw(S.pid):null;
 let saveInfo={ok:true, at:null, err:null};
-function save(){ if(!S||!S.pid) return; S.updatedAt=new Date().toISOString();
-  const ok=STORE.save(S.pid, S, projectSummary()); saveInfo={ok, at:ok?new Date():saveInfo.at, err:ok?null:STORE.error};
-  if(ok) STORE.setLast(S.pid); if(typeof updSaveState==='function') updSaveState(); }
+let saveQueue=Promise.resolve(), savePending=0, projectEpoch=0, transitionIntent=0;
+function save(){
+  if(!S||!S.pid) return Promise.resolve(true);
+  const state=S, epoch=projectEpoch, id=S.pid, data=JSON.parse(JSON.stringify(S)), snapshot=snap();
+  data.updatedAt=new Date().toISOString();
+  const summary={...projectSummary(),updatedAt:data.updatedAt};
+  savePending++; saveInfo={...saveInfo,ok:false,err:'pending'}; if(typeof updSaveState==='function') updSaveState();
+  const task=saveQueue.then(async()=>{
+    if(S!==state||projectEpoch!==epoch||S.pid!==id) return false;
+    const r=await STORE.save(id,data,summary,savedRaw,()=>S===state&&projectEpoch===epoch&&S.pid===id);
+    if(S!==state||projectEpoch!==epoch||S.pid!==id) return false;
+    if(r.written!==undefined) savedRaw=r.written;
+    if(r.ok) { S.updatedAt=data.updatedAt; STORE.setLast(id); }
+    // Более свежие изменения или другая запланированная запись ещё не сохранены.
+    const current=snap()===snapshot;
+    const complete=r.ok&&current&&savePending===1;
+    saveInfo={ok:complete,at:r.ok?new Date():saveInfo.at,err:complete?null:r.ok?(current?'pending':'dirty'):r.error};
+    return r.ok&&current;
+  }).catch(()=>{ if(S===state&&projectEpoch===epoch) saveInfo={...saveInfo,ok:false,err:'other'}; return false; }).finally(()=>{
+    savePending--; if(typeof updSaveState==='function') updSaveState();
+  });
+  saveQueue=task.then(()=>{},()=>{}); return task;
+}
 let fieldMsgs={};
 function fieldMsg(el,msg){ if(typeof elKey==='function'){ const k=elKey(el); if(k) fieldMsgs[k]=msg; } }
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.hidden=false; clearTimeout(toast.h); toast.h=setTimeout(()=>t.hidden=true,2400); }
@@ -2635,6 +2737,7 @@ document.addEventListener('keydown',e=>{ const t=e.target; if(t&&(t.tagName==='I
 function recompute(){
   P=computeProject(S); const real=unitsOf(P.items);
   P.specItems=splitItems(P.items,S.unitEdits);
+  if(P.qtyConverted) save();
   if(P.manualConverted){ setTimeout(()=>toast('Ручной режим заменён правками — расчёт снова обновляется'),50); save(); }
   P.roomOf=assignRooms(S, real);
   const sig=JSON.stringify([real.map(u=>u.key+u.c.w+u.c.d+u.c.h+u.c.mount+(u.c.roomId||'')), S.rooms, S.unitRoom, S.norms.align, S.norms.work, [S.norms.elPanelDepth,S.norms.elPanelWidth,S.norms.elPanelLowH,S.norms.elWaterDist], S.norms.sewerMax, 'flow3']);
@@ -2793,17 +2896,55 @@ function sharedSpans(A,B){ const tol=0.4, out=[];
       const b0=(h?B.x:B.y)+Math.min(h?wb.x1:wb.y1,h?wb.x2:wb.y2), b1=(h?B.x:B.y)+Math.max(h?wb.x1:wb.y1,h?wb.x2:wb.y2), lo=Math.max(a0,b0)-origin, hi=Math.min(a1,b1)-origin;
       out.push({side:wa.id,lo,hi}); } }
   return out.filter(s=>s.hi-s.lo>=1.0); }
+// Положительная площадь общих внутренних областей рабочих контуров приложения (метры).
+// Применённый измеренный контур представлен рабочим room.poly;
+// room.measured.pts — визуальный след и не подменяет геометрию расчёта.
+// room.poly либо прямоугольник w×d и наружные ниши nicheRect сдвигаются
+// на x/y; толщина стены, зазор WALL_GAP и выступы внутрь не добавляются.
+// Численный допуск по каждой оси 1e-9 м: контакт и перекрытие не шире
+// допуска не считаются наложением. Предполагаются простые контуры.
+const ROOM_OVERLAP_EPS=1e-9;
 function roomsOverlap(A,B){
-  if(!hasPoly(A)&&!hasPoly(B)) return ov({x:A.x,y:A.y,w:A.w,h:A.d},{x:B.x-0.05,y:B.y-0.05,w:B.w+0.1,h:B.d+0.1},0.01);
-  const WA=roomWalls(A), WB=roomWalls(B), cross=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
-  for(const wa of WA) for(const wb of WB){ const a={x:A.x+wa.x1,y:A.y+wa.y1}, b={x:A.x+wa.x2,y:A.y+wa.y2}, c={x:B.x+wb.x1,y:B.y+wb.y1}, d={x:B.x+wb.x2,y:B.y+wb.y2}, ab1=cross(a,b,c), ab2=cross(a,b,d), cd1=cross(c,d,a), cd2=cross(c,d,b);
-    if(ab1*ab2 < 0 && cd1*cd2 < 0) return true; }
-  const inside=(room,x,y)=>{ const lx=x-room.x, ly=y-room.y; return pointInRoom(room,lx,ly,0) && roomWalls(room).every(w=>segDist(lx,ly,w.x1,w.y1,w.x2,w.y2)>0.05); };
-  const points=room=>{ const P=roomPoly(room), out=P.map(p=>({x:room.x+p.x,y:room.y+p.y})); let a2=0,cx=0,cy=0;
-    for(let i=0;i<P.length;i++){ const p=P[i], q=P[(i+1)%P.length], c=p.x*q.y-q.x*p.y; a2+=c; cx+=(p.x+q.x)*c; cy+=(p.y+q.y)*c; }
-    if(Math.abs(a2)>1e-12){ cx/=3*a2; cy/=3*a2; if(pointInRoom(room,cx,cy,0)) out.push({x:room.x+cx,y:room.y+cy}); }
-    return out; };
-  return points(A).some(p=>inside(B,p.x,p.y)) || points(B).some(p=>inside(A,p.x,p.y)); }
+  const contours=r=>{
+    const shift=p=>({x:p.x+r.x,y:p.y+r.y});
+    const parts=[roomPoly(r).map(shift)];
+    for(const o of r.openings||[]){ const n=nicheRect({room:r},o); if(n&&n.w>0&&n.h>0) parts.push(rectPoly(n).map(shift)); }
+    return parts;
+  };
+  const aa=contours(A), bb=contours(B);
+  return aa.some(a=>bb.some(b=>roomPolygonsOverlap(a,b)));
+}
+function roomPolygonsOverlap(a,b){
+  const eps=ROOM_OVERLAP_EPS;
+  const edges=p=>p.map((v,i)=>[v,p[(i+1)%p.length]]);
+  const ea=edges(a), eb=edges(b), xs=[...a,...b].map(p=>p.x);
+  // Порядок пересечений с вертикалью меняется только в вершинах и
+  // точках пересечения рёбер. Поэтому внутри каждой полосы достаточно
+  // проверить одну вертикаль; совпадающие рёбра дают свои концы в xs.
+  for(const [p,q] of ea) for(const [r,s] of eb){
+    const ux=q.x-p.x, uy=q.y-p.y, vx=s.x-r.x, vy=s.y-r.y;
+    const den=ux*vy-uy*vx;
+    if(den===0) continue;
+    const dx=r.x-p.x, dy=r.y-p.y, t=(dx*vy-dy*vx)/den, u=(dx*uy-dy*ux)/den;
+    if(t>0&&t<1&&u>0&&u<1) xs.push(p.x+t*ux);
+  }
+  xs.sort((x,y)=>x-y);
+  const intervals=(es,x)=>{
+    const ys=[];
+    for(const [p,q] of es) if((p.x<x&&q.x>x)||(q.x<x&&p.x>x))
+      ys.push(p.y+(x-p.x)*(q.y-p.y)/(q.x-p.x));
+    ys.sort((y,z)=>y-z);
+    const out=[]; for(let i=0;i+1<ys.length;i+=2) out.push([ys[i],ys[i+1]]);
+    return out;
+  };
+  for(let i=1;i<xs.length;i++){
+    if(xs[i]-xs[i-1]<=eps) continue;
+    const x=xs[i-1]+(xs[i]-xs[i-1])/2, ai=intervals(ea,x), bi=intervals(eb,x);
+    for(const [a0,a1] of ai) for(const [b0,b1] of bi)
+      if(Math.min(a1,b1)-Math.max(a0,b0)>eps) return true;
+  }
+  return false;
+}
 function spotIn(A, side, lo, hi, w){
   const els=A.openings.filter(o=>o.side===side).sort((x,y)=>x.off-y.off), gaps=[]; let cur=lo;
   for(const x of els){ if(x.off+x.w<=lo||x.off>=hi) continue; if(x.off>cur) gaps.push([cur,Math.min(x.off,hi)]); cur=Math.max(cur,x.off+x.w); }
@@ -2836,9 +2977,11 @@ function placeNear(r, p){
       const c={x:vert?(w.nx>0?(p.x+w.x1)-r.w-WALL_GAP:(p.x+w.x1)+WALL_GAP):p.x+w.offOrigin.x+t, y:vert?p.y+w.offOrigin.y+t:(w.ny>0?(p.y+w.y1)-r.d-WALL_GAP:(p.y+w.y1)+WALL_GAP), sc:Math.abs(t)+(vert?0:0.05)};
       cands.push(c); } }
   cands.sort((a,b)=>a.sc-b.sc);
-  for(const c of cands){ const rect={x:c.x,y:c.y,w:r.w,h:r.d};
-    if(S.rooms.some(o=>o!==r && o.placed && ((hasPoly(r)||hasPoly(o))?roomsOverlap({...r,x:c.x,y:c.y},o):ov(rect,{x:o.x-0.05,y:o.y-0.05,w:o.w+0.1,h:o.d+0.1},0.01)))) continue;
-    r.x=+c.x.toFixed(3); r.y=+c.y.toFixed(3); return true; }
+  for(const c of cands){
+    // Проверяем те самые координаты, которые будут сохранены.
+    const x=+c.x.toFixed(3), y=+c.y.toFixed(3);
+    if(S.rooms.some(o=>o!==r && o.placed && roomsOverlap({...r,x,y},o))) continue;
+    r.x=x; r.y=y; return true; }
   return false; }
 function arrangeRooms(){
   for(const r of S.rooms) for(const o of r.openings){ if(o.type==='door'&&(o.to||'').startsWith('room:')&&rById(o.to.slice(5))&&!hasLink(r.id,o.to.slice(5))) setLink(r.id,o.to.slice(5),true); }
@@ -2870,16 +3013,18 @@ function heatHaveHtml(h, cov){
   const ten=cov.have.find(x=>x.plate==='ten'), selName=cov.c?esc((LB2[cov.c.id]||cov.c.lb||shortName(cov.c)).replace(/\.$/,'')):'';
   const line=(cls,txt,btns)=>`<div class="heat-have ${cls}"><span class="hh-t"><span class="tag have">имеется</span> ${txt}</span><span class="btns">${btns||''}${link}</span></div>`;
   let out='';
-  if(cov.on && cov.covered){
+  if(P.legacy && cov.on && cov.have.length){ const current=P.items.filter(i=>i.src==='buy'&&cov.c&&i.c.id===cov.c.id).reduce((a,i)=>a+i.qty,0), change=(P.oldHeat||[]).find(x=>x.name===h.n); out+=line('warn', `Старый расчёт: выбор ${cov.q} шт., сейчас докупить ${current} шт.${change?` После перехода: докупить ${change.after} шт.`:''} Сравните результат на шаге «Подбор».`); }
+  else if(cov.on && cov.covered){
     if(h.k==='plate' && ten) out+=line('warn', `Уже есть: ${nm(ten)}${/тэн/i.test(ten.name)?'':' (ТЭН)'} — в закупку не входит. Разумнее заменить на индукционную.`, `<button type="button" class="btn small tap" data-hinduct="${esc(ten.uid)}">Подобрать индукционную вместо неё</button>`);
     else out+=line('ok', `Уже есть: ${names} — в закупку не входит.`);
   } else if(cov.on && cov.partial){
     const what=cov.have.map(x=>{ const ct=capText(cov.role,x.cap); return nm(x)+(ct?` (${esc(ct)})`:'')+(x.qty>1?` × ${x.qty}`:''); }).join(', ');
-    out+=line('warn', `Есть ${what} — меньше выбранного, в закупку входит ${selName}${cov.q>1?` × ${cov.q}`:''}.`);
+    out+=line('warn', (P.legacy?`Есть ${what}. Действует прежний расчёт закупки; сравнение и переход доступны на шаге «Подбор».`:`Есть ${what}; зачтено ${cov.credited} из ${cov.q}, докупить ${cov.buy} × ${selName}.`));
   } else if(!cov.on && cov.have.length){
     const what=cov.have.map(x=>{ const t=whatText(recOf_(x.uid),' '); return t||nm(x); }).join(', ');
     out+=line('ok', `В имеющемся есть ${esc(what)} — учтено в мощности и на плане.`);
   }
+  if(cov.on && cov.unmatched.length) out+=line('warn', `Не зачтено: ${cov.unmatched.map(nm).join(', ')} — отличается исполнение, ёмкость или тип либо они неизвестны. Учтено в мощности и на плане.`);
   for(const uid of cov.skipped){ const e=recOf_(uid), tenS=e.role==='burners'&&e.plate==='ten';
     const txt=tenS ? `Имеющаяся плита ТЭН «${esc((e.n||'').trim()||'плита')}» не используется — в закупку входит ${cov.on&&cov.c?esc(lc1(cov.c.lb).replace(/\.$/,'')):'индукционная'}.`
       : `Имеющееся «${esc((e.n||'').trim()||'оборудование')}» не используется в подборе${cov.on&&cov.c?` — в закупку входит ${selName}`:''}.`;
@@ -2889,7 +3034,7 @@ function heatHaveHtml(h, cov){
 function heatHaveMeta(cov){ const x=cov.have; if(!x.length) return ''; const kw=x.reduce((a,y)=>a+(y.c.kw||0)*y.qty,0), ph=x.some(y=>y.c.ph===3)?'380':'220', f=x[0].c;
   return `есть: ${kw>0?`${fmt1(kw)} кВт · ${ph} В`:'без электропитания'}${f.mount==='floor'?` · ${Math.round(f.w*1000)}×${Math.round(f.d*1000)} мм`:''}`; }
 function heatCard(h){
-  const st=S.heat[h.k]||{on:false,v:h.opts[0][0],q:1}, fuel=heatFuel(S,h.k), c=CATI[heatId(h.k,st.v,fuel)], rec=h.rec(S.people), recLabel=(h.opts.find(o=>o[0]===rec)||[])[1], q=st.q||1;
+  const st=S.heat[h.k]||{on:false,v:h.opts[0][0],q:1}, fuel=heatFuel(S,h.k), c=CATI[heatId(h.k,st.v,fuel)], rec=h.rec(S.people), recLabel=(h.opts.find(o=>o[0]===rec)||[])[1], q=st.q==null?1:st.q;
   const title = h.k==='plate' ? (fuel==='gas'?'Газовая плита':'Индукционная плита') : h.n;
   const canGas = S.gas&&S.gas.on && GAS_K.includes(h.k);
   const opts = fuel==='gas' ? h.opts.map(([v,l])=>[v,l, hasGasVer(h.k,v)?'':`газового на ${l} нет`]) : h.opts;
@@ -2905,8 +3050,8 @@ function heatCard(h){
   return `<div class="heat ${st.on?'on':''}">
     <label class="check heat-h"><input type="checkbox" data-heat-on="${h.k}" ${st.on?'checked':''}><b>${title}</b>${h.main?'<span class="tag">основное</span>':''}</label>
     <p class="hint">${h.hint}</p>
-    ${st.on?`${canGas?`<div class="heat-row fuel-row">${seg('fuel-'+h.k,fuel,[['el','Электро'],['gas','Газ']])}</div>`:''}<div class="heat-row">${seg('h-'+h.k,st.v,opts)}<span class="stepper" title="Количество"><button type="button" data-hq="${h.k}" data-d="-1" aria-label="Меньше">−</button><span class="num">${q}</span><button type="button" data-hq="${h.k}" data-d="1" aria-label="Больше">+</button></span></div>
-    ${haveRow}<p class="hint heat-meta">${meta}${noGas.length?' · '+noGas.join(', '):''}${recHint!=null?(recHint?' · '+recHint:''):recLabel&&rec!==st.v?` · для ${S.people} чел. обычно берут: ${recLabel.toLowerCase()}`:''}</p>`
+    ${st.on?`${canGas?`<div class="heat-row fuel-row">${seg('fuel-'+h.k,fuel,[['el','Электро'],['gas','Газ']])}</div>`:''}<div class="heat-row">${seg('h-'+h.k,st.v,opts)}<span class="stepper" title="${P.legacy?'Старый выбор оборудования':'Общая потребность, включая имеющееся'}"><button type="button" data-hq="${h.k}" data-d="-1" aria-label="Меньше">−</button><span class="num">${q}</span><button type="button" data-hq="${h.k}" data-d="1" aria-label="Больше">+</button></span></div>
+    ${haveRow}<p class="hint heat-meta">${P.legacy?'Выбор: ':''}${meta}${noGas.length?' · '+noGas.join(', '):''}${recHint!=null?(recHint?' · '+recHint:''):recLabel&&rec!==st.v?` · для ${S.people} чел. обычно берут: ${recLabel.toLowerCase()}`:''}</p>`
     :`${haveRow}<p class="hint heat-meta">${recHint!=null?(recHint?recHint[0].toUpperCase()+recHint.slice(1):''):h.recOn(S.people)?`Для ${S.people} чел. обычно нужен: ${recLabel.toLowerCase()}`:''}</p>`}
   </div>`;
 }
@@ -2967,7 +3112,7 @@ bind[0]=()=>{
     S.heat[k]=S.heat[k]||{on:false,v:h.rec(S.people),q:1};
     if(!cb.checked && h.main && !HEAT.some(x=>x.main&&x.k!==k&&S.heat[x.k]&&S.heat[x.k].on)){ cb.checked=true; toast('Нужен пароконвектомат или плита — индукционная или газовая: без основного теплового кухня не работает'); return; }
     S.heat[k].on=cb.checked; touch(); render(); }));
-  main.querySelectorAll('[data-hq]').forEach(b=>b.addEventListener('click',()=>{ const st=S.heat[b.dataset.hq]; st.q=Math.min(4,Math.max(1,(st.q||1)+ +b.dataset.d)); touch(); render(); }));
+  main.querySelectorAll('[data-hq]').forEach(b=>b.addEventListener('click',()=>{ const st=S.heat[b.dataset.hq]; st.q=Math.min(4,Math.max(0,(st.q==null?1:st.q)+ +b.dataset.d)); touch(); render(); }));
   // «Подобрать по числу человек»: изменения не применяются сразу — панель со списком, применяется только отмеченное
   document.getElementById('heat-rec').addEventListener('click',()=>{ const T=heatTarget(S), d=heatDiff(S.heat,T.heat);
     if(!d.length){ heatRecOpen=false; render(); toast(`Выбор уже совпадает с типовым для ${S.people} ${plural(S.people,'человека','человек','человек')}`); return; }
@@ -3043,7 +3188,7 @@ function roomIssues(){
     else if(!mapDoor(a,d,b)) out.push({t:'warn', m:`Дверь из «${a.name}» в «${b.name}»: стены помещений не соприкасаются в этом месте — придвиньте помещения друг к другу.`}); }
   for(const l of (S.links||[])){ const [a,b]=LINK_EXT[l[0]]?[l[1],l[0]]:l; if(rById(a)&&(LINK_EXT[b]||rById(b))&&!doorFor(a,b)) out.push({t:'warn', m:`«${roomName(S,a)}» → ${LINK_EXT[b]?'«'+LINK_EXT[b]+'»':'«'+roomName(S,b)+'»'}: связь задана, а двери нет. Поставьте дверь на общей стене и в поле «Ведёт» выберите это помещение.`}); }
   for(let i=0;i<S.rooms.length;i++) for(let j=i+1;j<S.rooms.length;j++){ const a=S.rooms[i], b=S.rooms[j];
-    if(ov({x:a.x,y:a.y,w:a.w,h:a.d},{x:b.x,y:b.y,w:b.w,h:b.d},0.02)) out.push({t:'bad', m:`«${a.name}» и «${b.name}» наложены друг на друга на общем плане.`}); }
+    if(roomsOverlap(a,b)) out.push({t:'bad', m:`«${a.name}» и «${b.name}» наложены друг на друга на общем плане.`}); }
   return out;
 }
 /* ---------- шаг «Помещения» (пункт 30.1.1): одно поле плана, боковая панель помещения, окно «Новое помещение» ---------- */
@@ -3590,7 +3735,7 @@ function wallRows(){
         chainIn(`data-chain="${o.id}:w"`,`Ширина ${o.type==='prot'&&o.niche?'ниши':OP_GEN[o.type]}`,o.w,1),
         chainIn(`data-chain="${o.id}:a"`,`${B}, до ${nx?OP_GEN[nx.type]:'угла'}`,ga,0,ga<-0.001)];
       if(o.type==='prot') cells.push(chainIn(`data-chain="${o.id}:d"`,o.niche?'Глубина ниши':'Глубина выступа',o.depth||0.3,1));
-      return `<div class="chain-row" aria-current="${!!(selRoom&&selRoom.id===o.id)}"><button type="button" class="ttl" data-pick="op:${o.id}">${opTitle(o)} <span class="muted" style="font-weight:400;font-size:12.5px">настроить</span></button>
+      return `<div class="chain-row" aria-current="${!!(selRoom&&selRoom.id===o.id)}"><button type="button" class="ttl" data-pick="op:${o.id}">${esc(opTitle(o))} <span class="muted" style="font-weight:400;font-size:12.5px">настроить</span></button>
         <div class="chain-in ${cells.length===4?'four':''}">${cells.join('')}</div></div>${step===1&&selRoom&&selRoom.k==='op'&&selRoom.id===o.id?roomPanel().replace(' data-fs="plan"',''):''}`; }).join('')}</div>`; }).join('') + '<p class="hint" style="margin-top:6px">Все размеры в миллиметрах. Меняете одно число — соседнее пересчитывается само.</p>';
 }
 function pointRows(){
@@ -4361,7 +4506,7 @@ bind[3]=()=>{
 function roomsOfItem(it){ if(!P.roomOf) return ''; const ids=[...new Set(P.units.filter(u=>(u.c.base||u.c.id)===(it.c.base||it.c.id)&&u.src===it.src).map(u=>P.roomOf[u.key]))];
   if(!ids.length) return it.c.mount==='table'?'на стол':''; return ids.map(id=>'в «'+roomName(S,id)+'»').join(', '); }
 /* ---------- 4. Подбор ---------- */
-let confirmEditsReset=false, addQuery='';
+let confirmEditsReset=false, confirmQtyReview=false, addQuery='';
 function variantsOf(role){ const v=CAT.filter(c=>c.role===role&&!c.heatOnly).sort((a,b)=>a.cap-b.cap||a.kw-b.kw); return v.length>1?v:null; }
 function variantLabel(c){ return CAP_ROLES.includes(c.role) ? `${fmt0(c.cap)} л · ${fmt1(c.kw)} кВт` : `${c.n.replace(/^Машина посудомоечная /,'').replace(/^Шкаф /,'')} · ${fmt1(c.kw)} кВт`; }
 function heatOf(c){ const hc=heatChoice(S).find(x=>x.c.id===c.id); return hc?hc.h:null; }
@@ -4379,20 +4524,30 @@ function selRow(it){
   if(pale){ ctl=`<button class="btn small tap" type="button" data-revert="${pale==='skip'?'have:'+it.uid:c.id}">Вернуть</button>`; }
   else if(isHave){ ctl=`<span class="tag have">имеется × ${it.qty}</span><button class="btn small tap" type="button" data-skip="${it.uid}">Не использовать</button>`; }
   else {
-    if(h){ const st=S.heat[h.k], fuel=heatFuel(S,h.k); ctl+=`<select class="var" data-heatv="${h.k}" aria-label="Исполнение: ${esc(h.n)}" title="Меняется и на шаге «Исходные»">${h.opts.map(([v,l])=>`<option value="${v}" ${st.v===v?'selected':''} ${fuel==='gas'&&!hasGasVer(h.k,v)?'disabled':''}>${esc(l)}</option>`).join('')}</select><span class="num qty">× ${it.qty}</span>`; }
+    if(h){ const st=S.heat[h.k], fuel=heatFuel(S,h.k); ctl+=`<select class="var" data-heatv="${h.k}" aria-label="Исполнение: ${esc(h.n)}" title="Меняется и на шаге «Исходные»">${h.opts.map(([v,l])=>`<option value="${v}" ${st.v===v?'selected':''} ${fuel==='gas'&&!hasGasVer(h.k,v)?'disabled':''}>${esc(l)}</option>`).join('')}</select><span class="num qty">${P.legacy?'выбор':'потребность'} ${st.q==null?1:st.q} · докупить ${it.qty}</span>`; }
     else { if(vs) ctl+=`<select class="var" data-var="${c.role}" data-from="${c.id}" aria-label="Исполнение">${vs.map(v=>`<option value="${v.id}" ${v.id===c.id?'selected':''}>${esc(variantLabel(v))}</option>`).join('')}</select>`;
-      ctl+=`<span class="stepper"><button type="button" data-q="${c.id}" data-d="-1" aria-label="Меньше">−</button><span class="num">${it.qty}</span><button type="button" data-q="${c.id}" data-d="1" aria-label="Больше">+</button></span>`; }
+      ctl+=`<span class="stepper"><button type="button" data-q="${c.id}" data-d="-1" aria-label="${P.legacy?'Уменьшить закупку':'Уменьшить общую потребность'}">−</button><span class="num">${Math.max(0,((P.base.get(c.id)||{}).qty||0)+((E.delta[c.id]||{}).d||0))}</span><button type="button" data-q="${c.id}" data-d="1" aria-label="${P.legacy?'Увеличить закупку':'Увеличить общую потребность'}">+</button></span>`; }
     if(edited) ctl+=`<button class="btn small tap" type="button" data-revert="${c.id}" title="Вернуть как было по расчёту">↺ Вернуть как было</button>`;
   }
   return `<div class="irow${pale?' pale':''}${vs||h||edited?' sel-row':''}"><div class="nm"><span class="nmt">${esc(c.n)}</span>${MOUNT_WHERE[c.mount]?` <span class="muted">· ${MOUNT_WHERE[c.mount]}</span>`:''}
       ${h?`<span class="why">${esc(why||'выбрано на шаге «Исходные»')} · исполнение правится и здесь, и на шаге «Исходные»</span>`:why?`<span class="why">${esc(why)}</span>`:''}
       ${tags.length?`<span class="etags">${tags.map(t=>`<span class="tag edit">${esc(t)}</span>`).join('')}</span>`:''}</div>
     <div class="meta"><span>${c.mount==='none'?'—':fmt0(c.w*1000)+'×'+fmt0(c.d*1000)+'×'+fmt0(c.h*1000)}</span><span>${c.kw?fmt1(c.kw*it.qty)+' кВт'+(c.gas?' эл.':''):''}</span>${c.gas?`<span>газ${c.gkw?' '+fmt1(c.gkw*it.qty)+' кВт тепл.':''}</span>`:''}${S.rooms.length>1&&!pale?`<span>${esc(roomsOfItem(it))}</span>`:''}</div>
-    <div class="btns">${!isHave&&!pale&&!h?'<span class="tag buy">купить</span>':''}${ctl}</div></div>`;
+    <div class="btns">${!isHave&&!pale&&!h?(it.demandOnly?'<span class="tag have">закупка 0</span>':'<span class="tag buy">купить</span>'):''}${ctl}</div></div>`;
+}
+function demandOnlyRows(s,p){
+  const candidates=new Map(p.base);
+  for(const [id,d] of Object.entries(s.edits.delta||{})) if(!candidates.has(id)&&CATI[id]&&d.d>0) candidates.set(id,{c:CATI[id],qty:0,why:[]});
+  if(s.edits.qtySemantics!=='total-v1') return [];
+  const explicitRoles=new Set(Object.keys(s.edits.delta||{}).filter(id=>CATI[id]&&CAP_ROLES.includes(CATI[id].role)).map(id=>CATI[id].role));
+  return [...candidates.values()].filter(b=>(!explicitRoles.has(b.c.role)||s.edits.delta[b.c.id]) && !heatOf(b.c) && p.items.some(i=>i.src==='have'&&i.c.role===b.c.role && Math.abs(i.c.cap-b.c.cap)<1e-6 && !!i.c.gas===!!b.c.gas && (b.c.role!=='burners'||i.c.plate===(b.c.gas?'gas':'ind')) && (b.c.role!=='tea'||(s.existing.find(e=>e.uid===i.uid)||{}).cat===b.c.id)) && !s.edits.off[b.c.id] && !p.items.some(i=>i.src==='buy'&&i.c.id===b.c.id)).map(b=>({...b,qty:0,src:'buy',demandOnly:true}));
 }
 function stepSelect(){
+  if(P.unknown) return `${stepHead('Подбор оборудования','Версия ручных количеств неизвестна. Данные сохранены; предварительный расчёт не включает эти правки.')} ${notesHtml(P.notes)} ${pager()}`;
   const byZ={}, push=(z,x)=>(byZ[z]=byZ[z]||[]).push(x);
   P.items.forEach(it=>push(it.c.z, it));
+  // Сохраняем управление общей потребностью, даже если закупка закрыта наличием.
+  demandOnlyRows(S,P).forEach(b=>push(b.c.z,b));
   (P.removed||[]).forEach(r=>push(r.c.z, {c:r.c, qty:r.qty, why:r.why, src:'buy', pale:'off'}));
   (P.skipped||[]).forEach(h=>push(h.c.z, {c:h.c, qty:h.qty, src:'have', uid:h.uid, pale:'skip'}));
   const list=ZORDER.filter(z=>byZ[z]).map(z=>{ const rows=byZ[z].slice().sort((a,b)=>(!!a.pale)-(!!b.pale));
@@ -4402,12 +4557,13 @@ function stepSelect(){
   const ins=insertItems();
   const insHtml=ins.length?`<div class="zone-h"><span class="sw" style="background:var(--ink-2)"></span>Столы-вставки по плану</div><div class="rows">${ins.map(it=>`<div class="irow"><div class="nm">${esc(it.c.n)} <span class="muted">· заполняет угол или промежуток в линии${it.c.gap>=0.001?` · зазор ${Math.round(it.c.gap*1000)} мм`:''}</span></div><div class="meta"><span>${Math.round(it.c.w*1000)}×${Math.round(it.c.d*1000)}×870</span></div><div class="btns"><span class="tag buy">купить × ${it.qty}</span></div></div>`).join('')}</div>`:'';
   const n=editCount(S), stale=P.stale||[];
+  const heatTransition=P.legacy?`<div class="confirm-box neutral"><p>Сейчас действуют прежние правила. При переходе значения правок будут применены к общей потребности. Проверьте изменения закупки:</p>${P.review.length?`<ul>${P.review.map(x=>`<li>${esc(x.name)}: ${x.before} → ${x.after} шт.</li>`).join('')}</ul>`:'<p>Количество к закупке сейчас не изменится.</p>'}${confirmQtyReview?`<p>Подтвердите переход: пересчитаются смета и мощность. Сохранённые значения ручных правок останутся, но их смысл изменится.</p><button class="btn primary tap" type="button" id="qty-confirm-total">Подтвердить переход</button><button class="btn tap" type="button" id="qty-cancel-total">Отмена</button>`:`<button class="btn tap" type="button" id="qty-use-total">Пересмотреть и перейти</button>`}</div>`:'';
   const staleHtml=stale.length?`<ul class="notes" style="margin:0 0 12px">${stale.map(x=>`<li class="warn">${esc(shortName(x.c))}: правка «${x.d>0?'+':''}${x.d}» сделана, когда приложение ставило ${x.baseAt}; сейчас ставит ${x.now} — итог ${Math.max(0,x.now+x.d)}.
       <div class="btns" style="margin-top:6px"><button class="btn small tap" type="button" data-stale-keep="${x.id}">Оставить</button><button class="btn small tap" type="button" data-stale-drop="${x.id}">Убрать правку</button></div></li>`).join('')}</ul>`:'';
   const editsBar=n?`<div class="edits-bar"><span>Ваших правок: <b>${n}</b></span>${confirmEditsReset?`<span class="muted">Все правки будут сняты, подбор вернётся к расчёту.</span><button class="btn small danger tap" type="button" id="edits-reset-yes">Сбросить</button><button class="btn small tap" type="button" id="edits-reset-no">Отмена</button>`:`<button class="btn small tap" type="button" id="edits-reset">Сбросить все правки</button>`}</div>`:'';
-  return `${stepHead('Подбор оборудования', `Набор на ${S.people} ${plural(S.people,'человека','человек','человек')} за трапезой под выбранное тепловое оборудование, с учётом того, что уже есть. Под каждой позицией — почему она в наборе. Количество и исполнение можно править: правки хранятся отдельно и накладываются на свежий расчёт, если поменяется число людей или помещения.`)}
+  return `${stepHead('Подбор оборудования', `Набор на ${S.people} ${plural(S.people,'человека','человек','человек')} за трапезой под выбранное тепловое оборудование, с учётом того, что уже есть. Под каждой позицией — почему она в наборе. ${P.legacy?'Старые правки количества относятся к закупке; пересмотрите их перед переходом к общей потребности.':'Количество означает общую потребность, включая имеющееся; в закупку попадает остаток.'} ${P.legacy?'Количество на строке — закупка.':'Ручное количество холодильника, морозильника или водонагревателя фиксирует потребность в выбранном исполнении; другие исполнения этой роли остаются только как имеющееся.'} Количество и исполнение можно править: правки хранятся отдельно и накладываются на свежий расчёт, если поменяется число людей или помещения.`)}
   ${meters()}${notesHtml(P.notes.map(n=>n.step!=null&&n.step!==4&&n.go==null?{...n, go:n.step}:n))}
-  <section class="panel">${editsBar}${staleHtml}${list}${insHtml}
+  <section class="panel">${heatTransition}${editsBar}${staleHtml}${list}${insHtml}
     <div class="add-row"><input type="search" id="add-q" placeholder="Найти позицию по названию" aria-label="Поиск позиции для добавления" value="${esc(addQuery)}">
       <div class="add-pick"><select id="add-cat" aria-label="Добавить позицию">${addOpts||'<option value="">Ничего не нашлось</option>'}</select><button class="btn tap" type="button" id="add-go" ${addOpts?'':'disabled'}>Добавить</button></div></div>
   </section>
@@ -4428,7 +4584,12 @@ function revertEdit(id){ const E=S.edits;
   delete E.delta[id]; delete E.off[id]; const c=CATI[id]; if(c && E.pref[c.role]===id) delete E.pref[c.role]; }
 bind[4]=()=>{
   bindFit();
+  // Заблокированный экран не содержит элементов редактирования.
+  if(P.unknown) return;
   const E=S.edits;
+  const qt=document.getElementById('qty-use-total'); qt&&qt.addEventListener('click',()=>{confirmQtyReview=true;render();});
+  const qc=document.getElementById('qty-confirm-total'); qc&&qc.addEventListener('click',()=>{ if(E!==S.edits||(S.edits.qtySemantics!=null&&!['total-v1','purchase-v1'].includes(S.edits.qtySemantics))||(S.edits.qtyMigration!=null&&!['auto-v1','reviewed-v1'].includes(S.edits.qtyMigration))) return; E.qtySemantics='total-v1'; E.qtyMigration='reviewed-v1'; confirmQtyReview=false; touch(); render(); toast('Перешли к общей потребности'); });
+  const qx=document.getElementById('qty-cancel-total'); qx&&qx.addEventListener('click',()=>{confirmQtyReview=false;render();});
   main.querySelectorAll('[data-q]').forEach(b=>b.addEventListener('click',()=>{ const r=editStep(b.dataset.q, +b.dataset.d); touch(); render(); if(r==='off') toast('Убрано вами — строка осталась бледной, её можно вернуть'); }));
   main.querySelectorAll('[data-revert]').forEach(b=>b.addEventListener('click',()=>{ revertEdit(b.dataset.revert); touch(); render(); toast('Вернули как было по расчёту'); }));
   main.querySelectorAll('[data-skip]').forEach(b=>b.addEventListener('click',()=>{ E.skipHave[b.dataset.skip]=true; touch(); render(); toast('Имеющееся не используется — подбор докупит недостающее'); }));
@@ -4438,10 +4599,10 @@ bind[4]=()=>{
   main.querySelectorAll('[data-stale-keep]').forEach(b=>b.addEventListener('click',()=>{ const id=b.dataset.staleKeep, d=E.delta[id]; if(d){ const bb=P.base.get(id); d.baseAt=bb?bb.qty:0; } touch(); render(); }));
   main.querySelectorAll('[data-stale-drop]').forEach(b=>b.addEventListener('click',()=>{ delete E.delta[b.dataset.staleDrop]; touch(); render(); }));
   const rs=document.getElementById('edits-reset'); rs&&rs.addEventListener('click',()=>{ confirmEditsReset=true; render(); });
-  const ry=document.getElementById('edits-reset-yes'); ry&&ry.addEventListener('click',()=>{ confirmEditsReset=false; S.edits={delta:{}, off:{}, pref:{}, skipHave:{}}; touch(); render(); toast('Все правки сняты'); });
+  const ry=document.getElementById('edits-reset-yes'); ry&&ry.addEventListener('click',()=>{ confirmEditsReset=false; S.edits={qtySemantics:'total-v1',delta:{}, off:{}, pref:{}, skipHave:{}}; touch(); render(); toast('Все правки сняты'); });
   const rn=document.getElementById('edits-reset-no'); rn&&rn.addEventListener('click',()=>{ confirmEditsReset=false; render(); });
   const aq=document.getElementById('add-q'); aq.addEventListener('input',()=>{ addQuery=aq.value; const pos=aq.selectionStart; render(); const a2=document.getElementById('add-q'); a2.focus(); a2.setSelectionRange(pos,pos); });
-  document.getElementById('add-go').addEventListener('click',()=>{ const id=document.getElementById('add-cat').value; if(!id) return; editStep(id, +1); addQuery=''; touch(); render(); toast('Добавлено к закупке'); });
+  document.getElementById('add-go').addEventListener('click',()=>{ const id=document.getElementById('add-cat').value; if(!id) return; const h=heatOf(CATI[id]); if(h){ const st=S.heat[h.k]; st.q=Math.min(4,(st.q==null?1:st.q)+1); } else editStep(id, +1); addQuery=''; touch(); render(); toast('Добавлено к общей потребности'); });
 };
 
 /* ---------- 5. План ---------- */
@@ -4769,10 +4930,14 @@ function stepEng(){
 /* ---------- 7. Смета ---------- */
 function insertItems(){ const m=new Map(); P.units.filter(u=>u.c.insert).forEach(u=>{ const x=m.get(u.c.id); if(x){ x.qty++; x.c.gap=Math.max(x.c.gap||0,u.c.gap||0); } else m.set(u.c.id,{c:{...u.c}, qty:1, src:'buy'}); }); return [...m.values()]; }
 function extraRows(s){ return Array.isArray(s.extras)?s.extras:[]; }
+// Контракт строк для сметы и будущего PDF: источник и цена являются частью ключа.
+function equipmentCostRows(items){
+  const map=new Map(); for(const it of items){ const unitPrice=it.src==='have'?0:priceOf(it.c); const k=JSON.stringify([it.c.id,it.src,unitPrice]); const m=map.get(k); if(m) m.qty+=it.qty; else map.set(k,{...it,unitPrice}); }
+  return [...map.values()].sort((a,b)=>ZORDER.indexOf(a.c.z)-ZORDER.indexOf(b.c.z));
+}
 function costCalc(){
   const H=hoodsAll();
-  const map=new Map(); [...P.specItems,...insertItems()].forEach(it=>{ const k=it.c.id+':'+it.src; const m=map.get(k); if(m) m.qty+=it.qty; else map.set(k,{...it}); });
-  const rows=[...map.values()].sort((a,b)=>ZORDER.indexOf(a.c.z)-ZORDER.indexOf(b.c.z));
+  const rows=equipmentCostRows([...P.specItems,...insertItems()]);
   const eq=rows.filter(r=>r.src==='buy').reduce((s,r)=>s+priceOf(r.c)*r.qty,0);
   const hoodLen=Math.ceil(H.len*10)/10, hoodSum=hoodLen*S.hoodPrice, mont=(eq+hoodSum)*S.montage/100;
   const extra=extraRows(S), extras=extra.reduce((sum,r)=>sum+r.qty*r.price,0);
@@ -4781,7 +4946,7 @@ function costCalc(){
 function stepCost(){
   const C=costCalc();
   const hasGas=C.rows.some(r=>r.c.gas);
-  const rows=C.rows.map(r=>`<tr><td>${esc(r.c.n)}</td><td class="r num">${r.qty}</td>${hasGas?`<td class="r num">${r.c.gas?(r.c.gkw>0?fmt1(r.c.gkw*r.qty):'—'):''}</td>`:''}<td class="r">${r.src==='have'?'<span class="tag have">имеется</span>':`<input type="text" inputmode="decimal" data-num autocomplete="off" class="num" data-price="${r.c.id}" value="${priceOf(r.c)}" step="1000" min="0" aria-label="Цена за единицу">`}</td><td class="r num">${r.src==='have'?'—':rub(priceOf(r.c)*r.qty)}</td></tr>`).join('');
+  const rows=C.rows.map(r=>`<tr><td>${esc(r.c.n)}</td><td class="r num">${r.qty}</td>${hasGas?`<td class="r num">${r.c.gas?(r.c.gkw>0?fmt1(r.c.gkw*r.qty):'—'):''}</td>`:''}<td class="r">${r.src==='have'?'<span class="tag have">имеется · 0 ₽</span>':`<input type="text" inputmode="decimal" data-num autocomplete="off" class="num" data-price="${r.c.id}" value="${priceOf(r.c)}" step="1000" min="0" aria-label="Цена за единицу">`}</td><td class="r num">${r.src==='have'?rub(0):rub(priceOf(r.c)*r.qty)}</td></tr>`).join('');
   return `${stepHead('Спецификация и смета', `Цены — условные ориентиры, чтобы прикинуть бюджет. Впишите цены поставщика, итог пересчитается.`)}
   <div class="stack">
   <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Наименование</th><th class="r">Кол-во</th>${hasGas?'<th class="r">Газ, кВт тепл.</th>':''}<th class="r">Цена, ₽</th><th class="r">Сумма</th></tr></thead><tbody>${rows}
@@ -4899,7 +5064,7 @@ function setBind(pn){
 function setRebuild(focusId){ const body=document.getElementById('set-body'); if(!body) return; const y=body.scrollTop; body.innerHTML=setBodyHtml(); setBind(body); body.scrollTop=y; updSetUi(); let f=focusId&&document.getElementById(focusId); if(!f||f.disabled) f=document.getElementById('set-x'); f&&f.focus({preventScroll:true}); }
 function openSettings(fieldId){
   if(document.getElementById('set-ov')){ setFocusField(fieldId); return; }
-  setReturn=document.getElementById('set-open'); setConfirmReset=false;
+  setReturn=document.activeElement; setConfirmReset=false;
   const ov=document.createElement('div'); ov.className='set-ov'; ov.id='set-ov';
   ov.innerHTML=`<aside class="set-pnl" id="set-pnl" role="dialog" aria-modal="true" aria-labelledby="set-h">
     <div class="set-top"><div><h2 id="set-h">Настройки расчёта</h2><p class="set-sub">Влияют на подбор, план и инженерию всех шагов. Изменено значений: <b id="set-n">${setChangedN()}</b></p></div>
@@ -4921,7 +5086,7 @@ function closeSettings(){ const ov=document.getElementById('set-ov'); if(!ov) re
   const b=setReturn&&document.contains(setReturn)?setReturn:document.getElementById('set-open'); b&&b.focus(); }
 document.getElementById('set-open').addEventListener('click',()=>openSettings());
 // Esc закрывает панель, где бы ни был фокус; сначала Esc отменяет набор в поле (это делает общий обработчик клавиш)
-document.addEventListener('keydown',e=>{ if(e.key!=='Escape'||!document.getElementById('set-ov')) return; const t=e.target;
+document.addEventListener('keydown',e=>{ if(e.key!=='Escape'||!document.getElementById('set-ov')||!e.target.closest('#set-ov')) return; const t=e.target;
   if(t&&t.tagName==='INPUT'&&t.__focusVal!=null&&t.value!==t.__focusVal) return;
   e.preventDefault(); e.stopImmediatePropagation(); closeSettings(); }, true);
 document.addEventListener('click',e=>{ const a=e.target.closest('[data-set]'); if(a){ e.preventDefault(); openSettings(a.dataset.set||null); } });
@@ -5059,7 +5224,7 @@ function finalizePrintSvg(str, pal){
   const sub=v=>v.replace(/var\((--[\w-]+)\)/g,(m,k)=>pal[k]||'#000000');
   const walk=el=>{
     for(const a of [...el.attributes]){
-      if(a.name.startsWith('data-') || a.name==='class' || (a.name==='id' && el.tagName!=='pattern')) el.removeAttribute(a.name);
+      if((a.name.startsWith('data-') && a.name!=='data-print-background') || a.name==='class' || (a.name==='id' && el.tagName!=='pattern')) el.removeAttribute(a.name);
       else if(a.name==='id') el.setAttribute('id', a.value+'-'+uidS);
       else if(/url\(#/.test(a.value)) el.setAttribute(a.name, a.value.replace(/url\(#([\w-]+)\)/g,(m,k)=>`url(#${k}-${uidS})`));
       else if(a.name==='style'){ const v=a.value.replace(/pointer-events:\s*none;?/g,'').replace(/cursor:[^;]+;?/g,'').trim(); if(v) el.setAttribute('style',sub(v)); else el.removeAttribute('style'); }
@@ -5069,6 +5234,12 @@ function finalizePrintSvg(str, pal){
       const fw=el.getAttribute('font-weight'); if(fw){ el.setAttribute('font-weight', +fw>=600||fw==='bold'?'bold':'normal'); }
       if(el.getAttribute('font-weight')==='bold' && el.getAttribute('font-family')==='IBMPlexMono') el.setAttribute('font-family','IBMPlexSans');   // у моноширинного нет жирного начертания
       const db=el.getAttribute('dominant-baseline'); if(db==='central'||db==='middle'){ const fs=+(el.getAttribute('font-size')||16); el.removeAttribute('dominant-baseline'); el.setAttribute('y', (+(el.getAttribute('y')||0)+fs*0.35).toFixed(1)); }
+      // svg2pdf не поддерживает paint-order: белая обводка иначе закрывает буквы.
+      // Два текстовых слоя сохраняют векторный текст и исходный порядок: обводка, затем заливка.
+      if(el.getAttribute('paint-order')==='stroke'&&el.hasAttribute('stroke')){
+        // One searchable text object: no invisible duplicate stroke-text layer.
+        el.removeAttribute('stroke'); el.removeAttribute('stroke-width'); el.removeAttribute('paint-order');
+      }
     }
     for(const c of [...el.children]) { if(c.tagName==='title') c.remove(); else walk(c); }
   };
@@ -5079,10 +5250,36 @@ function finalizePrintSvg(str, pal){
 finalizePrintSvg.n=0;
 
 /* ---- печатный план одного помещения: слои walls / points / equip / need ---- */
-const PRINT_SCALES=[25,50,75,100,150,200];
+const PRINT_SCALES=[25,35,40,45,50,60,75,100,150,200,300,500,1000];
 const PLAN_BOX={w:265, h:150};   // поле под план на альбомном листе, мм
-function planExtents(room, layer){ const nichePad=Math.max(115,...roomGeom(S,room).openings.filter(o=>o.type==='prot'&&o.niche).map(o=>(o.depth||0.3)*100+120)); return {x:-nichePad, y:-nichePad, w:room.w*100+2*nichePad, h:room.d*100+nichePad+150}; }   // метки точек и отодвинутые цепочки помещаются в прежние поля — масштаб листа не меняется   // снизу — место под цепочку и масштабную линейку
-function pickScale(wCm,hCm,box){ box=box||PLAN_BOX; for(const k of PRINT_SCALES){ if(wCm*10/k<=box.w && hCm*10/k<=box.h) return k; } return PRINT_SCALES[PRINT_SCALES.length-1]; }
+function printScaleBarPosition(room,layer){
+  const W=room.w*100,D=room.d*100;if(layer!=='walls')return {x:0,y:D+67,bottom:110};
+  const obstacles=roomGeom(S,room).openings.filter(o=>o.type==='door'&&['hall','street','corr'].includes(o.to)).map(o=>segOf({room},o)).filter(q=>-q.ny>0.5).map(q=>({a:(q.x1+q.x2)*50-24,b:(q.x1+q.x2)*50+24}));
+  const width=350,lo=-90,hi=W+90-width,candidates=[0,W-width,...Array.from({length:Math.max(0,Math.floor((hi-lo)/10)+1)},(_,i)=>lo+i*10)];
+  const x=candidates.find(x=>x>=lo&&x<=hi&&!obstacles.some(q=>x<q.b&&x+width>q.a));
+  return x==null?{x:0,y:D+115,bottom:155}:{x,y:D+67,bottom:110};
+}
+function planExtents(room, layer){ const pad=Math.max(110,...roomGeom(S,room).openings.filter(o=>o.type==='prot'&&o.niche).map(o=>(o.depth||0.3)*100+110)), top=Math.max(pad,118), bottom=printScaleBarPosition(room,layer).bottom; return {x:-pad, y:-top, w:room.w*100+2*pad, h:room.d*100+top+bottom}; }
+// A page bbox cannot detect clipping inside an SVG viewport. Measure actual text
+// after applying the embedded print font, including rotations and text-anchor.
+function fitPrintSvgBounds(svg){
+  const clean=()=>svg.replace(/ data-print-background="true"/g,'');
+  if(typeof document.createElement!=='function'||!document.body) return clean();
+  const host=document.createElement('div'); if(!host||!host.style) return clean();
+  host.style.cssText='position:fixed;left:-20000px;top:0;visibility:hidden;pointer-events:none';host.innerHTML=svg;
+  const root=host.firstElementChild;if(!root||root.namespaceURI!=='http://www.w3.org/2000/svg'||typeof root.getCTM!=='function')return clean();
+  document.body.appendChild(host);
+  try{const v=root.getAttribute('viewBox').split(/\s+/).map(Number),inv=root.getCTM().inverse();let x=v[0],y=v[1],r=x+v[2],b=y+v[3];
+    for(const el of root.querySelectorAll('text')){const q=el.getBBox(),m=inv.multiply(el.getCTM());for(const [px,py] of [[q.x,q.y],[q.x+q.width,q.y],[q.x,q.y+q.height],[q.x+q.width,q.y+q.height]]){const xx=m.a*px+m.c*py+m.e,yy=m.b*px+m.d*py+m.f;x=Math.min(x,xx-3);y=Math.min(y,yy-3);r=Math.max(r,xx+3);b=Math.max(b,yy+3);}}
+    root.setAttribute('viewBox',[x,y,r-x,b-y].join(' '));root.setAttribute('width',r-x);root.setAttribute('height',b-y);
+    const bg=root.querySelector('rect[data-print-background]');if(bg){bg.setAttribute('x',x);bg.setAttribute('y',y);bg.setAttribute('width',r-x);bg.setAttribute('height',b-y);bg.removeAttribute('data-print-background');}
+    return new XMLSerializer().serializeToString(root);
+  }finally{host.remove();}
+}
+function printSvgExtents(svg){const m=/viewBox="([^"]+)"/.exec(svg),v=m?m[1].trim().split(/\s+/).map(Number):[];return {x:v[0],y:v[1],w:v[2],h:v[3]};}
+
+
+function pickScale(wCm,hCm,box){ box=box||PLAN_BOX; for(const k of PRINT_SCALES){ if(wCm*10/k<=box.w && hCm*10/k<=box.h) return k; } return Math.ceil(Math.max(wCm*10/box.w,hCm*10/box.h)/50)*50; }
 function scaleBarSvg(x,y,ink,k){ // 0–1–2 м
   let g=`<g font-family="IBMPlexMono" font-size="15" fill="${ink}">`;
   g+=`<rect x="${x}" y="${y}" width="100" height="9" fill="${ink}"/><rect x="${x+100}" y="${y}" width="100" height="9" fill="#ffffff" stroke="${ink}" stroke-width="1.2"/>`;
@@ -5093,6 +5290,27 @@ function scaleBarSvg(x,y,ink,k){ // 0–1–2 м
 function needMarks(c){ const m=[];
   if(c.cw) m.push(['ХВ','--z-cold']); if(c.hw) m.push(['ГВ','--z-hot']); if(c.dr) m.push(['К','--p-sewer']);
   if((c.kw||0)>0) m.push([c.ph===3?'ЭЛ 380':'ЭЛ 220','--p-el']); if(c.gas) m.push(['Г1','--p-gas']); return m; }
+// Flow arrows occupy the clear inner strip at the door centre. Outside this
+// strip the drawing already contains door labels and dimension chains.
+// sg.n is the inward normal. Hall flow approaches the threshold; street and
+// corridor flow leaves the threshold toward the kitchen. Door geometry stays put.
+function printDoorArrowGeometry(room,o){
+  const sg=segOf({room},o),mx=(sg.x1+sg.x2)*50,my=(sg.y1+sg.y2)*50,
+    width=Math.max(.01,Math.hypot(sg.x2-sg.x1,sg.y2-sg.y1)*100),nx=sg.nx,ny=sg.ny;
+  const near=Math.min(6,width*.1),far=Math.min(36,width*.4),outward=o.to==='hall',
+    a=outward?far:near,b=outward?near:far,ax=mx+nx*a,ay=my+ny*a,bx=mx+nx*b,by=my+ny*b,
+    length=Math.hypot(bx-ax,by-ay),ux=(bx-ax)/length,uy=(by-ay)/length,
+    head=Math.min(12,length*.55),half=Math.min(5,width*.08);
+  return {ax,ay,bx,by,mx,my,nx,ny,width,near,far,
+    head:[[bx,by],[bx-head*ux+half*uy,by-head*uy-half*ux],[bx-head*ux-half*uy,by-head*uy+half*ux]]};
+}
+function printDoorArrows(room){
+  let out='';
+  for(const o of roomGeom(S,room).openings){ if(o.type!=='door'||!['hall','street','corr'].includes(o.to)) continue;
+    const a=printDoorArrowGeometry(room,o);
+    out+=`<line x1="${a.ax}" y1="${a.ay}" x2="${a.bx}" y2="${a.by}" stroke="var(--accent)" stroke-width="3"/><polygon points="${a.head.map(p=>p.join(',')).join(' ')}" fill="var(--accent)"/>`;
+  } return out;
+}
 function printPlanSvg(opts){
   const layer=(opts.layers||['equip'])[0], mono=!!opts.mono, pal=mono?PRINT_MONO:PRINT_PALETTE, pos=opts.pos;
   const keep={sel, selSet, selRoom, addMode, showZones}; selSet=new Set(); sel=null; selRoom=null; addMode=null; showZones=false; if(typeof scrK!=='undefined') scrK=null;   // печать — без экранных размеров подписей
@@ -5120,8 +5338,19 @@ function printPlanSvg(opts){
     const hoodsOnly=S.points.filter(p=>p.type==='hood').map(p=>pointSvg(p,'view')).join('');
     let body='';
     const units=curUnits().filter(u=>S.layout[u.key]).sort((a,b)=>(a.c.mount==='wall')-(b.c.mount==='wall'));
+    const numberBoxes=[];
+    const freeLabel=(ox,oy,w,h,boxes)=>{
+      const fits=(x,y)=>x-w/2>=2&&y-h/2>=2&&x+w/2<=W-2&&y+h/2<=D-2&&!boxes.some(b=>x+w/2+3>b.x&&x-w/2-3<b.x+b.w&&y+h/2+3>b.y&&y-h/2-3<b.y+b.h);
+      if(fits(ox,oy)) return {x:ox,y:oy};
+      const choices=[];
+      for(let y=h/2+3;y<=D-h/2-3;y+=h+6) for(let x=w/2+3;x<=W-w/2-3;x+=w+6) if(fits(x,y)) choices.push({x,y,d:(x-ox)**2+(y-oy)**2});
+      choices.sort((a,b)=>a.d-b.d);
+      if(!choices.length) throw new Error('На плане недостаточно места для читаемых выносок. Уменьшите количество объектов на одном плане.');
+      return choices[0];
+    };
+    const placeNumber=(x,y,n)=>{ const ox=x,oy=y, q=freeLabel(x,y,32,32,numberBoxes); x=q.x;y=q.y; numberBoxes.push({x:x-16,y:y-16,w:32,h:32}); return (x!==ox||y!==oy?`<line x1="${ox}" y1="${oy}" x2="${x}" y2="${y}" stroke="${ink}" stroke-width="1.2"/>`:'')+numCircle(x,y,n); };
     const numCircle=(x,y,n)=>`<circle cx="${x}" cy="${y}" r="14" fill="#ffffff" stroke="${ink}" stroke-width="1.6"/><text x="${x}" y="${y}" font-size="${n>=100?11:14}" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="${ink}">${n}</text>`;
-    if(layer==='walls') body=chainsSvg(false)+walls+ops;
+    if(layer==='walls') body=chainsSvg(false)+walls+ops+printDoorArrows(S.room);
     else if(layer==='points') body=chainsSvg(true)+walls+ops+ptsAll;
     else if(layer==='equip'){
       const H=hoods(curGeom(),curUnits());
@@ -5132,56 +5361,62 @@ function printPlanSvg(opts){
         const fill = mono ? `url(#pz-${u.c.z})` : zc, fop = mono ? 1 : (wall?.06:u.src==='have'?.12:.22);
         const dash = wall ? 'stroke-dasharray="3 5"' : u.src==='have' ? 'stroke-dasharray="7 4"' : '';
         eq+=`<g transform="${posAng(p)?skewTransform(u.c,p):`translate(${b.x*100},${b.y*100})`}"><rect width="${w}" height="${h}" fill="#ffffff"/><rect width="${w}" height="${h}" fill="${fill}" fill-opacity="${fop}" stroke="${mono?ink:zc}" stroke-width="2" ${dash}/>${wall?'':`<line x1="${fe[0]}" y1="${fe[1]}" x2="${fe[2]}" y2="${fe[3]}" stroke="${mono?ink:zc}" stroke-width="6"/>`}</g>`;
-        const pp=pos&&pos.unit(u); if(pp) nums+=numCircle(b.x*100+(posAng(p)?b.w*100:w)/2, b.y*100+(posAng(p)?b.h*100:h)/2, pp.no); }
+        const pp=pos&&pos.unit(u); if(pp) nums+=placeNumber(b.x*100+(posAng(p)?b.w*100:w)/2, b.y*100+(posAng(p)?b.h*100:h)/2, pp.no); }
       let hs=H.list.map(r=>`${r.poly?`<polygon points="${r.poly.map(p=>`${p.x*100},${p.y*100}`).join(' ')}"`:`<rect x="${r.x*100}" y="${r.y*100}" width="${r.w*100}" height="${r.h*100}"`} fill="none" stroke="${mono?ink:'var(--z-hot)'}" stroke-width="2.5" stroke-dasharray="10 7"/>`).join('');
       if(gridClip && hasPoly(S.room) && roomWalls(S.room).some(w=>!w.axis)) hs=`<g clip-path="url(#rcp-${S.room.id||'r'})">${hs}</g>`;
       body=zones+(roomObs(S.room).length?walls+eq+hs:eq+hs+walls)+ops+hoodsOnly+nums+(typeof equipDimsSvg==='function'?equipDimsSvg(S.room, curUnits(), {print:true}):'');
     } else if(layer==='need'){
-      let eq='', marks='', nums=''; const avoid=[];   // подписи длины слива не закрывают метки подключений и номера
+      let eq='', marks='', nums=''; const avoid=S.points.filter(p=>p.type!=='hood').map(p=>{const m=ptMarkXY(curGeom(),p,null);return {x:m.x-16,y:m.y-16,w:32,h:32};});   // подписи длины слива не закрывают метки подключений и номера
       for(const u of units){ const p=S.layout[u.key], skew=posAng(p), b=bbox(u.c,p), bs=skew?baseSize(u.c,p):b, w=bs.w*100, h=bs.h*100, X=skew?0:b.x*100, Y=skew?0:b.y*100;
         eq+=skew?`<polygon points="${unitPoly(u.c,p).map(q=>`${q.x*100},${q.y*100}`).join(' ')}" fill="#ffffff" stroke="${ink2}" stroke-width="1.4" ${u.c.mount==='wall'?'stroke-dasharray="3 5"':u.src==='have'?'stroke-dasharray="7 4"':''}/>`:`<rect x="${X}" y="${Y}" width="${w}" height="${h}" fill="#ffffff" stroke="${ink2}" stroke-width="1.4" ${u.c.mount==='wall'?'stroke-dasharray="3 5"':u.src==='have'?'stroke-dasharray="7 4"':''}/>`;
         const a=skew*Math.PI/180, co=Math.cos(a), si=Math.sin(a), toPlan=(x,y)=>({x:(b.x+b.w/2)*100+(x-w/2)*co-(y-h/2)*si, y:(b.y+b.h/2)*100+(x-w/2)*si+(y-h/2)*co});
-        const markBox=(x,y,w,h)=>{ if(!skew) return {x,y,w,h}; const ps=rectPoly({x,y,w,h}).map(q=>toPlan(q.x,q.y)), xs=ps.map(q=>q.x), ys=ps.map(q=>q.y), x0=Math.min(...xs), y0=Math.min(...ys); return {x:x0,y:y0,w:Math.max(...xs)-x0,h:Math.max(...ys)-y0}; };
         const pp=pos&&pos.unit(u);
         // задняя кромка: противоположна фронту обслуживания
         const back = p.rot===0?{x:X+w/2,y:Y+11,v:false} : p.rot===180?{x:X+w/2,y:Y+h-11,v:false} : p.rot===90?{x:X+w-24,y:Y+h/2,v:true} : {x:X+24,y:Y+h/2,v:true};
         const ms=needMarks(u.c);
         if(ms.length){ // метки вдоль задней кромки; не влезают — следующий ряд ближе к фронту
-          if(skew) marks+=`<g transform="${skewTransform(u.c,p)}">`;
+          // Labels stay horizontal in page coordinates, including rotated equipment.
           const mh=18, gap=3, len=(back.v?h:w)-6, sz=ms.map(m=>m[0].length*7.6+9);
           const lines=[[]]; let used=0;
           ms.forEach((m,i)=>{ const step=back.v?mh:sz[i]; if(lines[lines.length-1].length && used+step>len){ lines.push([]); used=0; } lines[lines.length-1].push(i); used+=step+gap; });
           lines.forEach((ln,li)=>{ const tot=ln.reduce((a,i)=>a+(back.v?mh:sz[i])+gap,0)-gap; let t=-tot/2;
             const colW=Math.max(...ln.map(i=>sz[i])), inward=li*(back.v?colW+gap:mh+gap);
             ln.forEach(i=>{ const m=ms[i], mw=sz[i];
-              const cx = back.v ? back.x+(p.rot===90?-1:1)*(inward+ (colW-mw)/2*0) : back.x+t+mw/2;
-              const cy = back.v ? back.y+t+mh/2 : back.y+(p.rot===0?1:-1)*inward;
+              let cx = back.v ? back.x+(p.rot===90?-1:1)*(inward+ (colW-mw)/2*0) : back.x+t+mw/2;
+              let cy = back.v ? back.y+t+mh/2 : back.y+(p.rot===0?1:-1)*inward;
+              if(skew){ const q=toPlan(cx,cy);cx=q.x;cy=q.y; }
+              const anchor={x:cx,y:cy};
+              { const q=freeLabel(cx,cy,mw+4,mh+4,avoid);cx=q.x;cy=q.y;
+                if(cx!==anchor.x||cy!==anchor.y) marks+=`<line x1="${anchor.x}" y1="${anchor.y}" x2="${cx}" y2="${cy}" stroke="var(${m[1]})" stroke-width="1.3"/><circle cx="${anchor.x}" cy="${anchor.y}" r="2.5" fill="var(${m[1]})"/>`;
+              }
               const col=mono?'#ffffff':`var(${m[1]})`, tc=mono?ink:'#ffffff';
-              avoid.push(markBox(cx-mw/2-2, cy-mh/2-2, mw+4, mh+4));
+              avoid.push({x:cx-mw/2-2,y:cy-mh/2-2,w:mw+4,h:mh+4});
               marks+=`<rect x="${cx-mw/2}" y="${cy-mh/2}" width="${mw}" height="${mh}" rx="3" fill="${col}" stroke="${mono?ink:col}" stroke-width="1.2"/><text x="${cx}" y="${cy}" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="${tc}">${m[0]}</text>`;
-              t+=(back.v?mh:mw)+gap; }); }); if(skew) marks+='</g>'; }
+              t+=(back.v?mh:mw)+gap; }); }); }
         if(pp){ let fx = p.rot===0?{x:X+w/2,y:Y+h-18} : p.rot===180?{x:X+w/2,y:Y+18} : p.rot===90?{x:X+18,y:Y+h/2} : {x:X+w-18,y:Y+h/2};
           if(skew) fx=toPlan(fx.x,fx.y);
-          nums+=numCircle(fx.x, fx.y, pp.no); avoid.push({x:fx.x-16, y:fx.y-16, w:32, h:32}); }
+          const q=freeLabel(fx.x,fx.y,32,32,avoid);
+          if(q.x!==fx.x||q.y!==fx.y) nums+=`<line x1="${fx.x}" y1="${fx.y}" x2="${q.x}" y2="${q.y}" stroke="${ink}" stroke-width="1.2"/>`;
+          nums+=numCircle(q.x,q.y,pp.no); avoid.push({x:q.x-16,y:q.y-16,w:32,h:32}); }
       }
       const zs=[...new Set(units.filter(u=>needMarks(u.c).length).map(u=>{ const p=S.layout[u.key], r=p.rot; return posAng(p)?p.sw:r===0?'t':r===180?'b':r===90?'r':'l'; }))];
       // трассы слива до выпуска канализации — пунктиром вдоль стен; длиннее предела и «нет пути» — красным
       const swg=curGeom(), swl=[]; for(const u of units){ if(!hasDrain(u.c)) continue; const r=sewerRoute(swg,u,S.layout); if(r) swl.push({r, emph:false, label:true}); }
       for(const p of swg.points){ if(p.type==='hood') continue; const m=ptMarkXY(swg,p,null); avoid.push({x:m.x-14, y:m.y-14, w:28, h:28}); }
       const swr=swRoutesSvg(swg,swl,null,{avoid, split:true});
-      body=walls+ops+eq+swr.lines+ptsAll+marks+nums+swr.labels+(typeof zeroMarkSvg==='function'?zs.map(s=>zeroMarkSvg(S.room,s)).join(''):'');
+      body=walls+ops+swr.lines+ptsAll+marks+nums+swr.labels+(typeof zeroMarkSvg==='function'?zs.map(s=>zeroMarkSvg(S.room,s)).join(''):'');
     }
-    const bar=scaleBarSvg(0, D+104, ink, k);
+    const barPosition=printScaleBarPosition(S.room,layer),bar=scaleBarSvg(barPosition.x,barPosition.y,ink,k);
     const svg=`<svg viewBox="${ex.x} ${ex.y} ${ex.w} ${ex.h}" xmlns="http://www.w3.org/2000/svg" width="${ex.w}" height="${ex.h}">${hatchDefs(mono, pal['--ink'])}
-      <rect x="${ex.x}" y="${ex.y}" width="${ex.w}" height="${ex.h}" fill="#ffffff"/>${gridClip}${g}${dims}${body}${bar}</svg>`;
-    return finalizePrintSvg(svg, pal);
+      <rect data-print-background="true" x="${ex.x}" y="${ex.y}" width="${ex.w}" height="${ex.h}" fill="#ffffff"/>${gridClip}${g}${dims}${body}${bar}</svg>`;
+    return fitPrintSvgBounds(finalizePrintSvg(svg, pal));
   } finally { sel=keep.sel; selSet=keep.selSet; selRoom=keep.selRoom; addMode=keep.addMode; showZones=keep.showZones; PT_SH={t:0,r:0,b:0,l:0}; PRINT_EL=false; }
 }
 // общий план всех помещений
 function printOverviewSvg(opts){
   const mono=!!(opts&&opts.mono), pal=mono?PRINT_MONO:PRINT_PALETTE, rs=S.rooms;
   const minX=Math.min(...rs.map(r=>r.x)), minY=Math.min(...rs.map(r=>r.y)), maxX=Math.max(...rs.map(r=>r.x+r.w)), maxY=Math.max(...rs.map(r=>r.y+r.d));
-  const pad=Math.max(170,...rs.flatMap(r=>roomGeom(S,r).openings.filter(o=>o.type==='prot'&&o.niche).map(o=>(o.depth||0.3)*100+20))), k=100, X=v=>(v-minX)*k, Y=v=>(v-minY)*k, ink='var(--ink)', ink2='var(--ink-2)';
+  const pad=Math.max(170,...rs.flatMap(r=>roomGeom(S,r).openings.filter(o=>o.type==='prot'&&o.niche).map(o=>(o.depth||0.3)*100+20))), padX=Math.max(210,pad), k=100, X=v=>(v-minX)*k, Y=v=>(v-minY)*k, ink='var(--ink)', ink2='var(--ink-2)';
   let out='', arrows='';
   for(const r of rs){
     const points=hasPoly(r)?contourPts(r,0).map(p=>`${X(r.x+p.x/100)},${Y(r.y+p.y/100)}`).join(' '):'';
@@ -5194,10 +5429,10 @@ function printOverviewSvg(opts){
       out+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ffffff" stroke-width="10"/>`;
       if(o.type==='window') out+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${ink2}" stroke-width="2"/>`;
       if(o.type==='door' && (o.to==='hall'||o.to==='street'||o.to==='corr')){ const mx=(x1+x2)/2, my=(y1+y2)/2, nx=-sg.nx, ny=-sg.ny, L=110;
-        const sx=mx+nx*L, sy=my+ny*L, ex=mx+nx*14, ey=my+ny*14, lab=o.to==='hall'?'Трапезная':o.to==='street'?'Улица':'Коридор';
-        const ah=12, px=-ny, py=nx;
-        arrows+=`<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="var(--accent)" stroke-width="3"/><polygon points="${ex},${ey} ${ex+nx*ah*1.6+px*ah},${ey+ny*ah*1.6+py*ah} ${ex+nx*ah*1.6-px*ah},${ey+ny*ah*1.6-py*ah}" fill="var(--accent)"/>`;
-        const tx=sx+nx*22, ty=sy+ny*22, vert=nx!==0;
+        const outward=o.to==='hall', sx=mx+nx*(outward?-30:L), sy=my+ny*(outward?-30:L), ex=mx+nx*(outward?L:14), ey=my+ny*(outward?L:14), lab=o.to==='hall'?'Трапезная':o.to==='street'?'Улица':'Коридор';
+        const ah=12, px=-ny, py=nx, back=outward?-1:1;
+        arrows+=`<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="var(--accent)" stroke-width="3"/><polygon points="${ex},${ey} ${ex+back*nx*ah*1.6+px*ah},${ey+back*ny*ah*1.6+py*ah} ${ex+back*nx*ah*1.6-px*ah},${ey+back*ny*ah*1.6-py*ah}" fill="var(--accent)"/>`;
+        const tx=mx+nx*(L+22), ty=my+ny*(L+22), vert=nx!==0;
         arrows+=`<text x="${tx}" y="${ty}" font-size="18" font-weight="700" fill="var(--accent)" text-anchor="${vert?(nx>0?'start':'end'):'middle'}" dominant-baseline="central">${lab}</text>`; }
     }
     if(roomObs(r).length) out+=`<g transform="translate(${X(r.x)},${Y(r.y)})">${obstaclesSvg(r,'print')}</g>`;
@@ -5206,9 +5441,9 @@ function printOverviewSvg(opts){
       <text x="${cx}" y="${cy+fs*0.6}" font-size="15" font-family="var(--f-mono)" text-anchor="middle" fill="${ink2}">${ir?`габарит ${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм · ${fmt1(roomArea(r))} м²`:`${fmt0(r.d*1000)} × ${fmt0(r.w*1000)} мм · ${fmt1(roomArea(r))} м²`}</text>
       <text x="${cx}" y="${cy+fs*0.6+20}" font-size="13" text-anchor="middle" fill="var(--steel)">${esc(r.roles.map(x=>(ROLES.find(q=>q[0]===x)||[])[1]).filter(Boolean).join(' · ')||'назначение не отмечено')}</text>`;
   }
-  const w=(maxX-minX)*k+2*pad, h=(maxY-minY)*k+2*pad+40, kk=pickScale(w,h);
-  const svg=`<svg viewBox="${-pad} ${-pad} ${w} ${h}" xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect x="${-pad}" y="${-pad}" width="${w}" height="${h}" fill="#ffffff"/>${out}${arrows}${scaleBarSvg(0,(maxY-minY)*k+pad-10,ink,kk)}</svg>`;
-  return {svg:finalizePrintSvg(svg,pal), wCm:w, hCm:h, scale:kk};
+  const w=(maxX-minX)*k+2*padX, h=(maxY-minY)*k+2*pad+40; let kk=pickScale(w,h);
+  const svg=`<svg viewBox="${-padX} ${-pad} ${w} ${h}" xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect data-print-background="true" x="${-padX}" y="${-pad}" width="${w}" height="${h}" fill="#ffffff"/>${out}${arrows}${scaleBarSvg(0,(maxY-minY)*k+pad-10,ink,kk)}</svg>`;
+  let fitted=fitPrintSvgBounds(finalizePrintSvg(svg,pal));const bounds=printSvgExtents(fitted),actual=pickScale(bounds.w,bounds.h);if(actual!==kk){fitted=fitted.replace('М 1:'+kk,'М 1:'+actual);kk=actual;}return {svg:fitted, wCm:bounds.w, hCm:bounds.h, scale:kk};
 }
 function swatchSvg(o){ // маленький образец для легенды, 28×14
   const pal=o.mono?PRINT_MONO:PRINT_PALETTE, ink=pal['--ink'];
@@ -5264,10 +5499,12 @@ function reportCtx(options){
     }};
   return ctx;
 }
-const LAYER_CAPTION={walls:'Стены и проёмы', points:'Существующие подключения', equip:'Расстановка оборудования', need:'Требуемые подключения оборудования'};
+const LAYER_CAPTION={walls:'Общий план помещения и проёмов', points:'Существующие подключения', equip:'Расстановка оборудования', need:'Требуемые подключения оборудования'};
 function planBlockFor(room, layer, pos, mono){
-  const ex=planExtents(room, layer), k=pickScale(ex.w, ex.h);
-  const svg=planSvg(layer==='walls'?'room':layer==='points'?'points':'equip', [], {room, print:true, layers:[layer], mono, pos, scale:k});
+  const ex=planExtents(room, layer), sideLegend=['equip','need','points'].includes(layer), box=sideLegend?{w:214,h:158}:{w:265,h:158};let k=pickScale(ex.w,ex.h,box);
+  let svg=planSvg(layer==='walls'?'room':layer==='points'?'points':'equip', [], {room, print:true, layers:[layer], mono, pos, scale:k}), bounds=printSvgExtents(svg), measuredScale=pickScale(bounds.w,bounds.h,box);
+  if(measuredScale!==k){k=measuredScale;svg=planSvg(layer==='walls'?'room':layer==='points'?'points':'equip', [], {room, print:true, layers:[layer], mono, pos, scale:k});bounds=printSvgExtents(svg);}
+
   const legend=[];
   if(layer==='equip'){
     const zs=[...new Set(roomUnitsOf(room.id).filter(u=>S.layout[u.key]).map(u=>u.c.z))].sort((a,b)=>ZORDER.indexOf(a)-ZORDER.indexOf(b));
@@ -5281,7 +5518,7 @@ function planBlockFor(room, layer, pos, mono){
   let caption=`«${room.name}» — ${layer==='need'&&netsOpen(S)?'куда вывести сети':LAYER_CAPTION[layer].toLowerCase()}`;
   if(layer==='need') caption+='. Места подключений ориентировочные — у стены за аппаратом. Отсчёт «от угла» — от угла, отмеченного «0»';
   if(layer==='equip') caption+='. Отсчёт «от угла» — от угла, отмеченного «0»';
-  return {t:'plan', svg, wMm:ex.w*10/k, hMm:ex.h*10/k, scale:'1:'+k, caption, legend, orient:'landscape'};
+  return {t:'plan', svg, wMm:bounds.w*10/k, hMm:bounds.h*10/k, scale:'1:'+k, caption, roomName:room.name, legend, sideLegend, layer, orient:'landscape'};
 }
 // привязки оборудования помещения для таблицы PDF
 function bindingRows(room, pos){
@@ -5308,27 +5545,34 @@ function volts(c){ return (c.kw||0)>0?(c.ph===3?'380':'220'):'—'; }
 
 /* ================= Разделы ================= */
 const ALL=['full','electric','plumbing','vent','gas','cost'];
-REPORT.register({ id:'title', title:'Титульный лист', group:'Общее', order:100, audience:ALL, always:true,
-  build(ctx){ const m=ctx.meta, p=P.power, R=resEff(S), cost=costCalc(), posL=ctx.pos.list;
+// Дата и редакция относятся к проекту, а не к моменту формирования файла.
+function reportDateLabel(value){ value=typeof value==='string'?value:''; const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value||''); return m?`${m[3]}.${m[2]}.${m[1]}`:(value||'не указана'); }
+function fmtPower(n){ return (Math.round((n+Number.EPSILON)*1000)/1000).toLocaleString('ru-RU',{maximumFractionDigits:3}); }
+function reportSummaryBlocks(ctx){ const m=ctx.meta, p=P.power, R=resEff(S), cost=costCalc(), posL=ctx.pos.list;
     const area=S.rooms.reduce((a,r)=>a+roomArea(r),0), buyN=posL.filter(x=>x.src==='buy').length, haveN=posL.filter(x=>x.src==='have').length;
     const gasOn=S.gas&&S.gas.on, gasItems=P.items.some(i=>i.c.gas);
-    const pw=`${fmt1(p.demand)} кВт, ${p.need3?'3 фазы, 380 В':'1 фаза, 220 В'}`+(R.A!=null?` · сейчас ${fmt1(R.A)} кВт`:'')+(R.B!=null?` · можно до ${fmt1(R.B)} кВт`:'');
+    const pw=`${fmtPower(p.demand)} кВт, ${p.need3?'3 фазы, 380 В':'1 фаза, 220 В'}`+(R.A!=null?` · сейчас ${fmt1(R.A)} кВт`:'')+(R.B!=null?` · можно до ${fmt1(R.B)} кВт`:'');
     return [
-      {t:'p', text:'ЗАДАНИЕ НА ОБОРУДОВАНИЕ КУХНИ ТРАПЕЗНОЙ', muted:true},
-      {t:'h1', text:S.name||'Трапезная'},
-      {t:'kv', rows:[['Приход или монастырь', m.parish||'—'],['Адрес', m.address||'—'],['Составитель', m.author||'—'],['Контакт', m.contact||'—'],['Дата выгрузки', new Date().toLocaleDateString('ru-RU')]].concat(m.note?[['Примечание', m.note]]:[])},
       {t:'h3', text:'Кратко'},
       {t:'kv', cols:2, rows:[
         ['Человек за трапезой', fmt0(S.people)], ['Трапез в день', String(S.meals)],
         ['Помещений', `${S.rooms.length}, всего ${fmt1(area)} м²`], ['Позиций оборудования', `${posL.length}: купить ${buyN}, имеется ${haveN}`],
         ['Требуется электричества', pw], ['Газ', gasOn?(S.gas.src==='bottle'?'есть, баллоны':'есть, сеть'):netState(S,'gas')==='unk'?'неизвестно':netState(S,'gas')==='have'?'есть, в подборе не используется':(gasItems?'есть газовое имеющееся':'нет')],
         ['Итог сметы', rub(cost.total)], ['Режим правил', S.norms.strict?'строгий (общепит)':'здравый смысл']]},
-      {t:'p', text:'Расчёты ориентировочные: это исходные данные для поставщика оборудования и проектировщиков инженерных систем. Итоговые значения определяет проектировщик.', muted:true},
+      {t:'p', text:'Расчёты ориентировочные: это исходные данные для поставщика оборудования и проектировщиков инженерных систем. Итоговые значения определяет проектировщик.', muted:true}];
+}
+REPORT.register({ id:'title', title:'Титульный лист', group:'Общее', order:100, audience:ALL, always:true,
+  build(ctx){ const m=ctx.meta;
+    return [
+      {t:'p', text:'ЗАДАНИЕ НА ОБОРУДОВАНИЕ КУХНИ ТРАПЕЗНОЙ', muted:true},
+      {t:'h1', text:S.name||'Трапезная'},
+      {t:'kv', rows:[['Приход или монастырь', m.parish||'—'],['Адрес', m.address||'—'],['Составитель', m.author||'—'],['Контакт', m.contact||'—'],['Дата', reportDateLabel(m.date)],['Редакция проекта', String(m.revision||'не указана')]]},
+      {t:'p', text:'Исходные данные для согласования оборудования и инженерных систем. Расчёт ориентировочный.', muted:true},
       {t:'pagebreak'} ]; } });
 
 REPORT.register({ id:'summary', title:'Сводка замечаний', group:'Общее', order:200, audience:['full','electric','plumbing','vent','gas'],
   build(ctx){ const all=ctx.issues(), G=(lv)=>all.filter(i=>lv.includes(i.level));
-    const out=[{t:'h1', text:'Сводка замечаний'}];
+    const out=[{t:'h1', text:'Информация по проекту'}, ...reportSummaryBlocks(ctx), ...(ctx.meta.note?[{t:'h3',text:'Примечание'},{t:'p',text:ctx.meta.note}]:[])];
     const sec=(title,list,empty)=>{ out.push({t:'h3', text:title}); out.push(list.length?{t:'notes', items:list}:{t:'p', text:empty, muted:true}); };
     sec('Требует решения', G(['bad']), 'Нет.'); sec('Проверить', G(['warn']), 'Нет.'); sec('Справочно', G(['info','ok']), 'Нет.');
     const q=openQuestions(); out.push({t:'h3', text:'Открытые вопросы'}); out.push(q.length?{t:'notes', items:q.map(t=>({level:'info', text:t}))}:{t:'p', text:'Данных достаточно.', muted:true});
@@ -5355,7 +5599,7 @@ REPORT.register({ id:'rooms', title:'Помещения', group:'Помещен�
       {t:'table', cols:[{title:'Помещение',w:2},{title:'Длина × ширина, мм',w:1.5},{title:'Площадь, м²',w:1,align:'r'},{title:'Назначение',w:3},{title:'Откуда можно попасть',w:2.5}],
         rows:S.rooms.map(r=>[r.name, `${fmt0(r.d*1000)} × ${fmt0(r.w*1000)}`, fmt1(roomArea(r)), r.roles.map(x=>(ROLES.find(q=>q[0]===x)||[])[1]).filter(Boolean).join(', ')||'не отмечено', links(r)]),
         foot:[['Всего','',fmt1(S.rooms.reduce((a,r)=>a+roomArea(r),0)),'','']]},
-      ctx.plan.overview()]; } });
+      S.rooms.length>1?ctx.plan.overview():null]; } });
 
 REPORT.register({ id:'room-walls', title:'Стены и проёмы', group:'Помещения', order:500, audience:['full'], perRoom:true,
   build(ctx){ const r=ctx.room;
@@ -5374,7 +5618,7 @@ REPORT.register({ id:'room-walls', title:'Стены и проёмы', group:'П
       rows.length?{t:'table', cols:[{title:'Проём',w:1},{title:'Стена, длина мм',w:1.6},{title:'Привязка, мм',w:1.8},{title:'Ширина, мм',w:1,align:'r'},{title:'Подоконник / куда ведёт / глубина',w:3.6}], rows,
         note:hasPoly(r)?'Стены пронумерованы по часовой стрелке от левого верхнего угла, номера — на плане. Привязка — до ближнего края проёма.':'Стены названы так, как они лежат на плане: верхняя, правая, нижняя, левая. Привязка — до ближнего края проёма.'}:{t:'p', text:'Проёмов не отмечено.', muted:true},
       ...measured,
-      ...roomObs(r).map(ob=>({t:'p', text:`${(OBS_NOM[ob.kind]||OBS_NOM.other).replace(/^./,c=>c.toUpperCase())} ${ob.shape==='round'?'⌀'+fmt0(ob.w*1000):fmt0(ob.w*1000)+'×'+fmt0(ob.d*1000)} мм, от левой стены ${fmt0(ob.x*1000)} мм, от верхней ${fmt0(ob.y*1000)} мм`})),
+      ...roomObs(r).map(ob=>({t:'p', text:`${(OBS_NOM[ob.kind]||OBS_NOM.other).replace(/^./,c=>c.toUpperCase())} ${ob.shape==='round'?'диам. '+fmt0(ob.w*1000):fmt0(ob.w*1000)+'×'+fmt0(ob.d*1000)} мм, от левой стены ${fmt0(ob.x*1000)} мм, от верхней ${fmt0(ob.y*1000)} мм`})),
       ctx.plan.room(r,'walls')]; } });
 function doorLabelIn(r,o){ if(o.to&&o.to.startsWith('room:')) return 'ведёт в «'+roomName(S,o.to.slice(5))+'»'; return 'ведёт '+(DOOR_TO[o.to]||'—'); }
 
@@ -5389,6 +5633,15 @@ REPORT.register({ id:'room-points', title:'Существующие подклю
       rows.length?{t:'table', cols:[{title:'Что',w:2},{title:'Где',w:1.3},{title:'Привязка, мм',w:2.4},{title:'Высота, мм',w:1,align:'r'},{title:'Характеристики',w:3}], rows}:{t:'p', text:'В этом помещении подключения не отмечены — отдельного плана нет.', muted:true},
       rows.length?ctx.plan.room(r,'points'):null]; } });
 
+// Расчётная рекомендация экспортёра, не сохранённая пользователем привязка.
+// Иной зоны стол не подставляем: это создало бы ложную определённость.
+function reportTableHosts(tableItems, hostTables){
+  const groups=new Map();
+  tableItems.forEach(p=>{ const h=hostTables.find(t=>t.c.z===p.c.z); const k=h?h.no:0;
+    (groups.get(k)||groups.set(k,[]).get(k)).push(p); });
+  return groups;
+}
+
 REPORT.register({ id:'room-equip', title:'Расстановка оборудования', group:'Оборудование', order:700, audience:['full','electric','plumbing','vent','gas'], perRoom:true,
   available: ()=>P.items.length>0,
   build(ctx){ const r=ctx.room, us=roomUnitsOf(r.id), pos=ctx.pos;
@@ -5399,9 +5652,8 @@ REPORT.register({ id:'room-equip', title:'Расстановка оборудо�
     const out=[{t:'h2', text:`«${r.name}»: расстановка оборудования`}];
     out.push(rows.length?{t:'table', cols:[{title:'Поз.',w:.6,align:'r'},{title:'Наименование',w:hasNotes?3:5},{title:'Шт',w:.6,align:'r'},{title:'Ш×Г×В, мм',w:1.8},{title:'',w:1}, ...(hasNotes?[{title:'Примечание',w:2}]:[])], rows}:{t:'p', text:'Оборудования в этом помещении нет.', muted:true});
     if(tableItems.length){ const hostTables=us.filter(u=>S.layout[u.key]&&/^table|^serveTable|insert/.test(u.c.role||'')).map(u=>pos.unit(u)).filter(Boolean);
-      const host=z=>{ const same=hostTables.find(t=>t.c.z===z); return same||hostTables[0]; };
-      const grp=new Map(); tableItems.forEach(p=>{ const h=host(p.c.z); const k=h?h.no:0; (grp.get(k)||grp.set(k,[]).get(k)).push(p); });
-      out.push({t:'p', text:'Настольное: '+[...grp.entries()].map(([k,l])=>(k?`на столе поз. ${k}: `:'на столы: ')+l.map(p=>`поз. ${p.no} ${p.c.lb||shortName(p.c)}`).join(', ')).join('; ')+'.'}); }
+      const grp=reportTableHosts(tableItems,hostTables);
+      out.push({t:'p', text:'Рекомендуемое размещение настольных приборов (расчётная привязка к столам): '+[...grp.entries()].map(([k,l])=>(k?`на столе поз. ${k}: `:'стол не определён: ')+l.map(p=>`поз. ${p.no} ${p.c.lb||shortName(p.c)}`).join(', ')).join('; ')+'.'}); }
     const bind=bindingRows(r, pos);
     if(bind.length) out.push({t:'h3', text:'Привязки оборудования'}, {t:'table', cols:[{title:'Поз.',w:.6,align:'r'},{title:'Наименование',w:3.2},{title:'Стена',w:1.5},{title:'От угла, мм',w:1.1,align:'r'},{title:'Ширина, мм',w:1,align:'r'},{title:'До следующего, мм',w:1.2,align:'r'},{title:'Отступ от стены, мм',w:1.1,align:'r'}], rows:bind,
       note:'«От угла» — до начала аппарата: у горизонтальных стен от левого угла, у вертикальных — от верхнего (на плане он отмечен «0»). Аппараты стоят вплотную к стене; отступ — только там, где он есть на плане.'});
@@ -5418,18 +5670,20 @@ REPORT.register({ id:'room-need', title:'Требуемые подключени
     const m=new Map(); for(const u of us){ const p=pos.unit(u); if(!p) continue; const x=m.get(p.no)||{p,n:0,hood:false}; x.n++; x.hood=x.hood||under(u)||(u.c.hot&&!S.layout[u.key]); m.set(p.no,x); }
     // настольное с питанием или водой — тоже в таблицу
     pos.list.filter(p=>p.c.mount==='table'&&p.rooms.includes(r.id)&&((p.c.kw||0)>0||p.c.cw||p.c.dr)).forEach(p=>m.set(p.no,{p,n:p.qty,hood:false}));
-    const yes=v=>v?'✓':'';
+    const yes=v=>v?'Да':'';
     const rows=[...m.values()].sort((a,b)=>a.p.no-b.p.no).filter(x=>(x.p.c.kw||0)>0||x.p.c.cw||x.p.c.hw||x.p.c.dr||x.p.c.gas||x.p.c.hot).map(x=>{ const c=x.p.c;
       const an=us.filter(u=>pos.unit(u)===x.p && S.layout[u.key]).map(u=>needAnchor(u,r)), walls=[...new Set(an.map(a=>a.wall))];
       const drv=hasDrain(c)?drainVals(us.filter(u=>pos.unit(u)===x.p)).map(v=>v.t).join('; '):'';
-      return [String(x.p.no), shortName(c)+(x.n>1?` × ${x.n}`:''), (c.kw||0)>0?fmt1(c.kw*x.n):'—', volts(c), yes(c.cw), yes(c.hw), yes(c.dr), drv, c.gas?(c.gkw?fmt1(c.gkw*x.n):'✓'):'', x.hood?'да':'', walls.join(', ')||'на столе', an.map(a=>a.along).join('; ')||'—', an.length?'по паспорту аппарата':'—']; });
+      return [String(x.p.no), shortName(c)+(x.n>1?` × ${x.n}`:''), (c.kw||0)>0?fmt2(c.kw*x.n):'—', volts(c), yes(c.cw), yes(c.hw), yes(c.dr), drv, c.gas?(c.gkw?fmt1(c.gkw*x.n):'Да'):'', x.hood?'да':'', walls.join(', ')||'на столе', an.map(a=>a.along).join('; ')||'—', an.length?'по паспорту аппарата':'—']; });
     // сети проектируются: раздел — задание, куда вывести сети; перед таблицей — итог по помещению
     const nd=netsOpen(S), xs=[...m.values()], cnt=f=>xs.reduce((a,x)=>a+(f(x.p.c)?x.n:0),0), el=xs.filter(x=>(x.p.c.kw||0)>0);
-    const sumLine=`Холодная вода — ${cnt(c=>c.cw)} ${plural(cnt(c=>c.cw),'вывод','вывода','выводов')}, горячая — ${cnt(c=>c.hw)}, канализация — ${cnt(c=>c.dr)} ${plural(cnt(c=>c.dr),'выпуск','выпуска','выпусков')}, электрика: 220 В — ${el.filter(x=>x.p.c.ph!==3).reduce((a,x)=>a+x.n,0)}, 380 В — ${el.filter(x=>x.p.c.ph===3).reduce((a,x)=>a+x.n,0)}, суммарно ${fmt1(el.reduce((a,x)=>a+x.p.c.kw*x.n,0))} кВт; газ — ${cnt(c=>c.gas)}; вытяжка — ${fmt0(H.exhaust)} м³/ч.`;
+    const sumLine=`Холодная вода — ${cnt(c=>c.cw)} ${plural(cnt(c=>c.cw),'вывод','вывода','выводов')}, горячая — ${cnt(c=>c.hw)}, канализация — ${cnt(c=>c.dr)} ${plural(cnt(c=>c.dr),'выпуск','выпуска','выпусков')}, электрика: 220 В — ${el.filter(x=>x.p.c.ph!==3).reduce((a,x)=>a+x.n,0)}, 380 В — ${el.filter(x=>x.p.c.ph===3).reduce((a,x)=>a+x.n,0)}, суммарно ${fmtPower(el.reduce((a,x)=>a+x.p.c.kw*x.n,0))} кВт; газ — ${cnt(c=>c.gas)}; вытяжка — ${fmt0(H.exhaust)} м³/ч.`;
     return [{t:'h2', text:`«${r.name}»: ${nd?'задание: куда вывести сети':'требуемые подключения'}`},
       nd&&rows.length?{t:'p', text:sumLine}:null,
-      rows.length?{t:'table', cols:[{title:'Поз.',w:.5,align:'r'},{title:'Аппарат',w:2.4},{title:'кВт',w:.6,align:'r'},{title:'В',w:.55,align:'r'},{title:'ХВ',w:.45,align:'c'},{title:'ГВ',w:.45,align:'c'},{title:'К',w:.45,align:'c'},{title:'Слив до выпуска, м',w:1,align:'r'},{title:'Газ, кВт',w:.7,align:'r'},{title:'Под зонт',w:.65,align:'c'},{title:'Стена',w:.9},{title:'От угла, мм',w:.95,align:'r'},{title:'Высота от пола, мм',w:.95}], rows,
-        note:`Места подключений на плане ориентировочные — у стены за аппаратом. «От угла» — до центра метки подключения вдоль стены, от угла, отмеченного «0» на плане. Высота выводов — по паспорту выбранной модели. Слив до выпуска — вдоль стен до ближайшего выпуска этого помещения (на плане — пунктиром), через дверной проём не проходит; до трапа в полу — по прямой; предел ${fmtM(swMax(S))}.`}:{t:'p', text:'Подключения не требуются.', muted:true},
+      rows.length?{t:'table', cols:[{title:'Поз.',w:.55,align:'r'},{title:'Аппарат',w:3.5},{title:'кВт',w:.8,align:'r'},{title:'В',w:.65,align:'r'},{title:'ХВ',w:.6,align:'c'},{title:'ГВ',w:.6,align:'c'},{title:'К',w:.6,align:'c'},{title:'Слив, м',w:1,align:'r'},{title:'Газ, кВт',w:.85,align:'r'},{title:'Под зонт',w:.8,align:'c'}], rows:rows.map(r=>r.slice(0,10)),
+        note:`ХВ — холодная вода; ГВ — горячая вода; К — канализация. Слив до выпуска — вдоль стен до ближайшего выпуска этого помещения, не через дверной проём; до трапа в полу — по прямой; предел ${fmtM(swMax(S))}.`}:{t:'p', text:'Подключения не требуются.', muted:true},
+      rows.length?{t:'h3',text:'Привязки подключений'}:null,
+      rows.length?{t:'table',cols:[{title:'Поз.',w:.55,align:'r'},{title:'Аппарат',w:3.5},{title:'Стена',w:1.8},{title:'От угла, мм',w:1.25,align:'r'},{title:'Высота от пола, мм',w:2}],rows:rows.map(r=>[r[0],r[1],r[10],r[11],r[12]]),note:'Места подключений ориентировочные — у стены за аппаратом. «От угла» — до центра метки подключения вдоль стены от угла «0». Высота выводов — по паспорту выбранной модели.'}:null,
       rows.length?ctx.plan.room(r,'need'):null].filter(Boolean); } });
 // в режиме «сети проектируются» раздел называется «Задание: куда вывести сети» — в окне выгрузки, оглавлении и колонтитулах
 Object.defineProperty(REPORT.get('room-need'),'title',{get(){ return netsOpen(S)?'Задание: куда вывести сети':'Требуемые подключения'; }, configurable:true});
@@ -5439,35 +5693,39 @@ REPORT.register({ id:'spec', title:'Спецификация оборудова�
   build(ctx){ const L=ctx.pos.list, hasNotes=L.some(p=>notesFor(p.c,p.src));
     const E=S.edits||{}, edited=p=>p.src==='buy' && !!((E.delta&&E.delta[p.c.base||p.c.id]) || (E.pref&&E.pref[p.c.role]===(p.c.base||p.c.id))), anyEd=L.some(edited);
     const rows=L.map(p=>{ const c=p.c, price=p.src==='have'?0:priceOf(c);
-      return [String(p.no), c.n+(p.src==='have'&&c.what&&!c.n.toLowerCase().includes(c.what.toLowerCase())?` (${lc1(c.what)})`:'')+(edited(p)?' ✎':''), p.src==='have'?(c.model||'—'):'—', p.rooms.map(id=>roomName(S,id)).join(', '), String(p.qty), dimsOf(c), (c.kw||0)>0?fmt1(c.kw*p.qty):'—', volts(c), waterOf(c), c.gas?(c.gkw?fmt1(c.gkw*p.qty)+' тепл.':'да'):'—', p.src==='have'?'имеется':'купить', p.src==='have'?'—':fmt0(price), p.src==='have'?'—':fmt0(price*p.qty), ...(hasNotes?[notesFor(c,p.src)]:[])]; });
+      return [String(p.no), c.n+(p.src==='have'&&c.what&&!c.n.toLowerCase().includes(c.what.toLowerCase())?` (${lc1(c.what)})`:'')+(edited(p)?' (изменено вручную)':''), p.src==='have'?(c.model||'—'):'—', p.rooms.map(id=>roomName(S,id)).join(', '), String(p.qty), dimsOf(c), (c.kw||0)>0?fmt2(c.kw*p.qty):'—', volts(c), waterOf(c), c.gas?(c.gkw?fmt1(c.gkw*p.qty)+' тепл.':'да'):'—', p.src==='have'?'имеется':'купить', fmt0(price), fmt0(price*p.qty), ...(hasNotes?[notesFor(c,p.src)]:[])]; });
     const sum=L.filter(p=>p.src==='buy').reduce((a,p)=>a+priceOf(p.c)*p.qty,0), kw=L.reduce((a,p)=>a+(p.c.kw||0)*p.qty,0);
+    const commercial=rows.map(r=>[r[0],r[1],r[2],r[3],r[4],r[5],r[10],r[11],r[12],...(hasNotes?[r[13]]:[])]);
+    const engineering=rows.map(r=>[r[0],r[1],r[3],r[4],r[6],r[7],r[8],r[9]]);
     return [{t:'pagebreak', orient:'landscape'}, {t:'h1', text:'Спецификация оборудования'},
-      {t:'p', muted:true, text:'кВт — электрическая мощность (у газовых — только электрическая часть). Столы-вставки заполняют углы и промежутки в линиях оборудования. Цены ориентировочные.'+(anyEd?' ✎ — изменено вручную: количество или исполнение поправлено на шаге «Подбор».':'')},
-      {t:'table', cols:[{title:'Поз.',w:.5,align:'r'},{title:'Наименование',w:hasNotes?2.4:4.2},{title:'Модель',w:1.4},{title:'Помещение',w:1.4},{title:'Шт',w:.5,align:'r'},{title:'Ш×Г×В, мм',w:1.5},{title:'кВт',w:.7,align:'r'},{title:'В',w:.5,align:'r'},{title:'Вода',w:1},{title:'Газ',w:.9},{title:'',w:.9},{title:'Цена, ₽',w:1,align:'r'},{title:'Сумма, ₽',w:1.1,align:'r'}, ...(hasNotes?[{title:'Примечание',w:1.8}]:[])],
-        rows, foot:[['','Всего позиций: '+L.length,'','',String(L.reduce((a,p)=>a+p.qty,0)),'',fmt1(kw),'','','','','','', ...(hasNotes?['']:[])],['','К закупке','','',String(L.filter(p=>p.src==='buy').reduce((a,p)=>a+p.qty,0)),'','','','','','','',fmt0(sum), ...(hasNotes?['']:[])]],
-},
+      {t:'p', muted:true, text:'Столы-вставки заполняют углы и промежутки в линиях оборудования. Цены ориентировочные.'+(anyEd?' Изменено вручную — количество или исполнение поправлено на шаге «Подбор».':'')},
+      {t:'table', balanceTail:true, cols:[{title:'Поз.',w:.5,align:'r'},{title:'Наименование',w:3.6},{title:'Модель',w:1.3},{title:'Помещение',w:1.3},{title:'Шт',w:.5,align:'r'},{title:'Ш×Г×В, мм',w:1.6},{title:'Статус',w:.9},{title:'Цена, ₽',w:1,align:'r'},{title:'Сумма, ₽',w:1.1,align:'r'},...(hasNotes?[{title:'Примечание',w:1.8}]:[])],rows:commercial,
+        foot:[['','Всего позиций: '+L.length,'','',String(L.reduce((a,p)=>a+p.qty,0)),'','','','',...(hasNotes?['']:[])],['','К закупке','','',String(L.filter(p=>p.src==='buy').reduce((a,p)=>a+p.qty,0)),'','','',fmt0(sum),...(hasNotes?['']:[])]]},
+      {t:'pagebreak', orient:'portrait'}, {t:'h1',text:'Инженерные параметры оборудования'},
+      {t:'table',balanceTail:true,cols:[{title:'Поз.',w:.55,align:'r'},{title:'Наименование',w:3.5},{title:'Помещение',w:1.6},{title:'Шт',w:.6,align:'r'},{title:'кВт, всего',w:1,align:'r'},{title:'В',w:.65,align:'r'},{title:'Вода',w:1.1},{title:'Газ',w:1.1}],rows:engineering,
+        foot:[['','Установленная мощность','','',fmt2(kw),'','','']],note:'кВт — электрическая мощность (у газовых — только электрическая часть). Мощность указана для всего количества позиции; итог считается по исходным значениям до округления.'},
       {t:'pagebreak', orient:'portrait'}]; } });
 
 REPORT.register({ id:'eng-power', title:'Электроснабжение', group:'Инженерия', order:1000, audience:['full','electric'],
   build(ctx){ const p=P.power, R=resEff(S), pos=ctx.pos;
-    const rows=pos.list.filter(x=>(x.c.kw||0)>0).sort((a,b)=>b.c.kw*b.qty-a.c.kw*a.qty).map(x=>[String(x.no), shortName(x.c), String(x.qty), volts(x.c), fmt1(x.c.kw), fmt1(x.c.kw*x.qty), x.src==='have'?'имеется':'купить']);
+    const rows=pos.list.filter(x=>(x.c.kw||0)>0).sort((a,b)=>b.c.kw*b.qty-a.c.kw*a.qty).map(x=>[String(x.no), shortName(x.c), String(x.qty), volts(x.c), fmt2(x.c.kw), fmt2(x.c.kw*x.qty), x.src==='have'?'имеется':'купить']);
     const out=[{t:'h1', text:'Электроснабжение'},
-      {t:'kv', cols:2, rows:[['Установленная мощность', fmt1(p.inst)+' кВт'],['Электроприёмников', String(p.n)],['Коэффициент спроса', p.k.toLocaleString('ru-RU')],['Расчётная нагрузка', fmt1(p.demand)+' кВт'],
+      {t:'kv', cols:2, rows:[['Установленная мощность', fmtPower(p.inst)+' кВт'],['Электроприёмников', String(p.n)],['Коэффициент спроса', p.k.toLocaleString('ru-RU')],['Расчётная нагрузка', fmtPower(p.demand)+' кВт'],
         ['Расчётный ток', `${fmt0(p.amps)} А, ${R.ph===3?'380 В, на фазу':'220 В'}`],['Требуемый ввод', p.need3?'3 фазы, 380 В':'1 фаза, 220 В']]},
       {t:'h3', text:'Требуется и есть'},
-      {t:'kv', cols:2, rows:[['Требуется', `${fmt1(p.demand)} кВт, ${p.need3?'3 фазы':'1 фаза'}`],['Сейчас выделено', R.A!=null?`${fmt1(R.A)} кВт, ${S.res.ph===3?'3 фазы':'1 фаза'}`:'не указано'],
-        ['Можно увеличить до', R.B!=null?`${fmt1(R.B)} кВт, ${S.res.phMax===1?'1 фаза':'3 фазы'}`:'не указано'],['Нужно увеличить на', R.A!=null&&p.demand-R.A>0.05?fmt1(p.demand-R.A)+' кВт':'не нужно']]},
+      {t:'kv', cols:2, rows:[['Требуется', `${fmtPower(p.demand)} кВт, ${p.need3?'3 фазы':'1 фаза'}`],['Сейчас выделено', R.A!=null?`${fmt1(R.A)} кВт, ${S.res.ph===3?'3 фазы':'1 фаза'}`:'не указано'],
+        ['Можно увеличить до', R.B!=null?`${fmt1(R.B)} кВт, ${S.res.phMax===1?'1 фаза':'3 фазы'}`:'не указано'],['Нужно увеличить на', R.A!=null&&p.demand-R.A>0.05?fmtPower(p.demand-R.A)+' кВт':'не нужно']]},
       {t:'notes', items:[{level:p.verdict?p.verdict.t:'info', text:(p.verdict||powerVerdict(p,S)).m}]}];
     if(p.need3 && S.res.ph===1) out.push({t:'notes', items:[{level:'warn', text:'Нужен трёхфазный ввод 380 В: '+(P.items.some(i=>i.c.ph===3&&(i.c.kw||0)>0)?'в проекте есть оборудование на 380 В.':'нагрузка больше 15 кВт.')}]});
     const simp=P.notes.find(n=>/подбор упрощён/.test(n.m)); if(simp) out.push({t:'notes', items:[{level:'warn', text:simp.m}]});
-    if(R.ph===3) out.push({t:'h3', text:'Распределение установленной мощности по фазам'},{t:'kv', cols:2, rows:p.ph.map((v,i)=>['L'+(i+1), fmt1(v)+' кВт'])});
+    if(R.ph===3) out.push({t:'h3', text:'Распределение установленной мощности по фазам'},{t:'kv', cols:2, rows:p.ph.map((v,i)=>['L'+(i+1), fmtPower(v)+' кВт'])},{t:'p', muted:true, text:'Значения фаз округлены независимо; итог рассчитан по исходным значениям, поэтому сумма показанных фаз может отличаться из-за округления.'});
     out.push({t:'h3', text:'Нагрузки по позициям'},
       {t:'table', cols:[{title:'Поз.',w:.6,align:'r'},{title:'Оборудование',w:4},{title:'Шт',w:.6,align:'r'},{title:'В',w:.7,align:'r'},{title:'кВт, ед.',w:1,align:'r'},{title:'кВт, всего',w:1,align:'r'},{title:'',w:1}], rows,
-        foot:[['','Установленная мощность','','','',fmt1(p.inst),'']], note:`Расчётная нагрузка = установленная × коэффициент спроса ${p.k.toLocaleString('ru-RU')} (по числу электроприёмников). cos φ = ${S.norms.cos.toLocaleString('ru-RU')}.`});
+        foot:[['','Установленная мощность','','','',fmtPower(p.inst),'']], note:`Расчётная нагрузка = установленная × коэффициент спроса ${p.k.toLocaleString('ru-RU')} (по числу электроприёмников). cos φ = ${S.norms.cos.toLocaleString('ru-RU')}.`});
     return out; } });
 
 REPORT.register({ id:'eng-water', title:'Вода и канализация', group:'Инженерия', order:1100, audience:['full','plumbing'],
-  build(ctx){ const Wt=water(P.items), dishes=S.people*S.meals*(S.dishware||3), pos=ctx.pos, yes=v=>v?'✓':'';
+  build(ctx){ const Wt=water(P.items), dishes=S.people*S.meals*(S.dishware||3), pos=ctx.pos, yes=v=>v?'Да':'';
     const drT=x=>hasDrain(x.c)?drainVals(P.units.filter(u=>pos.unit(u)===x)).map(v=>v.t).join('; '):'';
     const rows=pos.list.filter(x=>x.c.cw||x.c.hw||x.c.dr).map(x=>[String(x.no), shortName(x.c), String(x.qty), yes(x.c.cw), yes(x.c.hw), yes(x.c.dr), drT(x), x.rooms.map(id=>roomName(S,id)).join(', ')]);
     const heater=P.items.filter(i=>i.c.role==='heater');
@@ -5528,7 +5786,7 @@ REPORT.register({ id:'hygiene', title:'Гигиена и санитария', gr
 
 REPORT.register({ id:'cost', title:'Смета', group:'Справочно', order:1500, audience:['full','cost'],
   build(ctx){ const C=costCalc(), pos=ctx.pos, custom=C.rows.some(r=>S.prices[r.c.id]!=null||(r.c.base!=null&&S.prices[r.c.base]!=null));
-    const rows=C.rows.map(r=>{ const p=pos.of(r.c,r.src); return [p?String(p.no):'', r.c.n, String(r.qty), r.src==='have'?'имеется':fmt0(priceOf(r.c)), r.src==='have'?'—':fmt0(priceOf(r.c)*r.qty)]; });
+    const rows=C.rows.map(r=>{ const p=pos.of(r.c,r.src); return [p?String(p.no):'', r.c.n, String(r.qty), r.src==='have'?'имеется · '+fmt0(r.unitPrice):'закупка · '+fmt0(r.unitPrice), fmt0(r.unitPrice*r.qty)]; });
     rows.push(['','Зонт вытяжной пристенный, погонный метр', fmt1(C.hoodLen)+' м', fmt0(S.hoodPrice), fmt0(C.hoodSum)]);
     C.extraRows.forEach(r=>rows.push(['',r.name.trim()||'Без названия',String(r.qty),fmt0(r.price),fmt0(r.qty*r.price)]));
     return [{t:'h1', text:'Смета'},
@@ -5564,8 +5822,11 @@ function buildReportDoc(options){
     const run=[]; while(i<secs.length&&secs[i].perRoom) run.push(secs[i++]);
     for(const room of S.rooms) for(const s of run){ const c=Object.assign({}, ctx, {room}); parts.push({title:(S.rooms.length>1?room.name+' · ':'')+s.title, id:s.id+':'+room.id, blocks:s.build(c)}); }
   }
-  parts.forEach(p=>p.blocks=p.blocks.filter(Boolean));
-  return {title:S.name||'Трапезная', date:new Date(), mono:!!options.mono, parts};
+  const summary=parts.find(p=>p.id==='summary'), input=parts.find(p=>p.id==='input');
+  if(summary && input){ summary.blocks.push({t:'h2',text:'Исходные данные'}, ...input.blocks.slice(1)); parts.splice(parts.indexOf(input),1); }
+  else if(!summary){ const info={id:'project-info',title:'Информация по проекту',blocks:[{t:'h1',text:'Информация по проекту'},...reportSummaryBlocks(ctx),...(ctx.meta.note?[{t:'p',text:ctx.meta.note}]:[])]}; parts.splice(1,0,info); }
+  parts.forEach(p=>{ p.blocks=p.blocks.filter(Boolean).flatMap(b=>b.t==='plan'&&b.layer&&b.caption?[{t:'p',text:b.caption,muted:true},b]:[b]); });
+  return {title:S.name||'Трапезная', dateLabel:reportDateLabel(ctx.meta.date), mono:!!options.mono, parts};
 }
 function reportFileName(){ const d=new Date(), pad=n=>String(n).padStart(2,'0');
   const name=(S.name||'Трапезная').replace(/[\\/:*?"<>|\u0000-\u001f]+/g,' ').replace(/\s+/g,' ').trim().slice(0,120)||'Трапезная';
@@ -5573,8 +5834,8 @@ function reportFileName(){ const d=new Date(), pad=n=>String(n).padStart(2,'0');
 
 /* ================= Рендер 1: предпросмотр в HTML (листы A4) ================= */
 const PAGE_MM={portrait:{w:210,h:297}, landscape:{w:297,h:210}}, PAGE_M={l:16, r:16, t:18, b:16};
-const LEVEL_MARK={bad:'!', warn:'?', info:'i', ok:'✓'}, CHECK_MARK={ok:'✓', bad:'✗', man:'?'};
-function htmlFonts(svg){ return svg.replace(/font-family="IBMPlexSans"/g,'font-family="IBM Plex Sans, Arial, sans-serif"').replace(/font-family="IBMPlexMono"/g,'font-family="IBM Plex Mono, monospace"'); }
+const LEVEL_MARK={bad:'!', warn:'?', info:'i', ok:'+'}, CHECK_MARK={ok:'+', bad:'!', man:'?'};
+function htmlFonts(svg){ return svg; }
 function blockHtml(b){
   const e=esc;
   switch(b.t){
@@ -5596,9 +5857,8 @@ function tableHtml(b, rows, withFoot){
   return `<table class="rp-table"><colgroup>${b.cols.map(c=>`<col style="width:${((c.w||1)/tw*100).toFixed(2)}%">`).join('')}</colgroup><thead><tr>${b.cols.map(c=>`<th class="${al(c)}">${e(c.title)}</th>`).join('')}</tr></thead><tbody>${body}</tbody>${withFoot&&b.foot?`<tfoot>${b.foot.map(r=>`<tr>${r.map((v,i)=>`<td class="${al(b.cols[i]||{})}">${e(v)}</td>`).join('')}</tr>`).join('')}</tfoot>`:''}</table>${withFoot&&b.note?`<p class="rp-p muted rp-note">${e(b.note)}</p>`:''}`;
 }
 function planPageHtml(b){
-  return `<div class="rp-plan"><div class="rp-cap"><b>${esc(b.caption)}</b>${b.scale?`<span>М ${esc(b.scale)}</span>`:''}</div>
-    <div class="rp-svg" style="width:${b.wMm.toFixed(1)}mm;height:${b.hMm.toFixed(1)}mm">${htmlFonts(b.svg).replace(/<svg /,'<svg style="width:100%;height:100%" ')}</div>
-    ${b.legend&&b.legend.length?`<div class="rp-legend">${b.legend.map(l=>`<span>${l.swatch.replace(/<svg /,'<svg style="width:7.4mm;height:3.7mm;vertical-align:middle" ')}${esc(l.text)}</span>`).join('')}</div>`:''}</div>`;
+ const legend=b.legend&&b.legend.length?`<div class="rp-legend" style="${b.sideLegend?'display:flex;flex-direction:column;width:44mm;gap:2mm;align-items:flex-start':''}">${b.legend.map(l=>`<span style="display:flex;align-items:center;gap:2mm">${l.swatch.replace(/<svg /,'<svg style="width:7.4mm;height:3.7mm;flex-shrink:0" ')}${esc(l.text)}</span>`).join('')}</div>`:'';
+ return `<div class="rp-plan"><div class="rp-cap"><b>${esc(b.layer?LAYER_CAPTION[b.layer]:b.caption)}</b><span style="white-space:nowrap">М ${esc(b.scale)}</span></div><div class="rp-p muted" style="max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.roomName?esc(b.roomName)+' · ':''}Печатать 100% · Размеры в мм</div><div style="display:flex;align-items:flex-start;gap:5mm"><div class="rp-svg" style="width:${b.wMm.toFixed(1)}mm;height:${b.hMm.toFixed(1)}mm;flex-shrink:0">${htmlFonts(b.svg).replace(/<svg /,'<svg style="width:100%;height:100%" ')}</div>${b.sideLegend?legend:''}</div>${b.sideLegend?'':legend}</div>`;
 }
 // раскладка по листам: измеряет настоящую высоту блоков, длинные таблицы переносит с повтором шапки
 function paginateHtml(D, host){
@@ -5626,24 +5886,40 @@ function paginateHtml(D, host){
       const tb=nodes[0].querySelector('tbody'), trs=[...tb.children]; let keep=trs.length;
       const tf=nodes[0].querySelector('tfoot'); if(tf) tf.remove(); if(nodes[1]) nodes[1].remove();
       while(keep>0 && over(page)){ trs[keep-1].remove(); keep--; }
-      const fitRows=trs.slice(0,keep).filter(r=>!r.classList.contains('grp')).length;
+      let fitRows=trs.slice(0,keep).filter(r=>!r.classList.contains('grp')).length;
+      // Balance short tails only for the two specification tables. Keep order,
+      // move rows rather than changing scale, and leave at least four here.
+      if(b.balanceTail && fitRows>=4 && rows.length>fitRows && rows.length-fitRows<8){
+        let move=Math.min(8-(rows.length-fitRows),fitRows-4);
+        while(keep>0&&move>0){const tr=trs[--keep];if(!tr.classList.contains('grp')){move--;fitRows--;}tr.remove();}
+      }
+      // A footer/note alone must not create a nearly empty continuation page.
+      // Move at least two body rows with it when all rows fitted only after
+      // removing the footer; preserve their order and all original values.
+      if(fitRows===rows.length && (b.note || (b.foot&&b.foot.length)) && fitRows>2){
+        const target=b.balanceTail?Math.min(8,Math.max(0,fitRows-4)):2;
+        if(b.balanceTail && target===0 && page.body.childNodes.length>1){nodes[0].remove();const carry=keepWithNext(page);page=newPage(orient);carry.forEach(n=>page.body.appendChild(n));continue;}
+        let moved=0; while(keep>0&&moved<target){ const tr=trs[--keep]; if(!tr.classList.contains('grp')) moved++; tr.remove(); }
+        fitRows-=moved;
+      }
+      if(fitRows===rows.length && (b.note || (b.foot&&b.foot.length)) && fitRows<=2 && page.body.childNodes.length>1){ nodes[0].remove(); const carry=keepWithNext(page); page=newPage(orient); carry.forEach(n=>page.body.appendChild(n)); continue; }
       if(fitRows<2 && page.body.childNodes.length>1){ nodes[0].remove(); const carry=keepWithNext(page); page=newPage(orient); carry.forEach(n=>page.body.appendChild(n)); continue; }
       if(fitRows===0){ return; }
       rows=rows.slice(fitRows); page=newPage(orient);
     }
   }
   pages.forEach((p,i)=>{ p.el.querySelector('.rp-head').innerHTML=`<span>${esc(D.title)}</span><span>${esc(p.title)}</span>`;
-    p.el.querySelector('.rp-foot').innerHTML=`<span>${D.date.toLocaleDateString('ru-RU')}</span><span>Расчёт ориентировочный</span><span>Лист ${i+1} из ${pages.length}</span>`; });
+    p.el.querySelector('.rp-foot').innerHTML=`<span>${esc(D.dateLabel)}</span><span>Расчёт ориентировочный</span><span>Лист ${i+1} из ${pages.length}</span>`; });
   return pages;
 }
 const REPORT_CSS=`
-.rp-page{position:relative;background:#fff;color:#1d282d;font:9.5pt/1.38 "IBM Plex Sans",Arial,sans-serif;box-shadow:0 1px 3px rgba(0,0,0,.25);overflow:hidden}
+.rp-page{position:relative;background:#fff;color:#1d282d;font:9.5pt/1.38 IBMPlexSans,Arial,sans-serif;box-shadow:0 1px 3px rgba(0,0,0,.25);overflow:hidden}
 .rp-page.portrait{width:210mm;height:297mm}.rp-page.landscape{width:297mm;height:210mm}
 .rp-head,.rp-foot{position:absolute;left:16mm;right:16mm;display:flex;justify-content:space-between;gap:6mm;font-size:7.5pt;color:#56646a}
 .rp-head{top:8mm;border-bottom:.2mm solid #c9d0cb;padding-bottom:1.2mm}.rp-foot{bottom:7mm;border-top:.2mm solid #c9d0cb;padding-top:1.2mm}
-.rp-head span:last-child{text-align:right}
+.rp-head span{min-width:0;max-width:50%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rp-head span:last-child{text-align:right}
 .rp-body{position:absolute;left:16mm;right:16mm;top:18mm;bottom:16mm;overflow:hidden}
-.rp-page h1,.rp-page h2,.rp-page h3{font-family:"IBM Plex Sans",Arial,sans-serif;font-weight:600;letter-spacing:0;text-transform:none;color:#1d282d;line-height:1.25;text-wrap:wrap}
+.rp-page h1,.rp-page h2,.rp-page h3{font-family:IBMPlexSans,Arial,sans-serif;font-weight:600;letter-spacing:0;text-transform:none;color:#1d282d;line-height:1.25;text-wrap:wrap}
 .rp-page h2::first-letter{color:inherit}
 .rp-h1{font-size:15pt;margin:0 0 3mm}.rp-h2{font-size:12.5pt;margin:0 0 2.5mm}.rp-h3{font-size:10.5pt;margin:4mm 0 1.8mm}
 .rp-p{margin:0 0 2.2mm;max-width:none}.rp-p.muted{color:#56646a;font-size:8.5pt}
@@ -5657,6 +5933,7 @@ const REPORT_CSS=`
 .rp-notes li{display:grid;grid-template-columns:5mm minmax(0,1fr);gap:2mm;align-items:start}
 .rp-notes .mk{display:inline-flex;width:4.2mm;height:4.2mm;border-radius:50%;align-items:center;justify-content:center;font-weight:700;font-size:7.5pt;color:#fff;background:#2e5964}
 .rp-notes .bad .mk{background:#b2261d}.rp-notes .warn .mk{background:#a86a0c}.rp-notes .ok .mk{background:#2d7448}
+.rp-mono .rp-page{filter:grayscale(1)}
 .rp-mono .rp-notes .mk{background:#fff!important;color:#1a1a1a;border:.3mm solid #1a1a1a}
 .rp-sign div{display:grid;grid-template-columns:48mm minmax(0,1fr) 14mm 32mm 10mm;gap:2mm;align-items:end;margin:9mm 0 0}
 .rp-sign i{border-bottom:.2mm solid #1d282d;height:5mm}.rp-sign .d{font-size:7pt;color:#56646a}
@@ -5673,13 +5950,20 @@ let pdfLibsP=null, pdfFontsP=null;
 function loadScript(src){ return new Promise((ok,no)=>{ const s=document.createElement('script'); s.src=src; s.async=false; s.onload=ok; s.onerror=()=>no(new Error('Не загрузилась библиотека: '+src)); document.head.appendChild(s); }); }
 function loadPdfLibs(){ if(!pdfLibsP) pdfLibsP=(async()=>{ for(const u of PDF_LIBS) await loadScript(u); if(!window.jspdf||!window.jspdf.jsPDF) throw new Error('jsPDF не загрузился'); })().catch(e=>{ pdfLibsP=null; throw e; }); return pdfLibsP; }
 function b64(buf){ const u=new Uint8Array(buf); let s=''; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return btoa(s); }
-function loadPdfFonts(){ if(!pdfFontsP) pdfFontsP=Promise.all(PDF_FONTS.map(async([url])=>{ const r=await fetch(url); if(!r.ok) throw new Error('Не загрузился шрифт '+url); return b64(await r.arrayBuffer()); })).catch(e=>{ pdfFontsP=null; throw e; }); return pdfFontsP; }
+function loadPdfFonts(){ if(!pdfFontsP) pdfFontsP=Promise.all(PDF_FONTS.map(async([url,family,style])=>{
+  const r=await fetch(url); if(!r.ok) throw new Error('Не загрузился шрифт '+url);
+  const bytes=await r.arrayBuffer();
+  // svg2pdf измеряет подписи через браузер: ему нужны те же шрифты, что и jsPDF.
+  const face=new FontFace(family,bytes,{weight:style==='bold'?'700':'400'});
+  await face.load(); document.fonts.add(face);
+  return b64(bytes);
+})).catch(e=>{ pdfFontsP=null; throw e; }); return pdfFontsP; }
 const hex=c=>{ const m=/^#?([0-9a-f]{6})$/i.exec(c); const n=parseInt(m?m[1]:'000000',16); return [n>>16&255, n>>8&255, n&255]; };
 async function buildReportPdf(options){
   options=options||{}; const onProgress=options.onProgress||(()=>{}), est=options.estimate||0;
   await loadPdfLibs(); const fonts=await loadPdfFonts();
   const D=buildReportDoc(options), mono=D.mono;
-  const C={ink:hex('#1d282d'), ink2:hex('#56646a'), rule:hex('#c9d0cb'), head:mono?[235,235,235]:hex('#eef1ee'), foot:mono?[245,245,245]:hex('#f6f8f6'),
+  const C={ink:hex(mono?'#252525':'#172d38'), ink2:hex(mono?'#666666':'#5b6a73'), rule:hex(mono?'#dddddd':'#dce4e5'), head:mono?[235,235,235]:hex('#e7eeee'), foot:mono?[245,245,245]:hex('#f2f6f5'),
     lv:{bad:hex(mono?'#1a1a1a':'#b2261d'), warn:hex(mono?'#1a1a1a':'#a86a0c'), info:hex(mono?'#1a1a1a':'#2e5964'), ok:hex(mono?'#1a1a1a':'#2d7448')}};
   const {jsPDF}=window.jspdf, doc=new jsPDF({unit:'mm', format:'a4', orientation:'portrait', compress:true});
   PDF_FONTS.forEach(([url,fam,sty],i)=>{ const f=url.split('/').pop(); doc.addFileToVFS(f,fonts[i]); doc.addFont(f,fam,sty); });
@@ -5697,6 +5981,21 @@ async function buildReportPdf(options){
   const ensure=(h)=>{ if(y+h>dims().B && !fresh){ page(); } };
   const pt=mm=>mm/0.3528;
   const lh=sz=>sz*0.3528*1.35;
+  // Measure with the same embedded font and width as the renderer. These bounds
+  // reserve nearby content before drawing; no table rows or notes are discarded.
+  const textHeight=(str,size=9,bold=false,width=dims().R-dims().L)=>{
+    doc.setFont('IBMPlexSans',bold?'bold':'normal');doc.setFontSize(size);
+    return doc.splitTextToSize(String(str),width).length*lh(size);
+  };
+  const kvHeight=b=>{ const w=dims().R-dims().L,two=b.cols===2, widths=two?[w*.27,w*.23,w*.27,w*.23]:[w*.42,w*.58], rows=[];
+    if(two){for(let i=0;i<b.rows.length;i+=2)rows.push([...b.rows[i],...(b.rows[i+1]||['',''])]);}else rows.push(...b.rows);
+    return rows.reduce((sum,row)=>sum+Math.max(...row.map((v,i)=>textHeight(v,9,false,widths[i]-3)))+1,0)+3;
+  };
+  const followingHeight=(blocks,start)=>{ let h=0;
+    for(let j=start;j<blocks.length&&blocks[j].t==='p';j++) h+=textHeight(blocks[j].text,blocks[j].muted?9:10.5)+2;
+    return h;
+  };
+  const firstContentHeight=(b,blocks,next)=>!b?0:b.t==='kv'?kvHeight(b):b.t==='table'?24+Math.min((b.note?textHeight(b.note,8)+2.5:0)+followingHeight(blocks,next)+3,(dims().B-dims().T)*.4):b.t==='p'?Math.min(textHeight(b.text,b.muted?9:10.5)+2,24):b.t==='notes'?18:0;
   const text=(str,{size=9.5,bold=false,color=C.ink,x,w,gapAfter=1.6,keep=0}={})=>{ const d=dims(); x=x==null?d.L:x; w=w||d.R-x;
     doc.setFont('IBMPlexSans', bold?'bold':'normal'); doc.setFontSize(size); doc.setTextColor(...color);
     const lines=doc.splitTextToSize(String(str), w), L1=lh(size);
@@ -5707,9 +6006,9 @@ async function buildReportPdf(options){
       doc.text(part, x, y, {baseline:'top', lineHeightFactor:1.35}); y+=part.length*L1; i+=part.length; fresh=false; if(i<lines.length) page(); }
     y+=gapAfter; };
   const tableOpts=(extra)=>Object.assign({startY:y, margin:{left:PAGE_M.l, right:PAGE_M.r, top:PAGE_M.t+1, bottom:PAGE_M.b+1},
-    styles:{font:'IBMPlexSans', fontSize:8, cellPadding:{top:0.9,bottom:0.9,left:1.2,right:1.2}, textColor:C.ink, lineColor:C.rule, lineWidth:0.2, overflow:'linebreak', valign:'top'},
+    styles:{font:'IBMPlexSans', fontSize:9.3, cellPadding:{top:2,bottom:2,left:2,right:2}, textColor:C.ink, lineColor:C.rule, lineWidth:0.2, overflow:'linebreak', valign:'top'},
     headStyles:{fontStyle:'bold', fillColor:C.head, textColor:C.ink}, footStyles:{fontStyle:'bold', fillColor:C.foot, textColor:C.ink},
-    showHead:'everyPage', showFoot:'lastPage', theme:'grid', rowPageBreak:'avoid'}, extra);
+    alternateRowStyles:{fillColor:C.foot}, showHead:'everyPage', showFoot:'lastPage', theme:'grid', rowPageBreak:'avoid'}, extra);
   const drawMarks=(items,markOf,levelOf)=>{ const d=dims(); for(const it of items){
     doc.setFont('IBMPlexSans','normal'); doc.setFontSize(9); const lines=doc.splitTextToSize(it.text, d.R-d.L-7), h=Math.max(4.6, lines.length*lh(9));
     ensure(h+1.2); const col=C.lv[levelOf(it)]||C.lv.info, cx=d.L+2.1, cy=y+2.1;
@@ -5720,24 +6019,45 @@ async function buildReportPdf(options){
   const svgEl=(str)=>{ const box=document.createElement('div'); box.style.cssText='position:fixed;left:-10000px;top:0;width:10px;height:10px;overflow:hidden'; box.innerHTML=str; document.body.appendChild(box); return {el:box.firstElementChild, done:()=>box.remove()}; };
   let blocksDone=0; const blocksTotal=D.parts.reduce((a,p)=>a+p.blocks.length,0);
   for(let pi=0; pi<D.parts.length; pi++){ const part=D.parts[pi]; title=part.title;
-    if(pi>0 && !fresh){ ensure(30); } if(fresh) secOf[doc.internal.getNumberOfPages()]=title;
-    for(const b of part.blocks){
+    if(pi>0 && !fresh){ const dd=dims(); if(orientOf[doc.internal.getCurrentPageInfo().pageNumber]!=='portrait'||y>dd.T+(dd.B-dd.T)*.45){ orient='portrait'; page('portrait'); }else y+=8; } if(part.id==='title') y=62; if(fresh) secOf[doc.internal.getNumberOfPages()]=title;
+    for(let bi=0;bi<part.blocks.length;bi++){ const b=part.blocks[bi];
+      if(/^h[123]$/.test(b.t)&&part.id!=='title'){ const sz=b.t==='h1'?18:b.t==='h2'?16:12; const reserve=textHeight(b.text,sz,true)+8+firstContentHeight(part.blocks[bi+1],part.blocks,bi+2); if(reserve<dims().B-dims().T)ensure(reserve); }
       const d=dims();
       if(b.t==='pagebreak'){ orient=b.orient||'portrait'; page(orient); }
-      else if(b.t==='h1'){ if(!fresh) y+=3; text(b.text,{size:15,bold:true,gapAfter:2.8,keep:28}); }
-      else if(b.t==='h2'){ if(!fresh) y+=2.5; text(b.text,{size:12.5,bold:true,gapAfter:2.2,keep:26}); }
-      else if(b.t==='h3'){ if(!fresh) y+=2.2; text(b.text,{size:10.5,bold:true,gapAfter:1.6,keep:22}); }
-      else if(b.t==='p'){ text(b.text,{size:b.muted?8.5:9.5, color:b.muted?C.ink2:C.ink, gapAfter:2}); }
+      else if(b.t==='h1'){ if(!fresh) y+=3; text(b.text,{size:part.id==='title'?22:18,bold:part.id!=='title',gapAfter:part.id==='title'?18:5,keep:28}); }
+      else if(b.t==='h2'){ if(!fresh) y+=2.5; text(b.text,{size:16,bold:true,gapAfter:4,keep:26}); }
+      else if(b.t==='h3'){ if(!fresh) y+=2.2; text(b.text,{size:12,bold:true,gapAfter:3,keep:22}); }
+      else if(b.t==='p'){ text(b.text,{size:b.muted?9:10.5, color:b.muted?C.ink2:C.ink, gapAfter:2}); }
       else if(b.t==='kv'){ const two=b.cols===2, body=[]; if(two){ for(let i=0;i<b.rows.length;i+=2){ const a=b.rows[i], c=b.rows[i+1]||['','']; body.push([a[0],a[1],c[0],c[1]]); } } else body.push(...b.rows.map(r=>[r[0],r[1]]));
         const w=d.R-d.L, cs=two?{0:{cellWidth:w*0.27,textColor:C.ink2},1:{cellWidth:w*0.23},2:{cellWidth:w*0.27,textColor:C.ink2},3:{cellWidth:w*0.23}}:{0:{cellWidth:w*0.42,textColor:C.ink2},1:{cellWidth:w*0.58}};
-        ensure(8); doc.autoTable(tableOpts({startY:y, body, theme:'plain', styles:{font:'IBMPlexSans', fontSize:9, cellPadding:{top:0.5,bottom:0.5,left:0,right:3}, textColor:C.ink, overflow:'linebreak'}, columnStyles:cs}));
+        ensure(Math.min(kvHeight(b),dims().B-dims().T)); doc.autoTable(tableOpts({startY:y, body, pageBreak:'avoid', theme:'plain', styles:{font:'IBMPlexSans', fontSize:9, cellPadding:{top:0.5,bottom:0.5,left:0,right:3}, textColor:C.ink, overflow:'linebreak'}, columnStyles:cs}));
         y=doc.lastAutoTable.finalY+2.5; fresh=false; }
       else if(b.t==='table'){ const tw=b.cols.reduce((a,c)=>a+(c.w||1),0), W2=d.R-d.L, cs={};
         b.cols.forEach((c,i)=>cs[i]={cellWidth:W2*(c.w||1)/tw, halign:c.align==='r'?'right':c.align==='c'?'center':'left'});
         let body=b.rows.map(r=>r.map(v=>v==null?'':String(v)));
         if(b.groupBy!=null){ const out=[]; let last; for(const r of body){ if(r[b.groupBy]!==last){ last=r[b.groupBy]; out.push([{content:last, colSpan:b.cols.length, styles:{fontStyle:'bold', fillColor:C.foot}}]); } out.push(r); } body=out; }
-        ensure(14); doc.autoTable(tableOpts({startY:y, head:[b.cols.map(c=>c.title)], body, foot:b.foot||undefined, columnStyles:cs,
-          headStyles:{fontStyle:'bold', fillColor:C.head, textColor:C.ink, halign:'left'}, didParseCell:(h)=>{ if((h.section==='head'||h.section==='foot')&&cs[h.column.index]) h.cell.styles.halign=cs[h.column.index].halign; } }));
+        // Keep the table's note and following explanatory paragraphs with its
+        // last rows. autoTable reserves this measured area on each table page;
+        // the final note uses it after the table, never a lone note-only page.
+        const noteReserve=Math.min((b.note?textHeight(b.note,8)+2.5:0)+followingHeight(part.blocks,bi+1)+3,(d.B-d.T)*.4);
+        ensure(14+noteReserve);
+        const opts=(tableBody,foot)=>tableOpts({startY:y, head:[b.cols.map(c=>c.title)], body:tableBody, foot, columnStyles:cs,
+          margin:{left:PAGE_M.l,right:PAGE_M.r,top:PAGE_M.t+1,bottom:PAGE_M.b+1+noteReserve},
+          headStyles:{fontStyle:'bold', fillColor:C.head, textColor:C.ink, halign:'left'}, didParseCell:(h)=>{ if((h.section==='head'||h.section==='foot')&&cs[h.column.index]) h.cell.styles.halign=cs[h.column.index].halign; } });
+        // Preflight with the same renderer and fonts. Only rebalance the two
+        // ungrouped specification tables when the final page has a short tail.
+        let cut=0;
+        if(b.balanceTail && b.groupBy==null && body.length>8){
+          const probe=new jsPDF({unit:'mm',format:'a4',orientation:orient,compress:true});
+          PDF_FONTS.forEach(([url,fam,sty],i)=>{const f=url.split('/').pop();probe.addFileToVFS(f,fonts[i]);probe.addFont(f,fam,sty);});
+          const pageRows=new Map(), po=opts(body,b.foot||undefined); let oversized=false;
+          po.didDrawCell=h=>{if(h.section==='body'&&h.column.index===0){const n=probe.internal.getCurrentPageInfo().pageNumber;if(!pageRows.has(n))pageRows.set(n,[]);pageRows.get(n).push(h.row.index);if(h.row.spansMultiplePages||h.row.index<0||h.row.height>dims().B-dims().T-noteReserve-15)oversized=true;}};
+          probe.autoTable(po); const groups=[...pageRows.values()];
+          const indexes=groups.flat(); if(new Set(indexes).size!==indexes.length)oversized=true;
+          if(!oversized && groups.length>1){const last=groups[groups.length-1],prev=groups[groups.length-2],first=last[0]; const shift=Math.min(8-last.length,prev.length-4),candidate=first-shift;if(last.length<8 && shift>0 && candidate>0 && candidate<body.length)cut=candidate;}
+        }
+        if(cut){doc.autoTable(opts(body.slice(0,cut),undefined));y=doc.lastAutoTable.finalY+2;fresh=false;page(orient);doc.autoTable(opts(body.slice(cut),b.foot||undefined));}
+        else doc.autoTable(opts(body,b.foot||undefined));
         y=doc.lastAutoTable.finalY+2; fresh=false; if(b.note) text(b.note,{size:8, color:C.ink2, gapAfter:2.5}); }
       else if(b.t==='notes') drawMarks(b.items, it=>LEVEL_MARK[it.level]||'i', it=>it.level);
       else if(b.t==='checklist') drawMarks(b.items, it=>CHECK_MARK[it.state], it=>it.state==='ok'?'ok':it.state==='bad'?'bad':'info');
@@ -5745,28 +6065,43 @@ async function buildReportPdf(options){
           doc.setDrawColor(...C.ink); doc.setLineWidth(0.25); doc.line(L+52, y, L+112, y); doc.line(L+128, y, L+168, y);
           doc.setFontSize(7); doc.setTextColor(...C.ink2); doc.text('подпись', L+52, y+1, {baseline:'top'}); doc.text('дата', L+128, y+1, {baseline:'top'}); y+=4; fresh=false; } }
       else if(b.t==='plan'){
-        page('landscape'); const dd=dims();
-        doc.setFont('IBMPlexSans','bold'); doc.setFontSize(10.5); doc.setTextColor(...C.ink); doc.text(b.caption, dd.L, y, {baseline:'top', maxWidth:dd.R-dd.L-30});
-        if(b.scale){ doc.setFont('IBMPlexSans','normal'); doc.text('М '+b.scale, dd.R, y, {baseline:'top', align:'right'}); }
-        y+=lh(10.5)*(doc.splitTextToSize(b.caption, dd.R-dd.L-30).length)+2;
-        const s=svgEl(b.svg); try{ await doc.svg(s.el, {x:dd.L+(dd.R-dd.L-b.wMm)/2, y, width:b.wMm, height:b.hMm}); } finally{ s.done(); }
-        y+=b.hMm+2;
-        if(b.legend&&b.legend.length){ let x=dd.L; doc.setFont('IBMPlexSans','normal'); doc.setFontSize(7.5);
-          for(const l of b.legend){ const tw2=doc.getTextWidth(l.text)+10.5; if(x+tw2>dd.R){ x=dd.L; y+=5; }
-            const sw=svgEl(l.swatch); try{ await doc.svg(sw.el,{x, y, width:7.4, height:3.7}); } finally{ sw.done(); }
-            doc.setFont('IBMPlexSans','normal'); doc.setFontSize(7.5); doc.setTextColor(...C.ink); doc.text(l.text, x+8.6, y+1.85, {baseline:'middle'}); x+=tw2+3; } }
-        fresh=false; page('portrait'); }
+        page('landscape'); const dd=dims(), sidebar=!!b.sideLegend||!!(b.legend&&b.legend.length&&b.wMm<=214), headerLegend=!sidebar&&!!(b.legend&&b.legend.length===1), planW=sidebar?214:dd.R-dd.L;
+        const heading=b.layer?(LAYER_CAPTION[b.layer]||b.caption):b.caption;
+        doc.setFont('IBMPlexSans','bold'); doc.setFontSize(18); doc.setTextColor(...C.ink);
+        doc.text(heading,dd.L,20,{baseline:'top',maxWidth:dd.R-dd.L});
+        doc.setFont('IBMPlexSans','normal'); doc.setFontSize(8);doc.setTextColor(...C.ink2);
+        const subtitleW=dd.R-dd.L-(headerLegend?83:0);let rn=String(b.roomName||'').replace(/\s+/g,' ').trim();const suffix='М '+b.scale+' · Печатать 100% · Размеры в мм';if(doc.getTextWidth(rn+' · '+suffix)>subtitleW){while(rn&&doc.getTextWidth(rn+'… · '+suffix)>subtitleW)rn=rn.slice(0,-1);rn+='…';}const sub=(rn?rn+' · ':'')+suffix;
+        doc.text(sub,dd.L,29,{baseline:'top',maxWidth:subtitleW}); y=35;
+        const s=svgEl(b.svg); try{ await doc.svg(s.el,{x:dd.L+(planW-b.wMm)/2,y,width:b.wMm,height:b.hMm}); }finally{s.done();}
+        if(b.legend&&b.legend.length){ let x=sidebar?dd.L+planW+5:headerLegend?dd.R-78:dd.L, ly=sidebar?40:headerLegend?28:y+b.hMm+2, rowHeight=0;
+          const limit=sidebar?dd.R-x:dd.R-dd.L;
+          if(sidebar){doc.setFont('IBMPlexSans','bold');doc.setFontSize(8);doc.setTextColor(...C.ink);doc.text('Обозначения',x,ly);ly+=6;}
+          for(const l of b.legend){
+            doc.setFont('IBMPlexSans','normal');doc.setFontSize(7.5);
+            const lines=doc.splitTextToSize(l.text,sidebar?limit-10:70), rowH=Math.max(8,lines.length*3.2+3);
+            if(!sidebar&&!headerLegend&&x+80>dd.R){x=dd.L;ly+=rowHeight;rowHeight=0;}
+            if(ly+rowH>dd.B){ fresh=false;page('landscape'); ly=28;x=sidebar?dd.L+planW+5:dd.L;rowHeight=0;
+              doc.setFont('IBMPlexSans','bold');doc.setFontSize(12);doc.setTextColor(...C.ink);doc.text('Обозначения · продолжение',dd.L,20,{baseline:'top'}); }
+            rowHeight=Math.max(rowHeight,rowH);
+            const sw=svgEl(l.swatch);try{await doc.svg(sw.el,{x,y:ly,width:7.4,height:3.7});}finally{sw.done();}
+            doc.setFont('IBMPlexSans','normal');doc.setFontSize(7.5);doc.setTextColor(...C.ink);doc.text(lines,x+9,ly+0.5,{baseline:'top'});
+            if(sidebar)ly+=rowH;else x+=83;
+          }
+        }
+        fresh=false; orient='portrait'; page('portrait'); }
+
       blocksDone++; onProgress(doc.internal.getNumberOfPages(), Math.max(est, doc.internal.getNumberOfPages()), blocksDone/blocksTotal);
       await new Promise(r=>setTimeout(r,0));
     }
   }
   // последний пустой лист после плана — убрать
   const nP=doc.internal.getNumberOfPages(); if(fresh && nP>1){ doc.deletePage(nP); }
-  const total=doc.internal.getNumberOfPages(), date=D.date.toLocaleDateString('ru-RU');
-  for(let i=1;i<=total;i++){ doc.setPage(i); const o=orientOf[i]||'portrait', P2=PAGE_MM[o], L=PAGE_M.l, R=P2.w-PAGE_M.r;
+  const total=doc.internal.getNumberOfPages(), date=D.dateLabel;
+  for(let i=1;i<=total;i++){ if(i===1) continue; doc.setPage(i); const o=orientOf[i]||'portrait', P2=PAGE_MM[o], L=PAGE_M.l, R=P2.w-PAGE_M.r;
     doc.setDrawColor(...C.rule); doc.setLineWidth(0.2); doc.line(L, 13.4, R, 13.4); doc.line(L, P2.h-11, R, P2.h-11);
     doc.setFont('IBMPlexSans','normal'); doc.setFontSize(7.5); doc.setTextColor(...C.ink2);
-    const t1=D.title, t2=secOf[i]||''; doc.text(t1, L, 12.3, {baseline:'bottom', maxWidth:(R-L)/2}); doc.text(t2, R, 12.3, {baseline:'bottom', align:'right', maxWidth:(R-L)/2-4});
+    const headerFit=(value,width)=>{ let t=String(value).replace(/\s+/g,' ').trim(); if(doc.getTextWidth(t)<=width) return t; while(t&&doc.getTextWidth(t+'…')>width)t=t.slice(0,-1);return t+'…'; };
+    const t1=headerFit(D.title,(R-L)/2), t2=headerFit(secOf[i]||'',(R-L)/2-4); doc.text(t1, L, 12.3, {baseline:'bottom'}); doc.text(t2, R, 12.3, {baseline:'bottom', align:'right'});
     doc.text(date, L, P2.h-9.8, {baseline:'top'}); doc.text('Расчёт ориентировочный', (L+R)/2, P2.h-9.8, {baseline:'top', align:'center'}); doc.text(`Лист ${i} из ${total}`, R, P2.h-9.8, {baseline:'top', align:'right'}); }
   doc.setProperties({title:'Задание на оборудование кухни трапезной — '+D.title, subject:'Задание на кухню трапезной', creator:'Кухня трапезной'});
   onProgress(total,total,1);
@@ -5806,13 +6141,13 @@ const REPORT_UI_CSS=`
 `;
 (function(){ const st=document.createElement('style'); st.textContent=REPORT_CSS+REPORT_UI_CSS; document.head.appendChild(st); })();
 
-// скачивание: возможность downloads; без неё кнопка неактивна
+// Claude downloads при наличии; в обычном браузере — скачивание Blob через ссылку.
 let repDl=null, repDlState='wait';
-(function(){ const c=window.claude; if(!c||typeof c.use!=='function'){ repDlState='none'; return; }
-  c.use('downloads').then(d=>{ repDl=d; repDlState=d?'ok':'none'; updRepDl(); }).catch(()=>{ repDlState='none'; updRepDl(); }); })();
-function updRepDl(){ document.querySelectorAll('[data-rep-dl]').forEach(b=>{ b.disabled=repDlState!=='ok'||repBusy;
-  b.title = repDlState==='ok' ? 'Скачать задание в PDF' : repDlState==='wait' ? 'Проверяю, можно ли скачивать…' : 'Скачивание недоступно в этом просмотре'; });
-  document.querySelectorAll('.rep-dl-hint').forEach(h=>{ h.textContent = repDlState==='ok' ? '' : repDlState==='wait' ? 'Проверяю, можно ли скачивать…' : 'Скачивание недоступно в этом просмотре — предпросмотр работает.'; h.hidden=repDlState==='ok'; }); }
+(function(){ const c=window.claude; if(!c||typeof c.use!=='function'){ repDlState='browser'; return; }
+  c.use('downloads').then(d=>{ repDl=d; repDlState=d&&typeof d.save==='function'?'ok':'browser'; if(repDlState==='browser') repDl=null; updRepDl(); }).catch(()=>{ repDlState='browser'; updRepDl(); }); })();
+function updRepDl(){ document.querySelectorAll('[data-rep-dl]').forEach(b=>{ b.disabled=repDlState==='wait'||repBusy;
+  b.title = repDlState==='wait' ? 'Проверяю, можно ли скачивать…' : 'Скачать задание в PDF'; });
+  document.querySelectorAll('.rep-dl-hint').forEach(h=>{ h.textContent = repDlState==='wait' ? 'Проверяю, можно ли скачивать…' : ''; h.hidden=repDlState!=='wait'; }); }
 let repBusy=false, repPagesEst=0;
 function repEstimate(){ const host=document.createElement('div'); host.className='rep-measure'+(reportState().mono?' rp-mono':''); document.body.appendChild(host);
   try{ const D=buildReportDoc(); return paginateHtml(D, host).length; } finally{ host.remove(); } }
@@ -5831,6 +6166,8 @@ function openReport(){
     <fieldset><legend>Титульный лист</legend><div class="fields">
       <label class="field"><span>Приход или монастырь</span><input type="text" data-meta="parish" value="${esc(m.parish)}" placeholder="Например, храм Покрова Пресвятой Богородицы"></label>
       <label class="field"><span>Адрес</span><input type="text" data-meta="address" value="${esc(m.address)}"></label>
+      <label class="field"><span>Редакция проекта</span><input type="text" data-meta="revision" value="${esc(m.revision||'')}" maxlength="40"></label>
+      <label class="field"><span>Дата проекта (необязательно)</span><input type="date" data-meta="date" value="${esc(m.date||'')}"></label>
       <label class="field"><span>Составитель</span><input type="text" data-meta="author" value="${esc(m.author)}"></label>
       <label class="field"><span>Контакт</span><input type="text" data-meta="contact" value="${esc(m.contact)}" placeholder="Телефон или почта"></label>
       <label class="field" style="grid-column:1/-1"><span>Примечание</span><input type="text" data-meta="note" value="${esc(m.note)}"></label></div></fieldset>
@@ -5841,7 +6178,7 @@ function openReport(){
     <div class="rep-count" id="rep-count">Считаю листы…</div>
     <div class="rep-btns"><button class="btn tap" type="button" id="rep-prev-btn">Предпросмотр</button><button class="btn primary tap" type="button" data-rep-dl id="rep-dl">Скачать PDF</button><span class="rep-dl-hint rep-hint"></span></div>
     <div class="rep-prog" id="rep-prog" aria-live="polite"></div></div>`;
-  document.body.appendChild(ov); updRepDl();
+  rememberModalFocus(ov); document.body.appendChild(ov); updRepDl();
   const dlg=ov.querySelector('.rep-dlg');
   const recount=()=>{ const el=document.getElementById('rep-count'); el.textContent='Считаю листы…'; setTimeout(()=>{ try{ repPagesEst=repEstimate(); el.textContent=`Получится примерно ${repPagesEst} ${plural(repPagesEst,'лист','листа','листов')} A4`; }catch(e){ el.textContent='Не удалось посчитать листы: '+e.message; console.error(e); } }, 30); };
   ov.addEventListener('click',e=>{ if(e.target===ov) closeReport(); });
@@ -5854,17 +6191,27 @@ function openReport(){
   document.getElementById('rep-mono').addEventListener('change',e=>{ r.mono=e.target.checked; touch(); recount(); });
   document.getElementById('rep-prev-btn').addEventListener('click',openPreview);
   document.getElementById('rep-dl').addEventListener('click',downloadReport);
-  recount(); setTimeout(()=>document.getElementById('rep-close').focus(),0);
+  recount(); setTimeout(()=>{ const b=document.getElementById('rep-close'); if(b&&!document.getElementById('rep-prev')) b.focus(); },0);
 }
-function closeReport(){ const o=document.getElementById('rep-ov'); if(o) o.remove(); }
+function closeReport(){ removeModal(document.getElementById('rep-ov')); }
 function setProg(t){ const p=document.getElementById('rep-prog'); if(p) p.textContent=t; const q=document.getElementById('rep-prev-prog'); if(q) q.textContent=t; }
+function downloadBrowserPdf(blob, filename){
+  const url=URL.createObjectURL(blob), link=document.createElement('a');
+  link.href=url; link.download=filename; link.hidden=true; document.body.appendChild(link);
+  try{ link.click(); }
+  finally{ link.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); }
+}
 async function downloadReport(){
-  if(repBusy || !repDl) return; repBusy=true; updRepDl();
+  if(repBusy || repDlState==='wait') return; repBusy=true; updRepDl();
   try{
     setProg('Загружаю библиотеки и шрифты…');
     const blob=await buildReportPdf({estimate:repPagesEst, onProgress:(n,m)=>setProg(`Собираю лист ${n} из ${m}`)});
-    setProg('Файл готов — подтвердите сохранение');
-    try{ await repDl.save({filename:reportFileName(), data:blob}); setProg('Сохранено'); toast('Задание сохранено в PDF'); }
+    setProg(repDl?'Файл готов — подтвердите сохранение':'Скачиваю PDF…');
+    try{
+      const filename=reportFileName();
+      if(repDl){ await repDl.save({filename, data:blob}); setProg('Сохранено'); toast('Задание сохранено в PDF'); }
+      else { downloadBrowserPdf(blob,filename); setProg('Скачивание PDF начато'); toast('Скачивание PDF начато'); }
+    }
     catch(e){ const c=e&&e.code;
       if(c==='declined') setProg('');
       else if(c==='rate_limited') setProg('Окно сохранения уже открыто или запросов слишком много — подождите и повторите.');
@@ -5878,11 +6225,11 @@ function openPreview(){
   const pv=document.createElement('div'); pv.className='rep-prev'; pv.id='rep-prev'; pv.setAttribute('role','dialog'); pv.setAttribute('aria-modal','true'); pv.setAttribute('aria-label','Предпросмотр задания');
   pv.innerHTML=`<div class="rep-prev-bar"><button class="btn tap" type="button" id="rep-prev-close">← Закрыть</button><span class="grow" id="rep-prev-info">Собираю предпросмотр…</span><span class="rep-prog" id="rep-prev-prog"></span><button class="btn primary tap" type="button" data-rep-dl id="rep-prev-dl">Скачать PDF</button></div>
     <div class="rep-prev-scroll" id="rep-prev-scroll"></div>`;
-  document.body.appendChild(pv); updRepDl();
+  rememberModalFocus(pv); document.body.appendChild(pv); updRepDl(); document.getElementById('rep-prev-close').focus();
   document.getElementById('rep-prev-close').addEventListener('click',closePreview);
   document.getElementById('rep-prev-dl').addEventListener('click',downloadReport);
   pv.addEventListener('keydown',e=>{ if(e.key==='Escape') closePreview(); });
-  setTimeout(()=>{ const sc=document.getElementById('rep-prev-scroll'); if(!sc) return;
+  setTimeout(async()=>{ try{await loadPdfFonts();}catch(e){const info=document.getElementById('rep-prev-info');if(info)info.textContent='Не удалось загрузить шрифты предпросмотра: '+e.message;return;} const sc=document.getElementById('rep-prev-scroll'); if(!sc) return;
     const host=document.createElement('div'); host.className='rep-measure'+(r.mono?' rp-mono':''); document.body.appendChild(host);
     let pages; try{ pages=paginateHtml(buildReportDoc(), host); } catch(e){ console.error(e); document.getElementById('rep-prev-info').textContent='Не удалось собрать предпросмотр: '+e.message; host.remove(); return; }
     const avail=sc.clientWidth-32;
@@ -5893,7 +6240,7 @@ function openPreview(){
     document.getElementById('rep-prev-info').textContent=`${pages.length} ${plural(pages.length,'лист','листа','листов')} · так примерно будет выглядеть PDF`;
     document.getElementById('rep-prev-close').focus(); }, 30);
 }
-function closePreview(){ const p=document.getElementById('rep-prev'); if(p) p.remove(); }
+function closePreview(){ removeModal(document.getElementById('rep-prev')); }
 // кнопка в шапке и на шаге «Смета»
 (function(){ const g=document.querySelector('nav.steps .undo'); if(!g) return;
   const b=document.createElement('button'); b.type='button'; b.className='btn small'; b.id='rep-open'; b.title='Задание на кухню в PDF'; b.setAttribute('aria-label','Задание на кухню в PDF');
@@ -5976,51 +6323,109 @@ function safeName(t){ return String(t||'Проект').replace(/[\\/:*?"<>|\u000
 let otherTabChange=false;
 function updSaveState(){ const el=document.getElementById('save-state'); if(!el) return;
   if(!S.pid){ el.textContent=''; el.className='save-state'; }
+  else if(saveInfo.err==='pending'){ el.textContent='Сохранение…'; el.className='save-state'; }
   else if(!saveInfo.ok){ el.textContent='Не сохранено'; el.className='save-state bad'; }
   else el.textContent=saveInfo.at?`Сохранено в этом браузере · ${saveInfo.at.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}`:'Сохранено в этом браузере', el.className='save-state';
   updStoreBar(); }
 function updStoreBar(){ const bar=document.getElementById('store-bar'); if(!bar) return; let h='';
-  if(S.pid && !saveInfo.ok) h+= saveInfo.err==='quota'
+  if(S.pid && !saveInfo.ok && saveInfo.err!=='pending') h+= saveInfo.err==='locks'
+    ? `<div role="alert"><span>Безопасное сохранение недоступно: браузер не поддерживает блокировки. Скачайте проект файлом.</span><button class="btn small tap" type="button" data-proj="download">Скачать файл</button></div>`
+    : saveInfo.err==='conflict'
+    ? `<div role="alert"><span>Проект изменён в другой вкладке. Перезапись заблокирована; ваши правки остаются в памяти. Скачайте их файлом.</span><button class="btn small tap" type="button" data-proj="download">Скачать файл</button></div>`
+    : saveInfo.err==='quota'
     ? `<div role="alert"><span>Не удалось сохранить: в браузере закончилось место. Скачайте проект файлом и удалите ненужные.</span><button class="btn small tap" type="button" data-proj="download">Скачать файл</button><button class="btn small tap" type="button" data-proj="list">Мои проекты</button></div>`
     : `<div role="alert"><span>Не удалось сохранить проект в этом браузере. Скачайте его файлом, чтобы не потерять.</span><button class="btn small tap" type="button" data-proj="download">Скачать файл</button></div>`;
+  if(S.pid && !saveInfo.ok && saveInfo.err!=='pending') h+=`<button class="btn small tap" type="button" id="pj-save-retry">Повторить сохранение</button>`;
   if(otherTabChange) h+=`<div class="info" role="status"><span>Проект изменён в другой вкладке.</span><button class="btn small tap" type="button" id="pj-reload">Загрузить ту версию</button><button class="btn small tap" type="button" id="pj-reload-no">Оставить эту</button></div>`;
   bar.innerHTML=h; bar.hidden=!h;
-  const r=document.getElementById('pj-reload'); r&&r.addEventListener('click',()=>{ otherTabChange=false; const d=STORE.load(S.pid); if(d) openProjectData(d,{keepStep:true, msg:'Загружена версия из другой вкладки'}); else updStoreBar(); });
+  const retry=document.getElementById('pj-save-retry'); retry&&retry.addEventListener('click',()=>save());
+  const r=document.getElementById('pj-reload'); r&&r.addEventListener('click',()=>{ otherTabChange=false; const raw=STORE.raw(S.pid), d=raw&&JSON.parse(raw); if(d) openProjectData(d,{expectedRaw:raw,keepStep:true, msg:'Загружена версия из другой вкладки'}); else updStoreBar(); });
   const n=document.getElementById('pj-reload-no'); n&&n.addEventListener('click',()=>{ otherTabChange=false; updStoreBar(); }); }
 window.addEventListener('storage',e=>{ if(!S.pid) return;
-  if(e.key===STORE.PK+S.pid && e.newValue && e.newValue!==e.oldValue){ otherTabChange=true; updStoreBar(); }
+  if((e.key===STORE.PK+S.pid || e.key===null) && e.newValue!==savedRaw){ otherTabChange=true; updStoreBar(); }
   if(e.key===STORE.IX && document.getElementById('pj-screen')) renderProjects(); });
 
 /* ---- открыть проект ---- */
 function resetUiState(){ planRebuilt=false; sel=null; selRoom=null; addMode=null; editUid=null; draft=null; confirmRoomDel=false; rpOpen=false; confirmArrange=false; otherTabChange=false; }
-function openProjectData(data, opts){
-  opts=opts||{}; const m=migrate(data); if(!m) throw new Error('bad');
-  ensureIds(m, opts.id); S=m; resetUiState();
-  undoStack=[]; redoStack=[]; lastPush=0;   // история отмены — у каждого проекта своя
+async function leaveProject(next, intent){
+  const original=S, epoch=projectEpoch;
+  let ok=!S.pid || await save();
+  if(intent!==transitionIntent || S!==original || epoch!==projectEpoch) return;
+  // Пока lock был занят, пользователь мог продолжить редактирование.
+  while(!ok && saveInfo.err==='dirty'){
+    ok=await save();
+    if(intent!==transitionIntent || S!==original || epoch!==projectEpoch) return;
+  }
+  if(ok){ return next(); }
+  const conflict=saveInfo.err==='conflict';
+  const ov=pjDialog(`<h3>Проект не сохранён</h3><p class="bad">${conflict?'Проект изменён в другой вкладке. Перезапись заблокирована.':'Не удалось сохранить текущий проект в браузере.'} Данные и история изменений остаются открытыми.</p><p class="note">Уход без сохранения удалит текущие несохранённые правки из памяти.</p><div class="btns"><button class="btn primary" id="pj-leave-retry">Повторить сохранение</button><button class="btn" id="pj-leave-cancel">Остаться</button><button class="btn danger" id="pj-leave-discard">Уйти без сохранения</button></div>`);
+  ov.querySelector('#pj-leave-cancel').onclick=()=>{ transitionIntent++; closePjDialog(); };
+  ov.querySelector('#pj-leave-retry').onclick=()=>{ closePjDialog(); leaveProject(next,intent); };
+  ov.querySelector('#pj-leave-discard').onclick=()=>{ closePjDialog(); if(intent===transitionIntent&&S===original&&epoch===projectEpoch) next(); };
+}
+async function openProjectData(data, opts){
+  opts=opts||{}; const intent=opts.intent||++transitionIntent;
+  if(!opts.leaveChecked){ const replacingCurrent=opts.persist && data.pid===S.pid && opts.expectedRaw===savedRaw;
+    return leaveProject(()=>openProjectData(data,{...opts,...(replacingCurrent?{expectedRaw:savedRaw}:{}),leaveChecked:true,intent}),intent); }
+  if(intent!==transitionIntent) return;
+  const prior=S, epoch=projectEpoch, beforeTarget=snap();
+  // Открываем актуальную версию, если целевой проект изменился пока мы
+  // ждали сохранения текущего. Старая строка не может считаться сохранённой.
+  if(!opts.persist && Object.prototype.hasOwnProperty.call(opts,'expectedRaw')){
+    const latest=STORE.raw(opts.id||data.pid);
+    if(latest!==opts.expectedRaw){
+      try { data=latest&&JSON.parse(latest); if(!data) throw new Error('missing'); }
+      catch(e){ toast('Проект изменён или удалён в другой вкладке; открыть его не удалось'); return; }
+      opts={...opts,expectedRaw:latest};
+    }
+  }
+  let m; try{ m=migrate(data); }catch(e){}
+  if(!m){ toast('Не удалось открыть проект'); return; } ensureIds(m,opts.id);
+  let targetRaw=Object.prototype.hasOwnProperty.call(opts,'expectedRaw')?opts.expectedRaw:STORE.raw(m.pid);
+  if(opts.persist){
+    m.updatedAt=new Date().toISOString();
+    const result=await STORE.save(m.pid,m,{name:m.name,org:(m.report&&m.report.meta&&m.report.meta.parish)||'',people:m.people,createdAt:m.createdAt,updatedAt:m.updatedAt,variantOf:m.variantOf||null},targetRaw,()=>intent===transitionIntent&&S===prior&&projectEpoch===epoch&&snap()===beforeTarget);
+    if(intent!==transitionIntent||S!==prior||epoch!==projectEpoch) return;
+    if(result.error==='cancelled' && snap()!==beforeTarget) return leaveProject(()=>openProjectData(data,{...opts,expectedRaw:targetRaw,leaveChecked:true,intent}),intent);
+    if(!result.ok){
+      if(result.written!==undefined) targetRaw=result.written;
+      const ov=pjDialog(`<h3>Не удалось сохранить открываемый проект</h3><p class="bad">${result.error==='conflict'?'Проект изменён в другой вкладке. Перезапись заблокирована.':result.error==='locks'?'Безопасное сохранение недоступно в этом браузере.':'Ошибка записи в браузере.'} Текущий проект и история остаются открытыми.</p><div class="btns"><button class="btn" id="pj-target-retry">Повторить сохранение</button><button class="btn" id="pj-target-cancel">Остаться</button></div>`);
+      ov.querySelector('#pj-target-retry').onclick=()=>{ closePjDialog(); openProjectData(data,{...opts,expectedRaw:targetRaw,intent}); };
+      ov.querySelector('#pj-target-cancel').onclick=()=>{ transitionIntent++; closePjDialog(); };
+      return;
+    }
+    targetRaw=result.written;
+    // Не переключаться, если при ожидании записи нового проекта старый снова изменили.
+    if(snap()!==beforeTarget){
+      return leaveProject(()=>openProjectData(data,{...opts,expectedRaw:targetRaw,leaveChecked:true,intent}),intent);
+    }
+  }
+  savedRaw=targetRaw; S=m; projectEpoch++; resetUiState();
+  undoStack=[]; redoStack=[]; lastPush=0;
   if(!opts.keepStep) step=0;
   render(); lastSnap=snap(); updUndo();
-  if(opts.persist){ save(); } else { STORE.setLast(S.pid); const u=S.updatedAt?new Date(S.updatedAt):null; saveInfo={ok:true, at:u&&!isNaN(u)?u:null, err:null}; updSaveState(); }
-  closeProjects(); window.scrollTo({top:0}); if(opts.msg) toast(opts.msg);
+  { STORE.setLast(S.pid); const u=S.updatedAt?new Date(S.updatedAt):null; saveInfo={ok:true,at:u&&!isNaN(u)?u:null,err:null}; updSaveState(); }
+  closeProjects(false); window.scrollTo({top:0}); if(opts.msg) toast(opts.msg);
 }
-function openProjectId(id){ const d=STORE.load(id); if(!d){ toast('Проект не найден в этом браузере'); renderProjects(); return; }
-  if(S.pid && S.pid!==id) save(); try{ openProjectData(d,{id, msg:`Открыт проект «${d.name||'Без названия'}»`}); }catch(e){ toast('Не удалось открыть проект'); } }
+function openProjectId(id){ const raw=STORE.raw(id); let d; try{ d=raw&&JSON.parse(raw); }catch(e){} if(!d){ toast('Проект не найден в этом браузере'); renderProjects(); return; }
+  try{ return openProjectData(d,{id, expectedRaw:raw, msg:`Открыт проект «${d.name||'Без названия'}»`}); }catch(e){ toast('Не удалось открыть проект'); } }
 function blankProject(name, people){
   const o=exampleData();
   Object.assign(o,{example:false, name:name||'Новая трапезная', people:Math.max(1,Math.round(people||40)), pid:'', createdAt:'', updatedAt:'', variantOf:null,
     heat:heatRecommend(Math.max(1,Math.round(people||40))), rooms:[{id:'r1', name:'Кухня', x:0, y:0, w:6, d:4, roles:ROLES.map(r=>r[0]), openings:[], points:[]}],
     cur:'r1', unitRoom:{}, links:[], res:{kw:null, ph:3, max:null, phMax:3, fit:false}, gas:{on:false, src:'main'},
-    report:{meta:{parish:'', address:'', author:'', contact:'', note:''}, preset:'full', sections:{}, mono:false},
+    report:{meta:{parish:'', address:'', author:'', contact:'', note:'', revision:'', date:''}, preset:'full', sections:{}, mono:false},
     existing:[], manual:null, prices:{}, layout:{}, inserts:[], layoutManual:false, layoutSig:'', utilities:'existing', nets:{water:'unk', sewer:'unk', vent:'unk', el:'unk', gas:'unk'}});   // новый чистый проект: наличие сетей пока неизвестно
   return o; }
-function createProject(data, msg){ if(S.pid) save(); data.pid=newPid(); data.createdAt=new Date().toISOString(); data.variantOf=data.variantOf||null;
-  openProjectData(data,{persist:true, msg}); }
+function createProject(data, msg){ data.pid=newPid(); data.createdAt=new Date().toISOString(); data.variantOf=data.variantOf||null;
+  return openProjectData(data,{persist:true, msg, expectedRaw:null}); }
 function nextVariantName(base){ const names=new Set(STORE.list().map(x=>x.name)); const root=base.replace(/ — вариант [А-Я]$/,'');
   for(const L of 'БВГДЕЖЗИКЛМНОПРСТУФХЦЧШЭЮЯ'){ const n=`${root} — вариант ${L}`; if(!names.has(n)) return {name:n, letter:L}; } return {name:root+' — вариант', letter:''}; }
 function makeVariant(id){
-  id=id||S.pid; if(!id) return; if(S.pid) save();
+  id=id||S.pid; if(!id) return;
   const src=id===S.pid?JSON.parse(JSON.stringify(S)):STORE.load(id); if(!src){ toast('Проект не найден'); return; }
   const v=nextVariantName(src.name||'Проект'); src.name=v.name; src.variantOf=id; src.example=false;
-  createProject(src, `Открыт вариант ${v.letter}, исходный проект сохранён`); }
+  return createProject(src, `Открыт вариант ${v.letter}, создан отдельный проект`); }
 
 /* ---- файл проекта ---- */
 let dlP=null; function getDl(){ const c=window.claude; if(!c||typeof c.use!=='function') return Promise.resolve(null); if(!dlP) dlP=c.use('downloads').catch(()=>null); return dlP; }
@@ -6036,11 +6441,31 @@ async function downloadProject(id){
     if(c==='rate_limited') toast('Окно сохранения уже открыто или запросов слишком много — подождите и повторите');
     else if(c==='unavailable'||c==='not_granted'||c==='capability_disabled'||c==='capability_removed') showJsonFallback(text, name);
     else toast('Не удалось сохранить файл: '+((e&&e.message)||c||'неизвестная ошибка')); } }
+// Общий клавиатурный контур для всех модальных окон, включая вложенный предпросмотр.
+function modalFocusables(dialog){
+  return [...dialog.querySelectorAll('button,input,select,textarea,a[href],summary,[tabindex]')]
+    .filter(el=>!el.disabled&&el.tabIndex>=0&&el.getClientRects().length&&!el.closest('[hidden],[inert]'));
+}
+window.addEventListener('keydown',e=>{
+  if(e.key!=='Tab') return;
+  const dialogs=[...document.querySelectorAll('[role="dialog"][aria-modal="true"]')].filter(el=>el.getClientRects().length);
+  const dialog=dialogs[dialogs.length-1]; if(!dialog) return;
+  const f=modalFocusables(dialog), i=f.indexOf(document.activeElement);
+  e.preventDefault(); e.stopImmediatePropagation();
+  if(!f.length){ dialog.tabIndex=-1; dialog.focus(); return; }
+  f[i<0?(e.shiftKey?f.length-1:0):(i+(e.shiftKey?-1:1)+f.length)%f.length].focus();
+},true);
+function rememberModalFocus(overlay){ overlay.returnFocus=document.activeElement; }
+function removeModal(overlay){
+  if(!overlay) return;
+  const back=overlay.returnFocus; overlay.remove();
+  if(back&&back.isConnected) back.focus({preventScroll:true});
+}
 function pjDialog(html){ closePjDialog(); const ov=document.createElement('div'); ov.className='pj-ov'; ov.id='pj-ov';
-  ov.innerHTML=`<div class="pj-dlg" role="dialog" aria-modal="true">${html}</div>`; document.body.appendChild(ov);
+  ov.innerHTML=`<div class="pj-dlg" role="dialog" aria-modal="true">${html}</div>`; rememberModalFocus(ov); document.body.appendChild(ov);
   ov.addEventListener('click',e=>{ if(e.target===ov) closePjDialog(); }); ov.addEventListener('keydown',e=>{ if(e.key==='Escape') closePjDialog(); });
-  setTimeout(()=>{ const f=ov.querySelector('[autofocus],button'); f&&f.focus(); },0); return ov; }
-function closePjDialog(){ const o=document.getElementById('pj-ov'); if(o) o.remove(); }
+  setTimeout(()=>{ const f=ov.isConnected&&ov.querySelector('[autofocus],button'); f&&f.focus(); },0); return ov; }
+function closePjDialog(){ removeModal(document.getElementById('pj-ov')); }
 function showJsonFallback(text, name){
   const ov=pjDialog(`<h3>Файл проекта</h3><p class="note">Скачивание недоступно в этом просмотре — скопируйте текст и сохраните его в файл .json, например «${esc(name)}».</p>
     <textarea readonly id="pj-json" aria-label="Текст файла проекта">${esc(text)}</textarea>
@@ -6114,18 +6539,108 @@ function sanitizeProject(d){
   if(!pos(d.people)){ d.people=defaults.people; messages.push('Восстановлено количество людей'); }
   return messages;
 }
+// Проверяем файл до миграции и пробного рендера: неверные типы нельзя молча исправлять.
+function validateProjectImport(o){
+  const obj=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
+  const fail=path=>{ throw new Error('Неверная структура или тип поля: '+path); };
+  const walk=(v,path)=>{
+    if(Array.isArray(v)){ v.forEach((x,i)=>walk(x,path+'['+i+']')); return; }
+    if(!obj(v)) return;
+    for(const [k,x] of Object.entries(v)){
+      if(['__proto__','prototype','constructor'].includes(k)) fail(path+'.'+k);
+      if(['id','pid','uid','cur','variantOf'].includes(k)&&x!==null){
+        if(typeof x!=='string'||(x!==''&&!/^[A-Za-z0-9_-]{1,128}$/.test(x))) fail(path+'.'+k);
+      }
+      if(['name','n','note','model'].includes(k)&&typeof x!=='string') fail(path+'.'+k);
+      walk(x,path+'.'+k);
+    }
+  };
+  if(!obj(o)) fail('project');
+  walk(o,'project');
+  if(o.v!==1&&o.v!==2) fail('v');
+  if(typeof o.name!=='string'||!Number.isFinite(o.people)||o.people<=0) fail('name / people');
+  // Типы известных полей, включая вложенные настройки; отсутствующие поля старых версий мигрируются.
+  const match=(v,base,path)=>{
+    if(v===undefined) return;
+    if(base===null) return;
+    if(v===null&&['res.kw','res.ph','res.max','res.phMax'].includes(path)) return;
+    if(Array.isArray(base)){ if(!Array.isArray(v)) fail(path); return; }
+    if(obj(base)){
+      if(!obj(v)) fail(path);
+      for(const k of Object.keys(base)) if(Object.prototype.hasOwnProperty.call(v,k)) match(v[k],base[k],path+'.'+k);
+    }else if(typeof v!==typeof base||(typeof v==='number'&&!Number.isFinite(v))) fail(path);
+  };
+  if(o.v===2){
+    const base=exampleData();
+    for(const k of Object.keys(base)) if(!['rooms','room'].includes(k)&&Object.prototype.hasOwnProperty.call(o,k)) match(o[k],base[k],k);
+  }
+  // До миграции проверяем и старое одиночное помещение: migrate иначе
+  // преобразует/ограничивает неверные значения, скрывая ошибку файла.
+  if(o.room!==undefined&&o.room!==null){
+    if(!obj(o.room)) fail('room');
+    for(const k of ['w','d']) if(!Number.isFinite(o.room[k])||o.room[k]<=0) fail('room.'+k);
+    for(const k of ['doorX','doorW']) if(o.room[k]!==undefined&&!Number.isFinite(o.room[k])) fail('room.'+k);
+  }
+  if(o.v===1){
+    if(o.meals!==undefined&&!Number.isFinite(o.meals)) fail('meals');
+    if(o.res!==undefined){
+      if(!obj(o.res)) fail('res');
+      for(const k of ['kw','ph','max','phMax']) if(o.res[k]!==undefined&&o.res[k]!==null&&!Number.isFinite(o.res[k])) fail('res.'+k);
+    }
+    if(o.existing!==undefined){
+      if(!Array.isArray(o.existing)) fail('existing');
+      for(const e of o.existing){
+        if(!obj(e)) fail('existing');
+        if(e.cat!==undefined&&typeof e.cat!=='string') fail('existing.cat');
+        if(e.qty!==undefined&&!Number.isFinite(e.qty)) fail('existing.qty');
+        if(e.custom!==undefined){
+          if(!obj(e.custom)) fail('existing.custom');
+          for(const k of ['w','d','h','kw','ph']) if(e.custom[k]!==undefined&&!Number.isFinite(e.custom[k])) fail('existing.custom.'+k);
+          for(const k of ['noPlan','hot','wat']) if(e.custom[k]!==undefined&&typeof e.custom[k]!=='boolean') fail('existing.custom.'+k);
+        }
+      }
+    }
+  }
+  if(o.edits && typeof o.edits==='object' && !Array.isArray(o.edits)) for(const k of ['qtySemantics','qtyMigration']) if(Object.prototype.hasOwnProperty.call(o.edits,k) && typeof o.edits[k]!=='string') fail('edits.'+k);
+  if(o.rooms!==undefined&&o.rooms!==null){
+    if(!Array.isArray(o.rooms)||!o.rooms.length) fail('rooms');
+    for(const r of o.rooms){
+      if(!obj(r)||!Number.isFinite(r.w)||r.w<=0||!Number.isFinite(r.d)||r.d<=0) fail('rooms');
+      for(const k of ['x','y']) if(r[k]!==undefined&&!Number.isFinite(r[k])) fail('rooms.'+k);
+      for(const k of ['roles','openings','points','obstacles','poly']) if(r[k]!==undefined&&!Array.isArray(r[k])) fail('rooms.'+k);
+      if(r.roles&&!r.roles.every(x=>typeof x==='string')) fail('rooms.roles');
+      for(const k of ['openings','points','obstacles','poly']) if(r[k]&&!r[k].every(obj)) fail('rooms.'+k);
+    }
+  }else if(!obj(o.room)&&o.v===2) fail('rooms / room');
+  for(const k of ['existing','inserts','extras']) if(o[k]!==undefined&&(!Array.isArray(o[k])||!o[k].every(obj))) fail(k);
+  if(o.v===2&&o.existing) for(const e of o.existing){
+    if(typeof e.n!=='string'||!Number.isFinite(e.qty)||e.qty<0) fail('existing');
+    for(const k of ['w','d','h','kw','ph']) if(e[k]!==undefined&&!Number.isFinite(e[k])) fail('existing.'+k);
+    for(const k of ['cap','gkw']) if(e[k]!==undefined&&e[k]!==null&&!Number.isFinite(e[k])) fail('existing.'+k);
+    for(const k of ['hot','wat','gas']) if(e[k]!==undefined&&typeof e[k]!=='boolean') fail('existing.'+k);
+  }
+  if(o.prices&&(!obj(o.prices)||!Object.values(o.prices).every(Number.isFinite))) fail('prices');
+  for(const k of ['unitRoom','layoutRoom']) if(o[k]&&(!obj(o[k])||!Object.values(o[k]).every(x=>typeof x==='string'))) fail(k);
+  if(o.report&&o.report.meta!==undefined){ if(!obj(o.report.meta)) fail('report.meta'); for(const k of ['parish','address','author','contact','note','date','revision']) if(o.report.meta[k]!==undefined&&typeof o.report.meta[k]!=='string') fail('report.meta.'+k); }
+  if(o.report&&o.report.sections&&(!obj(o.report.sections)||!Object.values(o.report.sections).every(x=>typeof x==='boolean'))) fail('report.sections');
+  if(o.manual!==undefined&&o.manual!==null&&(!Array.isArray(o.manual)||!o.manual.every(x=>obj(x)&&typeof x.cat==='string'&&Number.isFinite(x.qty)))) fail('manual');
+  for(const k of ['kw','ph','max','phMax']) if(o.res&&o.res[k]!==undefined&&o.res[k]!==null&&!Number.isFinite(o.res[k])) fail('res.'+k);
+  if(o.links!==undefined&&(!Array.isArray(o.links)||!o.links.every(x=>Array.isArray(x)&&x.length===2&&x.every(id=>typeof id==='string'&&/^[A-Za-z0-9_-]{1,128}$/.test(id))))) fail('links');
+  for(const k of ['layout','unitRoom','layoutRoom','unitEdits','report','heat','norms','feats','res','gas','edits','prices','nets']) if(o[k]!==undefined&&!obj(o[k])) fail(k);
+}
 function parseProjectText(text){
   let o; try{ o=JSON.parse(text); }catch(e){ return {error:NOT_PROJECT}; }
   if(!o||typeof o!=='object') return {error:NOT_PROJECT};
   let raw=o, newer=false;
-  if(o.app===PJ_APP){ if(!(+o.format>=1)) return {error:NOT_PROJECT}; newer=+o.format>PJ_FORMAT; raw=o.project; if(!raw||typeof raw!=='object') return {error:NOT_PROJECT}; }
+  if(o.app===PJ_APP){ if(!Number.isInteger(o.format)||o.format<1) return {error:NOT_PROJECT}; newer=+o.format>PJ_FORMAT; raw=o.project; if(!raw||typeof raw!=='object') return {error:NOT_PROJECT}; }
   else if(!(o.v===1||o.v===2)) return {error:NOT_PROJECT};
   if(raw.v===2 && !Array.isArray(raw.rooms) && !raw.room) return {error:NOT_PROJECT};
   if(raw.v===1 && !raw.room && !raw.people) return {error:NOT_PROJECT};
+  try{ validateProjectImport(raw); }catch(e){ return {error:'Файл проекта повреждён: '+e.message}; }
   let m, messages=[];
   try{ m=migrate(JSON.parse(JSON.stringify(raw))); }
   catch(e){
-    try{ const clean=JSON.parse(JSON.stringify(raw)); messages=sanitizeProject(clean); m=migrate(clean); }catch(e){ m=null; }
+    return {error:'Файл проекта повреждён: неверная структура данных'};
   }
   if(!m) return {error: newer?'Файл сохранён более новой версией приложения, и открыть его не получилось':NOT_PROJECT};
   try{
@@ -6133,7 +6648,9 @@ function parseProjectText(text){
     if(raw.v===2&&Array.isArray(raw.rooms)) m.rooms=JSON.parse(JSON.stringify(raw.rooms));
     for(const k of ['heat','norms','feats','res','gas','report','edits','prices','existing']) if(Object.prototype.hasOwnProperty.call(raw,k)&&(k==='existing'?!Array.isArray(raw[k]):!raw[k]||typeof raw[k]!=='object'||Array.isArray(raw[k]))) m[k]=raw[k];
     if(Object.prototype.hasOwnProperty.call(raw,'nets')){ m.nets=raw.nets; m.utilities=raw.utilities; }
-    messages.push(...sanitizeProject(m)); clampAll(m);
+    messages.push(...sanitizeProject(m));
+    if(messages.length) return {error:'Файл проекта повреждён: '+messages.join('; ')};
+    clampAll(m);
   }catch(e){ return {error:'Файл проекта повреждён: '+e.message}; }
   const data=JSON.parse(JSON.stringify(m)), focus=captureFocus();
   const saved={S,step,sel,selSet,selRoom,addMode,editUid,formErr,draft,planMode,P,planRebuilt,issCache,lastSnap,fieldMsgs,scrK,posCache,rpOpen,rpFocus,rpScroll,roomFreeze,stepWallSel,stepFarSel,tiltWallSel,tiltEndSel,tiltDirSel,lastPlanCtx,navDirty,navRaf,save,saveView,commit,toast,timeout:window.setTimeout,raf:window.requestAnimationFrame};
@@ -6164,6 +6681,7 @@ function importProjectText(text, fname){
   const r=parseProjectText(text);
   if(r.error){ pjDialog(`<h3>Не получилось открыть</h3><p class="bad">${esc(r.error)}.</p>${fname?`<p class="note">Файл: ${esc(fname)}</p>`:''}<div class="btns"><button class="btn" type="button" id="pj-close">Понятно</button></div>`).querySelector('#pj-close').addEventListener('click',closePjDialog); return; }
   const d=r.data, has=d.pid?STORE.meta(d.pid):null, upd=d.updatedAt||r.savedAt;
+  const importRaw=d.pid?STORE.raw(d.pid):null;
   const browserNewer = has && has.updatedAt && upd && new Date(has.updatedAt)>new Date(upd);
   const org=d.report&&d.report.meta&&d.report.meta.parish;
   const ov=pjDialog(`<h3>Загрузить проект</h3>
@@ -6172,7 +6690,7 @@ function importProjectText(text, fname){
     ${has?`<p class="warn">${browserNewer?`В браузере есть более новая версия (изменена ${esc(fmtDT(has.updatedAt))}). «Заменить» вернёт проект к версии из файла.`:`Этот проект уже есть в браузере: «${esc(has.name)}», изменён ${esc(fmtDT(has.updatedAt))}.`}</p>
       <div class="btns"><button class="btn primary tap" type="button" id="pj-replace">Заменить</button><button class="btn tap" type="button" id="pj-copyopen">Открыть как копию</button><button class="btn tap" type="button" id="pj-cancel">Отмена</button></div>`
     :`<div class="btns"><button class="btn primary tap" type="button" id="pj-open" autofocus>Открыть</button><button class="btn tap" type="button" id="pj-cancel">Отмена</button></div>`}`);
-  const done=(data,msg)=>{ closePjDialog(); if(S.pid) save(); openProjectData(data,{persist:true, msg}); };
+  const done=(data,msg)=>{ closePjDialog(); openProjectData(data,{persist:true, msg, expectedRaw:data.pid===d.pid?importRaw:null}); };
   ov.querySelector('#pj-cancel').addEventListener('click',closePjDialog);
   const op=ov.querySelector('#pj-open'); op&&op.addEventListener('click',()=>{ const x=JSON.parse(JSON.stringify(d)); x.pid=x.pid||newPid(); done(x,`Проект «${x.name}» загружен`); });
   const rp=ov.querySelector('#pj-replace'); rp&&rp.addEventListener('click',()=>{ done(JSON.parse(JSON.stringify(d)),`Проект «${d.name}» загружен`); });
@@ -6200,7 +6718,7 @@ function staleCopy(p){ if(!p.exportedAt) return true; const e=new Date(p.exporte
 function openProjects(opts){ opts=opts||{}; closeProjMenu(); if(opts.newForm) pjNewOpen=true;
   let sc=document.getElementById('pj-screen'); if(!sc){ sc=document.createElement('div'); sc.className='pj-screen'; sc.id='pj-screen'; sc.setAttribute('role','region'); sc.setAttribute('aria-label','Мои проекты'); document.body.appendChild(sc); document.body.style.overflow='hidden'; }
   renderProjects(); if(opts.newForm){ const n=document.getElementById('pj-new-name'); n&&n.focus(); } }
-function closeProjects(){ const sc=document.getElementById('pj-screen'); if(sc){ sc.remove(); document.body.style.overflow=''; } pjNewOpen=false; pjConfirmDel=null; }
+function closeProjects(cancel=true){ if(cancel) transitionIntent++; const sc=document.getElementById('pj-screen'); if(sc){ sc.remove(); document.body.style.overflow=''; } pjNewOpen=false; pjConfirmDel=null; }
 function renderProjects(){
   const sc=document.getElementById('pj-screen'); if(!sc) return;
   const last=STORE.last(), all=STORE.list().filter(p=>!pjPending||p.id!==pjPending.id);
@@ -6210,14 +6728,14 @@ function renderProjects(){
   const card=p=>{ const isLast=p.id===last && !!S.pid && S.pid===p.id;
     const sum=[p.people!=null?`${fmt0(p.people)} ${plural(p.people,'человек','человека','человек')}`:'', p.kw!=null?`нужно ${fmt0(p.kw)} кВт`:'', p.total!=null?moneyShort(p.total):''].filter(Boolean).join(' · ');
     const del=pjConfirmDel===p.id;
-    const actions=`<button class="btn tap" type="button" data-pa="variant" data-id="${p.id}">Сделать вариант</button><button class="btn tap" type="button" data-pa="download" data-id="${p.id}">Скачать файл</button><button class="btn tap danger" type="button" data-pa="delask" data-id="${p.id}">Удалить</button>`;
-    return `<article class="pj-card${isLast?' last':''}" data-card="${p.id}">${isLast?'<span class="tag-last">последний открытый</span>':''}
+    const actions=`<button class="btn tap" type="button" data-pa="variant" data-id="${esc(p.id)}">Сделать вариант</button><button class="btn tap" type="button" data-pa="download" data-id="${esc(p.id)}">Скачать файл</button><button class="btn tap danger" type="button" data-pa="delask" data-id="${esc(p.id)}">Удалить</button>`;
+    return `<article class="pj-card${isLast?' last':''}" data-card="${esc(p.id)}">${isLast?'<span class="tag-last">последний открытый</span>':''}
       <h3>${esc(p.name||'Без названия')}</h3>${p.org?`<div class="org">${esc(p.org)}</div>`:''}
       <div class="meta">изменён ${esc(fmtDT(p.updatedAt))}</div>${sum?`<div class="sum">${esc(sum)}</div>`:''}
       ${p.variantOf?`<div class="var">вариант от «${esc(names.get(p.variantOf)||'удалённого проекта')}»</div>`:''}
       ${staleCopy(p)?'<div class="nocopy">копия файлом не сохранялась</div>':''}
-      ${del?`<div class="pj-confirm" role="alert"><span>Удалить «${esc(p.name)}» из этого браузера? Если файла проекта нет, восстановить его будет нельзя.</span><div class="btns"><button class="btn danger tap" type="button" data-pa="del" data-id="${p.id}">Удалить</button><button class="btn tap" type="button" data-pa="delno">Отмена</button></div></div>`
-      :`<div class="row"><button class="btn primary tap" type="button" data-pa="open" data-id="${p.id}">${isLast?'Продолжить':'Открыть'}</button><span class="pj-inline">${actions}</span>
+      ${del?`<div class="pj-confirm" role="alert"><span>Удалить «${esc(p.name)}» из этого браузера? Если файла проекта нет, восстановить его будет нельзя.</span><div class="btns"><button class="btn danger tap" type="button" data-pa="del" data-id="${esc(p.id)}">Удалить</button><button class="btn tap" type="button" data-pa="delno">Отмена</button></div></div>`
+      :`<div class="row"><button class="btn primary tap" type="button" data-pa="open" data-id="${esc(p.id)}">${isLast?'Продолжить':'Открыть'}</button><span class="pj-inline">${actions}</span>
         <details class="pj-more"><summary aria-label="Ещё действия с проектом «${esc(p.name)}»">⋯</summary><div>${actions.replace(/btn tap danger/,'danger').replace(/btn tap/g,'')}</div></details></div>`}
     </article>`; };
   sc.innerHTML=`<div class="pj-in">
@@ -6248,13 +6766,14 @@ function pjAction(a, id){
   else if(a==='delno'){ pjConfirmDel=null; renderProjects(); }
   else if(a==='del'){ pjConfirmDel=null; deleteWithUndo(id); }
 }
-function finishPending(){ if(!pjPending) return; clearTimeout(pjPending.timer); const id=pjPending.id; pjPending=null; STORE.remove(id); const u=document.getElementById('pj-undo'); u&&u.remove();
-  if(S.pid===id){ S.pid=''; saveInfo={ok:true,at:null,err:null}; updSaveState(); } }
-function deleteWithUndo(id){
-  finishPending();
+async function finishPending(){ if(!pjPending) return; clearTimeout(pjPending.timer); const {id,raw}=pjPending; const prior=S, epoch=projectEpoch, beforeDelete=snap(); pjPending=null; const result=await STORE.remove(id,raw); if(!result.ok){ toast('Не удалось удалить проект: версия изменилась или запись недоступна'); renderProjects(); return; } const u=document.getElementById('pj-undo'); u&&u.remove();
+  if(S===prior&&projectEpoch===epoch&&S.pid===id){ if(snap()!==beforeDelete){ saveInfo={ok:false,at:saveInfo.at,err:'conflict'}; updSaveState(); } else { S.pid=''; projectEpoch++; transitionIntent++; saveInfo={ok:true,at:null,err:null}; updSaveState(); } } }
+async function deleteWithUndo(id){
+  await finishPending();
   const meta=STORE.meta(id); if(!meta) return;
-  if(S.pid===id){ save(); }
-  pjPending={id, name:meta.name, timer:setTimeout(finishPending, 10000)};
+  let raw=STORE.raw(id);
+  if(S.pid===id){ const prior=S, epoch=projectEpoch; if(!await save() || S!==prior || projectEpoch!==epoch){ toast('Не удалось сохранить проект перед удалением'); return; } raw=savedRaw; }
+  pjPending={id, raw, name:meta.name, timer:setTimeout(finishPending, 10000)};
   renderProjects();
   const u=document.createElement('div'); u.className='pj-undo'; u.id='pj-undo'; u.setAttribute('role','status');
   u.innerHTML=`<span>Проект «${esc(meta.name)}» удалён</span><button type="button" id="pj-undo-btn">Вернуть</button>`; document.body.appendChild(u);
@@ -7139,8 +7658,8 @@ function focusUnit(key){
 }
 
 /* ---- план на весь экран: свой слой поверх приложения ---- */
-function fsOpen(f){ fsField=f; render(); requestAnimationFrame(()=>fitZoom(f)); }
-function fsClose(){ fsField=null; document.documentElement.classList.remove('pfs-lock'); render(); }
+function fsOpen(f){ fsField=f; render(); const b=main.querySelector('.plan-fs [data-fs-close]'); b&&b.focus(); requestAnimationFrame(()=>fitZoom(f)); }
+function fsClose(){ const f=fsField; fsField=null; document.documentElement.classList.remove('pfs-lock'); render(); const b=main.querySelector(`[data-fs-open="${CSS.escape(f||'')}"]`); b&&b.focus(); }
 function applyFs(){
   const f=fsField, els=f?[...main.querySelectorAll(`[data-fs="${f}"]`)]:[], box=els.find(x=>x.classList.contains('plan-box'));
   if(!f||!box){ fsField=null; document.documentElement.classList.remove('pfs-lock'); return; }
@@ -7149,6 +7668,7 @@ function applyFs(){
   const head=document.createElement('div'); head.className='pfs-head'; const foot=document.createElement('div'); foot.className='pfs-foot';
   for(const el of els){ if(el===box) continue; if(el.classList.contains('zbar')||el.classList.contains('plan-layers')||el.classList.contains('lay-menu')) head.appendChild(el); else foot.appendChild(el); }
   ov.append(head, box, foot); main.appendChild(ov);
+  ov.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!e.defaultPrevented){ e.preventDefault(); e.stopPropagation(); fsClose(); } });
   document.documentElement.classList.add('pfs-lock');
 }
 

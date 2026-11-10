@@ -693,7 +693,7 @@ public sealed class CodexMonitorChangesV2 : IDisposable {
   while($true){
    # Arm new worker roots before rereading: writes during initial snapshot stay signalled.
    $snapshot=Read-MonitorSnapshot;foreach($root in $snapshot.Roots){$local=Join-Path $root '.codex-runs';if(Test-Path -LiteralPath $local){$changes.Add($local)}};$snapshot=Read-MonitorSnapshot
-   if($initial){"Монитор Codex · UTC $([datetime]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss'))";Format-WorkflowMonitorSummary -Runs $snapshot.Runs -Stages $snapshot.Stages -Publications $snapshot.Publications;$initial=$false}
+   if($initial){"Монитор Codex";Format-WorkflowMonitorSummary -Runs $snapshot.Runs -Stages $snapshot.Stages -Publications $snapshot.Publications;$initial=$false}
    $records=@(Get-WorkflowMonitorRecords -Runs $snapshot.Runs -Events $snapshot.Events -Stages $snapshot.Stages -Publications $snapshot.Publications)
    Write-WorkflowMonitorRecords -Records @(Select-WorkflowMonitorNewRecords -Records $records -Cursor $cursor -InitialSkipFallback)
    while(!$changes.Wait(1000)){}
@@ -705,7 +705,7 @@ public sealed class CodexMonitorChangesV2 : IDisposable {
 function Invoke-Workflow {
  [CmdletBinding()]param([string]$Command='status',[string]$Repo,[string]$CoordinatorRepo,[string]$TaskId,[string]$WorkerRepo,[string]$WorkerBranch,[string]$MaxWorkers='2',[string]$Id,[string]$TaskFile,[string[]]$Files,[string]$Model='sol',[string]$Effort='medium',[switch]$AllowMax,[string]$Evidence,[string]$Message,[string]$Baseline,[string]$StatusFile,[string]$Stage,[string]$StageAction='start',[switch]$Once,[switch]$CompleteItem,[int]$DeployTimeoutSeconds=300,[switch]$TestMode,[string]$TestCli,[switch]$TestSkipDeployment)
  if(!$Repo){$Repo=Split-Path $PSScriptRoot -Parent};Init-Repo $Repo;Init-Coordination $CoordinatorRepo $TaskId $Command
- if($Command -in @('status','monitor')){if($Command -eq 'status' -or $Once){"Монитор Codex · UTC $([datetime]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss'))";Show-Monitor}else{Watch-Monitor};return}
+ if($Command -in @('status','monitor')){if($Command -eq 'status' -or $Once){"Монитор Codex";Show-Monitor}else{Watch-Monitor};return}
  # Lock order for every mutating command is local operation.lock, then short coordinator registry.lock.
  # A worker runner holds neither coordinator gate nor local operation.lock while executing CLI.
  $lock=Acquire-Operation

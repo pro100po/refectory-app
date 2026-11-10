@@ -15,7 +15,7 @@ try{
  [IO.File]::WriteAllText($runner,'param($Module,$Repo,[switch]$Once)'+"`n"+'$ErrorActionPreference="Stop";[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);Import-Module $Module -Force;Invoke-Workflow -Command monitor -Repo $Repo -Once:$Once',$utf8)
  $exe=(Get-Process -Id $PID).Path;$args=@('-NoProfile','-File',('"'+$runner+'"'),'-Module',('"'+$Module+'"'),'-Repo',('"'+$repo+'"'))
  $process=Start-Process $exe -ArgumentList $args -RedirectStandardOutput $output -RedirectStandardError $errors -PassThru -WindowStyle Hidden
- Await 'Монитор Codex · UTC';Await 'Запусков пока нет';Stable 2200
+ Await 'Монитор Codex';Await 'Запусков пока нет';Stable 2200
  [IO.File]::WriteAllText((Join-Path $runs 'noise.log'),'noise',$utf8);Stable
  $run=Join-Path $runs '20261110T090000000Z-12345678';[void][IO.Directory]::CreateDirectory($run);$state=Join-Path $run 'state.json';$temp=Join-Path $run 'new.tmp'
  State $temp 'created-observation';[IO.File]::Move($temp,$state);Await 'created-observation'
@@ -35,12 +35,12 @@ try{
  [IO.File]::WriteAllText($state,'"bad schema"',$utf8);Await 'Ошибка задачи /20261110T090000000Z-12345678';$errorOutput=Output;[IO.File]::WriteAllText((Join-Path $runs 'noise.log'),'different noise',$utf8);Stable
  State $state 'recovered valid state';Await 'recovered valid state'
  $publication=Join-Path $runs 'publication.json';$p=@{commit='abcdef';phase='pushed';pushed=$true;deployed=$false;deployStatus='not-checked';error=$null};[IO.File]::WriteAllText($publication,($p|ConvertTo-Json),$utf8);Await 'Отправлено на GitHub';[IO.File]::WriteAllText($publication,($p|ConvertTo-Json),$utf8);Stable
- Assert (([regex]::Matches((Output),'Монитор Codex · UTC')).Count -eq 1) 'one initial snapshot; subsequent output appends'
+ Assert (([regex]::Matches((Output),'Монитор Codex')).Count -eq 1) 'one initial snapshot; subsequent output appends'
  Assert ((Output).Contains('created-observation') -and (Output).Contains('stage A')) 'prior events preserved'
  Assert ((Shared $errors).Length -eq 0) 'monitor has no stderr'
  $process.Kill();$process.WaitForExit();$process.Dispose();$process=$null
  $once=Start-Process $exe -ArgumentList ($args+'-Once') -RedirectStandardOutput $output -RedirectStandardError $errors -PassThru -WindowStyle Hidden
- try{Assert ($once.WaitForExit(12000)) '-Once exits';Assert ($once.ExitCode -eq 0) '-Once exit code';Assert (([regex]::Matches((Output),'Монитор Codex · UTC')).Count -eq 1) '-Once one initial snapshot'}finally{if(!$once.HasExited){$once.Kill()};$once.Dispose()}
+ try{Assert ($once.WaitForExit(12000)) '-Once exits';Assert ($once.ExitCode -eq 0) '-Once exit code';Assert (([regex]::Matches((Output),'Монитор Codex')).Count -eq 1) '-Once one initial snapshot'}finally{if(!$once.HasExited){$once.Kill()};$once.Dispose()}
  'ALL MONITOR EVENT TESTS PASSED'
 }finally{
  if($process){if(!$process.HasExited){$process.Kill();$process.WaitForExit()};$process.Dispose()}

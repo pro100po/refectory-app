@@ -68,6 +68,8 @@ function Get-WorkflowMonitorRecords {
    $action="$(Read-MonitorField $entry @('action'))"
    $stage="$(Read-MonitorField $entry @('stage'))"
    $message="$(Read-MonitorField $entry @('details','message','lastEvent'))"
+   $title=''
+   foreach($state in $states){if($state.Scope.root -ceq $identity.root -and $state.Scope.task -ceq $identity.task -and $state.Scope.attempt -ceq $identity.attempt){$title="$(Read-MonitorField $state.Run @('title','task'))";break}}
    $aliases=@()
    if($source.kind -eq 'event'){
     foreach($state in $states){
@@ -77,7 +79,7 @@ function Get-WorkflowMonitorRecords {
    if($source.kind -eq 'stage'){
     $verb=if($action -eq 'start'){'Начат этап'}elseif($action -eq 'end'){'Завершён этап'}else{'Этап'}
     $model="$(Read-MonitorField $entry @('model'))";$effort="$(Read-MonitorField $entry @('effort'))"
-    $route=if($model){" ($model / $effort)"}else{''}
+    $route=if($model -and $action -ne 'end'){" ($model / $effort)"}else{''}
     $message="${verb}: $stage$route. $message"
    }elseif($source.kind -eq 'publication'){
     $errorText="$(Read-MonitorField $entry @('error'))"
@@ -94,7 +96,7 @@ function Get-WorkflowMonitorRecords {
    # Publication state may change without a timestamp; content is its version.
    if($source.kind -eq 'publication'){$eventKey=Get-MonitorHash @($message,(Read-MonitorField $entry @('phase')),(Read-MonitorField $entry @('commit')),(Read-MonitorField $entry @('pushed') $false),(Read-MonitorField $entry @('deployed') $false),(Read-MonitorField $entry @('deployStatus')),(Read-MonitorField $entry @('error')))}
    $key=Get-MonitorHash @($source.kind,$identity.root,$identity.task,$identity.attempt,$stage,$eventKey)
-   $records.Add([pscustomobject]@{Id=$key;Aliases=@($aliases);IsFallback=$false;Time=$time;SortTime=(Get-MonitorTime $time);Sequence=$sequence;Root=$identity.root;Task=$identity.task;Attempt=$identity.attempt;Stage=$stage;Type=$type;Message=(ConvertTo-MonitorLine $message);Level=(Get-MonitorLevel $type $action)});$sequence++
+   $records.Add([pscustomobject]@{Id=$key;Aliases=@($aliases);IsFallback=$false;Time=$time;SortTime=(Get-MonitorTime $time);Sequence=$sequence;Root=$identity.root;Task=$identity.task;Attempt=$identity.attempt;Title=$title;Source=$source.kind;Stage=$stage;Type=$type;Message=(ConvertTo-MonitorLine $message);Level=(Get-MonitorLevel $type $action)});$sequence++
   }
  }
  foreach($state in $states){
@@ -106,7 +108,7 @@ function Get-WorkflowMonitorRecords {
   if($state.Commit){$message+=". Сохранено: $($state.Commit)"}
   if($state.Pushed){$message+='. Отправлено на GitHub'}
   if($state.Deployed){$message+='. Сайт обновлён'}
-  $records.Add([pscustomobject]@{Id=$state.Id;Aliases=@();IsFallback=$true;Time=$time;SortTime=(Get-MonitorTime $time);Sequence=$sequence;Root=$state.Scope.root;Task=$state.Scope.task;Attempt=$state.Scope.attempt;Stage='';Type=$state.Status;Message=(ConvertTo-MonitorLine $message);Level=(Get-MonitorLevel $state.Status)});$sequence++
+  $records.Add([pscustomobject]@{Id=$state.Id;Aliases=@();IsFallback=$true;Time=$time;SortTime=(Get-MonitorTime $time);Sequence=$sequence;Root=$state.Scope.root;Task=$state.Scope.task;Attempt=$state.Scope.attempt;Title=(Read-MonitorField $state.Run @('title','task'));Source='state';Stage='';Type=$state.Status;Message=(ConvertTo-MonitorLine $message);Level=(Get-MonitorLevel $state.Status)});$sequence++
  }
  $records | Sort-Object SortTime,Sequence
 }
@@ -121,7 +123,9 @@ function Select-WorkflowMonitorNewRecords {
   $ids=@([string]$record.Id)+@(Read-MonitorField $record @('Aliases') @())
   $seen=$false;foreach($id in $ids){if($Cursor.Seen.Contains([string]$id)){$seen=$true}}
   foreach($id in $ids){[void]$Cursor.Seen.Add([string]$id)}
-  if(!$seen){$fresh.Add($record)}
+  $type="$(Read-MonitorField $record @('Type'))"; $message="$(Read-MonitorField $record @('Message'))"
+  $noise=(($type -in @('cli-event','cli-unparsed')) -and $message -notmatch '(?i)error|fail|ошиб|сбой') -or ($type -eq 'reviewed' -and $message -match '(?i)отпечатк')
+  if(!$seen -and !$noise){$fresh.Add($record)}
  }
  if(!$Cursor.Initialized){$Cursor.Initialized=$true;if($InitialLimit -gt 0){$fresh|Where-Object {!$InitialSkipFallback -or !(Read-MonitorField $_ @('IsFallback') $false)}|Select-Object -Last $InitialLimit};return}
  $fresh
@@ -131,10 +135,17 @@ function Format-WorkflowMonitorRecord {
  process {
   $time=Get-MonitorTime $Record.Time
   $stamp=if($time -eq [datetimeoffset]::MinValue){'--:--:--'}else{$time.ToLocalTime().ToString('HH:mm:ss')}
-  $task=Limit-MonitorLabel "$($Record.Task)" 18
-  $attempt=if("$($Record.Attempt)" -match '^\d{8}T\d{9}Z-([a-fA-F0-9]{8})$'){$Matches[1]}else{Limit-MonitorLabel "$($Record.Attempt)" 10}
-  $label=if($attempt -and $attempt -ne $Record.Task){"$task/$attempt"}else{$task}
-  "$stamp [$label] $(ConvertTo-MonitorLine $Record.Message)"
+  $source="$(Read-MonitorField $Record @('Source'))"
+  $title="$(Read-MonitorField $Record @('Title'))"
+  if($title -match '^\d{8}T\d{9}Z-[a-fA-F0-9]{8}$'){$title=''}else{$title=$title -replace '^#+\s+',''}
+  $attempt="$(Read-MonitorField $Record @('Attempt'))"
+  $task="$(Read-MonitorField $Record @('Task'))"
+  $label=if($source -eq 'publication'){'Публикация'}elseif($source -eq 'stage'){'Этап'}elseif($title){Limit-MonitorLabel $title 50}elseif($attempt -match '([a-fA-F0-9]{8})$'){"Задача $($Matches[1])"}elseif($task -match '([a-fA-F0-9]{8})$'){"Задача $($Matches[1])"}else{Limit-MonitorLabel $task 18}
+  $message=ConvertTo-MonitorLine $Record.Message
+  if($source -eq 'state' -and $message -match '^Состояние: (cli-event|cli-unparsed|reviewed) : '){$message=$message -replace '^Состояние: (cli-event|cli-unparsed|reviewed) : [^.]*',('Состояние: '+(Get-MonitorStatus "$(Read-MonitorField $Record @('Type'))"))}
+  $message=[regex]::Replace($message,'(?<![a-fA-F0-9])[a-fA-F0-9]{40}(?![a-fA-F0-9])',{param($m) $m.Value.Substring(0,7)})
+  if($source -eq 'publication'){$message=$message -replace 'Публикация: prepared','Подготовка публикации' -replace 'Развёртывание: not-checked','проверка сайта ожидается' -replace 'Развёртывание: pending','проверка сайта ожидается'}
+  "$stamp [$label] $message"
  }
 }
 function Write-WorkflowMonitorRecords {
@@ -153,7 +164,7 @@ function Format-WorkflowMonitorSummary {
  $active=@($ordered|Where-Object {(Read-MonitorField $_ @('status')) -notin $terminal})
  $complete=@($ordered|Where-Object {(Read-MonitorField $_ @('status')) -in $terminal})
  $stamp=$Now.ToLocalTime().ToString('HH:mm:ss')
- "$stamp [монитор] Текущее состояние. Активных задач: $($active.Count); завершённых: $($complete.Count). Время местное; длительность обновляется при событии."
+ "$stamp [монитор] Активных задач: $($active.Count)."
  foreach($run in @($active)+@($complete|Select-Object -First $CompletedLimit)){
   $identity=Get-MonitorIdentity $run
   $start=Get-MonitorTime (Read-MonitorField $run @('started'))
@@ -162,16 +173,15 @@ function Format-WorkflowMonitorSummary {
   $duration=if($start -ne [datetimeoffset]::MinValue){[Math]::Max(0,[int]($end-$start).TotalSeconds)}else{0}
   $elapsed=[timespan]::FromSeconds($duration)
   $clock=if($start -eq [datetimeoffset]::MinValue){'не указано'}else{$start.ToLocalTime().ToString('MM-dd HH:mm:ss')}
-  $title=ConvertTo-MonitorLine "$(Read-MonitorField $run @('title','task') $identity.task)"
+  $title=ConvertTo-MonitorLine "$(Read-MonitorField $run @('title','task'))"
   $route="$(Read-MonitorField $run @('model') 'модель не указана') / $(Read-MonitorField $run @('effort') 'уровень не указан')"
   $status=Get-MonitorStatus "$(Read-MonitorField $run @('status') 'не указан')"
-  $record=[pscustomobject]@{Time=$Now.ToString('o');Task=$identity.task;Attempt=$identity.attempt;Message="$title. $status. $route. Начало: $clock; длительность: $([int]$elapsed.TotalHours)ч $($elapsed.Minutes)м $($elapsed.Seconds)с."}
+  $record=[pscustomobject]@{Time=$Now.ToString('o');Task=$identity.task;Attempt=$identity.attempt;Title=$title;Source='state';Message="$status. $route. Начало: $clock; длительность: $([int]$elapsed.TotalHours)ч $($elapsed.Minutes)м $($elapsed.Seconds)с."}
   Format-WorkflowMonitorRecord $record
   $integration="$(Read-MonitorField $run @('integrationStatus'))"
   $commit="$(Read-MonitorField $run @('commit'))"
   if($commit -or $integration){$record.Message="Сохранение: $(if($commit){$commit}else{'нет коммита'}); включение: $(if($integration){$integration}else{'не зарегистрировано'}); GitHub: $(if(Read-MonitorField $run @('pushed') $false){'отправлено'}else{'не отправлено'}); сайт: $(if(Read-MonitorField $run @('deployed') $false){'обновлён'}else{'не подтверждён'}).";Format-WorkflowMonitorRecord $record}
  }
- if($complete.Count -gt $CompletedLimit){"$stamp [монитор] Ещё завершённых задач: $($complete.Count-$CompletedLimit). Полные события сохранены в журналах."}
  if($Publications.Count){
   $lastPublication=@($Publications|Sort-Object {Get-MonitorTime (Read-MonitorField $_ @('time','deployChecked','updated'))}|Select-Object -Last 1)
   foreach($record in @(Get-WorkflowMonitorRecords -Publications $lastPublication)){$record.Time=$Now.ToString('o');$record.Message='Последняя публикация. '+$record.Message;Format-WorkflowMonitorRecord $record}

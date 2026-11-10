@@ -18,10 +18,10 @@ Assert (@($records.Id|Sort-Object -Unique).Count -eq 6) 'record identity never m
 Assert ($records[0].Message -eq 'Исполнитель запущен' -and $records[1].Message -eq $longText) 'equal timestamps preserve source order'
 $line=Format-WorkflowMonitorRecord $records[1]
 Assert ($line.Contains($longText)) 'long Unicode event text remains complete for normal terminal wrapping'
-Assert ($line -match '^\d{2}:\d{2}:\d{2} \[кухня/attempt-1\] ') 'plain log has local time and short task/attempt prefix'
+Assert ($line -match '^\d{2}:\d{2}:\d{2} \[кухня\] ') 'plain log has local time and short task label'
 $realIds=@(Get-WorkflowMonitorRecords -Events @((Event 'кухня' '20261110T090000000Z-12345678' 'a' 0 'Первая попытка'),(Event 'кухня' '20261110T090000000Z-abcdef12' 'a' 0 'Вторая попытка')))
 $realLines=@($realIds|Format-WorkflowMonitorRecord)
-Assert ($realLines[0].Contains('[кухня/12345678]') -and $realLines[1].Contains('[кухня/abcdef12]')) 'real timestamp attempt IDs display distinct GUID suffixes'
+Assert ($realLines[0].Contains('[Задача 12345678]') -and $realLines[1].Contains('[Задача abcdef12]')) 'real timestamp attempt IDs display distinct GUID suffixes'
 foreach($width in @(40,80,120)){
  # Terminals wrap the same ordinary line; the formatter never creates columns.
  $rendered=($records|Format-WorkflowMonitorRecord|Out-String -Width $width)
@@ -53,7 +53,7 @@ foreach($n in 1..7){$runs+=@{id="done-$n";taskId="done-$n";task="Завершё�
 foreach($n in 1..2){$runs+=@{id="active-$n";taskId="active-$n";task="Активная $n";status='running';model='gpt-6.1-sol';effort='high';started='2026-11-10T08:00:00Z'}}
 $summary=@(Format-WorkflowMonitorSummary -Runs $runs -Now ([datetime]'2026-11-10T10:00:00Z') -CompletedLimit 2)
 $text=$summary -join "`n"
-Assert ($text.Contains('Активных задач: 2; завершённых: 7') -and $text.Contains('Ещё завершённых задач: 5')) 'startup summary bounds completed history and counts all tasks'
+Assert ($text.Contains('Активных задач: 2.') -and !$text.Contains('Ещё завершённых задач:')) 'startup summary bounds completed history and counts all tasks'
 Assert ((($text.IndexOf('Активная 1') -lt $text.IndexOf('Завершённая')) -and ($text.IndexOf('Активная 2') -lt $text.IndexOf('Завершённая')))) 'active tasks appear before completed tasks'
 Assert ($text.Contains('длительность: 2ч 0м 0с') -and $text.Contains('длительность: 1ч 0м 0с')) 'snapshot durations use supplied event time and fixed completed end'
 Assert (($summary -join "`n") -eq ((Format-WorkflowMonitorSummary -Runs $runs -Now ([datetime]'2026-11-10T10:00:00Z') -CompletedLimit 2) -join "`n")) 'same snapshot time produces stable summary without ticking'
@@ -79,4 +79,15 @@ Assert (@(Select-WorkflowMonitorNewRecords -Records $stateOnly -Cursor $reverse)
 $state.status='failed';$state.error='Ошибка запуска'
 $changed=@(Get-WorkflowMonitorRecords -Runs @($state))
 Assert (@(Select-WorkflowMonitorNewRecords -Records $changed -Cursor $dedup).Count -eq 1) 'semantic state changes produce one new fallback'
+$sha='c8aa97742c99ef8237e54f6b151bb339a452fbc6'
+$run=@{root='r';taskId='20261110T152055490Z-945ac728';attemptId='20261110T152055490Z-945ac728';title='Параллельные задачи';status='running'}
+$short=@(Get-WorkflowMonitorRecords -Runs @($run) -Events @((Event $run.taskId $run.attemptId 'r' 0 "Сохранено $sha" 'accepted'),(Event $run.taskId $run.attemptId 'r' 1 'turn.completed' 'cli-event'),(Event $run.taskId $run.attemptId 'r' 2 'Проверка привязана к текущему отпечатку файлов' 'reviewed'),(Event $run.taskId $run.attemptId 'r' 3 'Критическая ошибка запуска' 'failed')) -Publications @(@{root='r';commit=$sha;phase='prepared'},@{root='r';commit=$sha;pushed=$true;deployStatus='not-checked'}))
+$c=New-WorkflowMonitorCursor;$visible=@(Select-WorkflowMonitorNewRecords -Records $short -Cursor $c -InitialLimit 100);$render=@($visible|Format-WorkflowMonitorRecord) -join "`n"
+$rawTitle=@{root='r';taskId='20261110T152055490Z-945ac728';attemptId='20261110T152055490Z-945ac728';title='20261110T152055490Z-945ac728';status='running'}
+Assert ((Format-WorkflowMonitorRecord @(Get-WorkflowMonitorRecords -Runs @($rawTitle))[0]).Contains('[Задача 945ac728]')) 'technical timestamp title uses short task label'
+Assert ($render.Contains('[Параллельные задачи]') -and $render.Contains('[Публикация]')) 'semantic task and publication labels'
+Assert ($render -notmatch $sha -and $render.Contains('c8aa977') -and $render -notmatch '20261110T152055490') 'full hashes and timestamp IDs stay out of display'
+Assert ($render -notmatch 'turn.completed|отпечатк' -and $render.Contains('Критическая ошибка запуска')) 'technical chatter is hidden and critical error remains'
+Assert ($render.Contains('Подготовка публикации') -and $render.Contains('проверка сайта ожидается')) 'publication statuses are readable'
+Assert (@(Select-WorkflowMonitorNewRecords -Records $short -Cursor $c).Count -eq 0) 'filtered records do not disturb deduplication'
 'ALL MONITOR LOG LAYOUT TESTS PASSED'

@@ -1,9 +1,7 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}[role="dialog"] :focus-visible{outline:3px solid var(--steel);outline-offset:2px}
 </style></head><body>
 <title>Кухня трапезной</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="fonts/ui-fonts.css">
 <style>
 /* Макет: рабочий инструмент-мастер. Шаги сверху, лист чертёжной бумаги для плана, киноварь — как инициалы в богослужебных книгах */
 :root{
@@ -5944,7 +5942,7 @@ const REPORT_CSS=`
 `;
 
 /* ================= Рендер 2: PDF (jsPDF + svg2pdf + autotable) ================= */
-const PDF_LIBS=['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.4/dist/svg2pdf.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'];
+const PDF_LIBS=['vendor/jspdf.umd.min.js','vendor/svg2pdf.umd.min.js','vendor/jspdf.plugin.autotable.min.js'];
 const PDF_FONTS=[['fonts/IBMPlexSans-Regular.ttf','IBMPlexSans','normal'],['fonts/IBMPlexSans-SemiBold.ttf','IBMPlexSans','bold'],['fonts/IBMPlexMono-Regular.ttf','IBMPlexMono','normal']];
 let pdfLibsP=null, pdfFontsP=null;
 function loadScript(src){ return new Promise((ok,no)=>{ const s=document.createElement('script'); s.src=src; s.async=false; s.onload=ok; s.onerror=()=>no(new Error('Не загрузилась библиотека: '+src)); document.head.appendChild(s); }); }
@@ -6141,13 +6139,7 @@ const REPORT_UI_CSS=`
 `;
 (function(){ const st=document.createElement('style'); st.textContent=REPORT_CSS+REPORT_UI_CSS; document.head.appendChild(st); })();
 
-// Claude downloads при наличии; в обычном браузере — скачивание Blob через ссылку.
-let repDl=null, repDlState='wait';
-(function(){ const c=window.claude; if(!c||typeof c.use!=='function'){ repDlState='browser'; return; }
-  c.use('downloads').then(d=>{ repDl=d; repDlState=d&&typeof d.save==='function'?'ok':'browser'; if(repDlState==='browser') repDl=null; updRepDl(); }).catch(()=>{ repDlState='browser'; updRepDl(); }); })();
-function updRepDl(){ document.querySelectorAll('[data-rep-dl]').forEach(b=>{ b.disabled=repDlState==='wait'||repBusy;
-  b.title = repDlState==='wait' ? 'Проверяю, можно ли скачивать…' : 'Скачать задание в PDF'; });
-  document.querySelectorAll('.rep-dl-hint').forEach(h=>{ h.textContent = repDlState==='wait' ? 'Проверяю, можно ли скачивать…' : ''; h.hidden=repDlState!=='wait'; }); }
+function updRepDl(){ document.querySelectorAll('[data-rep-dl]').forEach(b=>{ b.disabled=repBusy; b.title='Скачать задание в PDF'; }); }
 let repBusy=false, repPagesEst=0;
 function repEstimate(){ const host=document.createElement('div'); host.className='rep-measure'+(reportState().mono?' rp-mono':''); document.body.appendChild(host);
   try{ const D=buildReportDoc(); return paginateHtml(D, host).length; } finally{ host.remove(); } }
@@ -6176,7 +6168,7 @@ function openReport(){
       <div class="rep-groups">${groups.map(([g,list])=>`<div><h4>${g}</h4>${list.map(s=>`<label class="check tap"><input type="checkbox" data-sec="${s.id}" ${on(s.id)?'checked':''}>${esc(s.title)}${s.perRoom&&S.rooms.length>1?' <span class="muted">— по помещениям</span>':''}</label>`).join('')}</div>`).join('')}</div></fieldset>
     <label class="check tap"><input type="checkbox" id="rep-mono" ${r.mono?'checked':''}>Чёрно-белая печать — зоны различаются штриховкой</label>
     <div class="rep-count" id="rep-count">Считаю листы…</div>
-    <div class="rep-btns"><button class="btn tap" type="button" id="rep-prev-btn">Предпросмотр</button><button class="btn primary tap" type="button" data-rep-dl id="rep-dl">Скачать PDF</button><span class="rep-dl-hint rep-hint"></span></div>
+    <div class="rep-btns"><button class="btn tap" type="button" id="rep-prev-btn">Предпросмотр</button><button class="btn primary tap" type="button" data-rep-dl id="rep-dl">Скачать PDF</button></div>
     <div class="rep-prog" id="rep-prog" aria-live="polite"></div></div>`;
   rememberModalFocus(ov); document.body.appendChild(ov); updRepDl();
   const dlg=ov.querySelector('.rep-dlg');
@@ -6202,21 +6194,16 @@ function downloadBrowserPdf(blob, filename){
   finally{ link.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); }
 }
 async function downloadReport(){
-  if(repBusy || repDlState==='wait') return; repBusy=true; updRepDl();
+  if(repBusy) return; repBusy=true; updRepDl();
   try{
     setProg('Загружаю библиотеки и шрифты…');
     const blob=await buildReportPdf({estimate:repPagesEst, onProgress:(n,m)=>setProg(`Собираю лист ${n} из ${m}`)});
-    setProg(repDl?'Файл готов — подтвердите сохранение':'Скачиваю PDF…');
+    setProg('Скачиваю PDF…');
     try{
       const filename=reportFileName();
-      if(repDl){ await repDl.save({filename, data:blob}); setProg('Сохранено'); toast('Задание сохранено в PDF'); }
-      else { downloadBrowserPdf(blob,filename); setProg('Скачивание PDF начато'); toast('Скачивание PDF начато'); }
+      downloadBrowserPdf(blob,filename); setProg('Скачивание PDF начато'); toast('Скачивание PDF начато');
     }
-    catch(e){ const c=e&&e.code;
-      if(c==='declined') setProg('');
-      else if(c==='rate_limited') setProg('Окно сохранения уже открыто или запросов слишком много — подождите и повторите.');
-      else if(c==='too_large') setProg('Файл слишком большой для сохранения здесь.');
-      else setProg('Не удалось сохранить файл: '+((e&&e.message)||c||'неизвестная ошибка')); }
+    catch(e){ setProg('Не удалось сохранить файл: '+((e&&e.message)||'неизвестная ошибка')); }
   } catch(e){ console.error(e); setProg('Не удалось собрать PDF: '+e.message); }
   finally{ repBusy=false; updRepDl(); }
 }
@@ -6428,7 +6415,6 @@ function makeVariant(id){
   return createProject(src, `Открыт вариант ${v.letter}, создан отдельный проект`); }
 
 /* ---- файл проекта ---- */
-let dlP=null; function getDl(){ const c=window.claude; if(!c||typeof c.use!=='function') return Promise.resolve(null); if(!dlP) dlP=Promise.resolve().then(()=>c.use('downloads')).catch(e=>{ dlP=null; throw e; }); return dlP; }
 function projectFile(data){ return JSON.stringify({app:PJ_APP, format:PJ_FORMAT, savedAt:new Date().toISOString(), project:data}, null, 1); }
 function projectFileName(data){ const d=new Date(), p2=n=>String(n).padStart(2,'0'); return `${safeName(data.name)} — ${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}.json`; }
 function downloadProjectInBrowser(text, name){
@@ -6448,18 +6434,7 @@ async function downloadProject(id){
   let data; if(!id || id===S.pid){ if(S.pid) save(); data=JSON.parse(JSON.stringify(S)); id=S.pid; } else data=STORE.load(id);
   if(!data){ toast('Проект не найден'); return; }
   const text=projectFile(data), name=projectFileName(data);
-  let dl, browser=false;
-  try{ dl=await getDl(); }
-  catch(e){ const c=e&&e.code; if(c==='declined') return;
-    if(c==='rate_limited'){ toast('Окно сохранения уже открыто или запросов слишком много — подождите и повторите'); return; }
-    browser=true; }
-  if(!dl) browser=true;
-  if(dl) try{ await dl.save({filename:name, data:text}); }
-  catch(e){ const c=e&&e.code; if(c==='declined') return;
-    if(c==='rate_limited'){ toast('Окно сохранения уже открыто или запросов слишком много — подождите и повторите'); return; }
-    if(c==='unavailable'||c==='not_granted'||c==='capability_disabled'||c==='capability_removed') browser=true;
-    else{ toast('Не удалось сохранить файл: '+((e&&e.message)||c||'неизвестная ошибка')); return; } }
-  if(browser){ try{ downloadProjectInBrowser(text,name); }catch(e){ showJsonFallback(text,name); return; } }
+  try{ downloadProjectInBrowser(text,name); }catch(e){ showJsonFallback(text,name); return; }
   const exportedAt=new Date().toISOString();
   toast('Скачивание файла проекта начато');
   // Ошибка локальной отметки не означает ошибку уже выданного файла.

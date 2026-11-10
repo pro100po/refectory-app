@@ -4463,7 +4463,7 @@ bind[3]=()=>{
   const v=id=>document.getElementById(id);
   const pull=()=>{ const g=(id,k)=>{ const el=v(id); if(el) draft[k]=el.value; };
     g('it-n','n'); g('it-model','model'); g('it-w','w'); g('it-d','d'); g('it-h','h'); g('it-kw','kw'); g('it-gkw','gkw'); g('it-cap','cap'); g('it-room','roomId'); g('it-cq','cq');
-    if(v('it-q')) draft.qty=Math.max(1,parseInt(v('it-q').value)||1);
+    if(v('it-q')) draft.qty=v('it-q').value;
     if(v('it-z')) draft.zOverride=v('it-z').value||null;
     if(v('it-hot')) draft.hot=v('it-hot').checked; if(v('it-wat')) draft.wat=v('it-wat').checked; if(v('it-gas')) draft.gas=v('it-gas').checked;
     if(v('it-more')) draft.moreOpen=v('it-more').open; };
@@ -4488,9 +4488,26 @@ bind[3]=()=>{
     if(k==='it-src'){ draft.src=val; render(); }
     if(k==='it-plate'){ const was=draft.plate; draft.plate=val; if(val==='gas') draft.gas=true; else if(was==='gas') draft.gas=false; render(); } });
   v('it-cancel').addEventListener('click',()=>{ editUid=null; draft=null; formErr=false; render(); });
-  v('it-save').addEventListener('click',()=>{ pull();
-    const er=itemErrs(draft); if(Object.keys(er).length){ formErr=true; render();
-      const first={role:'it-role', plate:'it-plate', cap:'it-cap', w:'it-w', d:'it-d', h:'it-h'}[Object.keys(er)[0]], el=first==='it-plate'?document.querySelector('[data-seg="it-plate"] button'):v(first); el&&el.focus(); return; }
+  v('it-save').addEventListener('click',()=>{
+    const form=main.querySelector('.ex-form'), values={...draft};
+    for(const k of ['cap','w','d','h']) if(v('it-'+k)) values[k]=v('it-'+k).value;
+    const required=itemErrs(values), errors=[];
+    for(const k of ['role','plate','cap','w','d','h','kw','gkw','q']){
+      const el=k==='plate'?form.querySelector('[data-seg="it-plate"]'):v('it-'+k);
+      if(!el || el.disabled) continue;
+      clearFieldError(el);
+      let msg=required[k]||'';
+      if(el.matches('input[data-num]')){
+        const result=checkNum(el);
+        msg=result.ok?'':result.msg;
+        if(result.ok && k==='cap' && !(Number(result.value)>0)) msg=required.cap||'Укажите ёмкость';
+        else if(k==='q' && !Number.isInteger(Number(result.value))) msg='Количество: укажите целое число от 1 до 50';
+      }
+      if(msg){ setFieldError(el,msg); errors.push(el); }
+    }
+    if(errors.length){ const first=errors[0].matches('[data-seg]')?errors[0].querySelector('button'):errors[0]; first&&first.focus(); return; }
+    form.querySelectorAll('input[data-num]:not(:disabled)').forEach(el=>{ el.value=checkNum(el).value; });
+    pull(); draft.qty=Number(draft.qty);
     const ri=draft.role?ROLE_INFO[draft.role]:null, gas=!!draft.gas||(draft.role==='burners'&&draft.plate==='gas');
     const it={uid:draft.uid, qty:draft.qty, n:(draft.n||'').trim()||(ri?ri.label:'Оборудование'), model:(draft.model||'').trim(), w:+dot(draft.w), d:+dot(draft.d), h:+dot(draft.h),
       kw:draft.ph?(+dot(draft.kw||'')||0):0, ph:draft.ph, z:zoneOfRec(draft), mount:draft.mount, hot:!!draft.hot, wat:!!draft.wat, gas, gkw:gas&&+dot(draft.gkw||'')>0?+dot(draft.gkw):null,

@@ -6428,19 +6428,47 @@ function makeVariant(id){
   return createProject(src, `Открыт вариант ${v.letter}, создан отдельный проект`); }
 
 /* ---- файл проекта ---- */
-let dlP=null; function getDl(){ const c=window.claude; if(!c||typeof c.use!=='function') return Promise.resolve(null); if(!dlP) dlP=c.use('downloads').catch(()=>null); return dlP; }
+let dlP=null; function getDl(){ const c=window.claude; if(!c||typeof c.use!=='function') return Promise.resolve(null); if(!dlP) dlP=Promise.resolve().then(()=>c.use('downloads')).catch(e=>{ dlP=null; throw e; }); return dlP; }
 function projectFile(data){ return JSON.stringify({app:PJ_APP, format:PJ_FORMAT, savedAt:new Date().toISOString(), project:data}, null, 1); }
 function projectFileName(data){ const d=new Date(), p2=n=>String(n).padStart(2,'0'); return `${safeName(data.name)} — ${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}.json`; }
+function downloadProjectInBrowser(text, name){
+  let url, link, started=false;
+  try{
+    url=URL.createObjectURL(new Blob([text],{type:'application/json;charset=utf-8'}));
+    link=document.createElement('a'); link.href=url; link.download=name; link.hidden=true;
+    document.body.appendChild(link); link.click(); started=true;
+  }finally{
+    if(link) link.remove();
+    // Не отзывать URL до того, как браузер успеет начать чтение файла.
+    if(url){ const release=()=>{ try{ URL.revokeObjectURL(url); }catch(e){} };
+      if(started) setTimeout(release,60000); else release(); }
+  }
+}
 async function downloadProject(id){
   let data; if(!id || id===S.pid){ if(S.pid) save(); data=JSON.parse(JSON.stringify(S)); id=S.pid; } else data=STORE.load(id);
   if(!data){ toast('Проект не найден'); return; }
-  const text=projectFile(data), name=projectFileName(data), dl=await getDl();
-  if(!dl){ showJsonFallback(text, name); return; }
-  try{ await dl.save({filename:name, data:text}); if(id) STORE.mark(id,{exportedAt:new Date().toISOString()}); toast('Файл проекта сохранён'); if(document.getElementById('pj-screen')) renderProjects(); }
+  const text=projectFile(data), name=projectFileName(data);
+  let dl, browser=false;
+  try{ dl=await getDl(); }
   catch(e){ const c=e&&e.code; if(c==='declined') return;
-    if(c==='rate_limited') toast('Окно сохранения уже открыто или запросов слишком много — подождите и повторите');
-    else if(c==='unavailable'||c==='not_granted'||c==='capability_disabled'||c==='capability_removed') showJsonFallback(text, name);
-    else toast('Не удалось сохранить файл: '+((e&&e.message)||c||'неизвестная ошибка')); } }
+    if(c==='rate_limited'){ toast('Окно сохранения уже открыто или запросов слишком много — подождите и повторите'); return; }
+    browser=true; }
+  if(!dl) browser=true;
+  if(dl) try{ await dl.save({filename:name, data:text}); }
+  catch(e){ const c=e&&e.code; if(c==='declined') return;
+    if(c==='rate_limited'){ toast('Окно сохранения уже открыто или запросов слишком много — подождите и повторите'); return; }
+    if(c==='unavailable'||c==='not_granted'||c==='capability_disabled'||c==='capability_removed') browser=true;
+    else{ toast('Не удалось сохранить файл: '+((e&&e.message)||c||'неизвестная ошибка')); return; } }
+  if(browser){ try{ downloadProjectInBrowser(text,name); }catch(e){ showJsonFallback(text,name); return; } }
+  const exportedAt=new Date().toISOString();
+  toast('Скачивание файла проекта начато');
+  // Ошибка локальной отметки не означает ошибку уже выданного файла.
+  try{
+    if(id){ await saveQueue; const result=await STORE.mark(id,{exportedAt});
+      if(!result||!result.ok) toast('Скачивание файла проекта начато; отметку о копии в браузере сохранить не удалось'); }
+    if(document.getElementById('pj-screen')) renderProjects();
+  }catch(e){ toast('Скачивание файла проекта начато; отметку о копии в браузере обновить не удалось'); }
+}
 // Общий клавиатурный контур для всех модальных окон, включая вложенный предпросмотр.
 function modalFocusables(dialog){
   return [...dialog.querySelectorAll('button,input,select,textarea,a[href],summary,[tabindex]')]

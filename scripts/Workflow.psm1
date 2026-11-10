@@ -279,7 +279,7 @@ function New-Archive($p,$Message) {
  [IO.File]::AppendAllText((Join-Path $script:Repo 'versions/list.txt'),"$stamp`t$subject`n",$script:Utf8)
  $rows=@();$lines=[IO.File]::ReadAllLines((Join-Path $script:Repo 'versions/list.txt'));[array]::Reverse($lines)
  foreach($line in $lines){if(!$line.Trim()){continue};$pair=$line.Split("`t",2);if($pair.Count -ne 2 -or $pair[0] -notmatch '^\d{4}-\d{2}-\d{2}_\d{4,9}$'){throw 'Неверная строка versions/list.txt; архив не будет опубликован.'};$safe=[Net.WebUtility]::HtmlEncode($pair[1]);$st=$pair[0];$rows+="<tr><td>$st</td><td>$safe</td><td><a href='versions/$st.html' target='_blank'>открыть</a></td></tr>"}
- $page='<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Кухня трапезной — история версий</title><style>body{max-width:1000px;margin:24px auto;padding:0 16px;background:white;color:#222;font:15px/1.5 system-ui}td{padding:8px;border-bottom:1px solid #ddd}a{color:#295d92}</style></head><body><h1>Кухня трапезной — история версий</h1><p><a href="./">Текущая версия</a> · <a href="https://github.com/pro100po/refectory-app/blob/project-status/PROJECT_STATUS.md">Состояние проекта</a></p><table>'+($rows -join "`n")+'</table></body></html>'
+ $page='<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Кухня трапезной — история версий</title><style>body{max-width:1000px;margin:24px auto;padding:0 16px;background:white;color:#222;font:15px/1.5 system-ui}td{padding:8px;border-bottom:1px solid #ddd}td:first-child{white-space:nowrap}a{color:#295d92}</style></head><body><h1>Кухня трапезной — история версий</h1><p><a href="./">Текущая версия</a> · <a href="https://github.com/pro100po/refectory-app/blob/project-status/PROJECT_STATUS.md">Состояние проекта</a></p><table>'+($rows -join "`n")+'</table></body></html>'
  [IO.File]::WriteAllText((Join-Path $script:Repo 'versions.html'),$page,$script:Utf8)
  $p.archiveFiles=@($archive,'versions/list.txt','versions.html');$p.archiveHashes=@{};foreach($f in $p.archiveFiles){$p.archiveHashes[$f]=(Get-FileHash -LiteralPath (Join-Path $script:Repo $f)).Hash};$p.phase='archive-created';Save-Publication $p
 }
@@ -348,10 +348,10 @@ function Update-ProjectStatus($StatusFile) {
   'https://github.com/pro100po/refectory-app/blob/project-status/PROJECT_STATUS.md'
  }finally{if($null -eq $oldEnv){Remove-Item Env:GIT_INDEX_FILE -ErrorAction SilentlyContinue}else{$env:GIT_INDEX_FILE=$oldEnv};foreach($f in @($tmp,$source)){if(Test-Path -LiteralPath $f){Remove-Item -LiteralPath $f}}}
 }
-function Show-Monitor {
+function Show-Monitor([datetime]$Now=[datetime]::UtcNow) {
  $labels=@{prepared='Подготовлен';starting='Запуск';running='Исполнитель работает';'awaiting-review'='Ожидает проверки';reviewed='Проверен';accepted='Принят и сохранён';'accepted-no-changes'='Принят без правок';failed='Ошибка';interrupted='Прерван';rejected='Отклонён, правки сохранены';superseded='Заменён повторным запуском';invalid='Регистрация отклонена'}
  $rows=@();foreach($s in @(Get-Ledger|Sort-Object started -Descending|Select-Object -First 12)){
-  $end=if($s.ended){[datetime]$s.ended}else{[datetime]::UtcNow};$duration=[int]($end-[datetime]$s.started).TotalSeconds
+  $end=if($s.ended){[datetime]$s.ended}else{$Now};$duration=[int]($end-[datetime]$s.started).TotalSeconds
   $status=if($labels.ContainsKey($s.status)){$labels[$s.status]}else{$s.status};$role=if($s.kind -eq 'manual'){'Ручная работа'}else{'CLI исполнитель'}
   $rows+=[pscustomobject]@{ID=$s.id;Задание=$s.task;Роль=$role;Модель="$($s.model)/$($s.effort)";Стадия=$status;Начало=$s.started;Конец=$s.ended;Секунд=$duration;Сохранено=$(if($s.commit){$s.commit.Substring(0,12)}else{'Нет коммита'});GitHub=$s.pushed;Сайт=$s.deployed;Событие=$s.lastEvent;Ошибка=$s.error}
  };$rows|Format-Table ID,Модель,Стадия,Секунд,Сохранено,GitHub,Сайт -Wrap -AutoSize
@@ -360,17 +360,76 @@ function Show-Monitor {
   'Явно зарегистрированные стадии (данные ведущего):';$ev=@(Get-Content -LiteralPath $st|ForEach-Object {$_|ConvertFrom-Json -AsHashtable});$stRows=@()
   foreach($group in ($ev|Group-Object stage)){
    $last=$group.Group[-1];$start=@($group.Group|Where-Object {$_.action -eq 'start'})|Select-Object -Last 1
-   $ended=if($last.action -eq 'end'){$last.time}else{$null};$elapsed=if($start){[int](($(if($ended){[datetime]$ended}else{[datetime]::UtcNow}))-[datetime]$start.time).TotalSeconds}else{$null}
+   $ended=if($last.action -eq 'end'){$last.time}else{$null};$elapsed=if($start){[int](($(if($ended){[datetime]$ended}else{$Now}))-[datetime]$start.time).TotalSeconds}else{$null}
    $stRows+=[pscustomobject]@{Шаг=$group.Name;Модель="$($last.model)/$($last.effort)";Состояние=$(if($ended){'Завершён'}else{'Выполняется'});Начало=$(if($start){$start.time}else{'Не указано'});Конец=$ended;Секунд=$elapsed;Событие=$last.details}
   };$stRows|Format-Table -Wrap -AutoSize
  }
  $pub=Join-Path $script:Runs 'publication.json';if(Test-Path -LiteralPath $pub){$p=Read-Json $pub;'Последняя публикация:';[pscustomobject]@{Коммит=$p.commit;Отправлено=$p.pushed;Развёрнуто=$p.deployed;ПроверкаPages=$p.deployStatus;Ошибка=$p.error}|Format-List}
  if(!$rows.Count){'Запусков пока нет. Никакие команды исполнения/публикации не выполнялись.'}
 }
+function Watch-Monitor {
+ # Native handlers only: PowerShell scriptblocks cannot run on watcher threads.
+ if(-not ('CodexMonitorChanges' -as [type])){
+  Add-Type -TypeDefinition @'
+using System;
+using System.IO;
+using System.Threading;
+public sealed class CodexMonitorChanges : IDisposable {
+ readonly FileSystemWatcher watcher;
+ readonly AutoResetEvent changed = new AutoResetEvent(false);
+ readonly object gate = new object();
+ bool disposed;
+ public CodexMonitorChanges(string path) {
+  watcher = new FileSystemWatcher(path) {
+   IncludeSubdirectories = true,
+   NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite | NotifyFilters.Size,
+   InternalBufferSize = 65536
+  };
+  // Directory events also matter: an entire run can be renamed or removed.
+  watcher.Changed += Wake; watcher.Created += Wake; watcher.Deleted += Wake;
+  watcher.Renamed += Wake; watcher.Error += Overflow;
+  watcher.EnableRaisingEvents = true;
+ }
+ void Wake(object sender, FileSystemEventArgs args) { Signal(); }
+ void Overflow(object sender, ErrorEventArgs args) { Signal(); } // Full rescan, including on buffer overflow.
+ void Signal() { lock(gate) { if(!disposed) changed.Set(); } }
+ public bool Wait(int milliseconds) { return changed.WaitOne(milliseconds); }
+ public void Dispose() {
+  lock(gate) { disposed = true; }
+  watcher.Dispose(); changed.Dispose();
+ }
+}
+'@
+ }
+ $changes=[CodexMonitorChanges]::new($script:Runs)
+ try {
+  $previous=$null
+  while($true){
+   # The watcher is already armed. Changes during reads/rendering stay signalled.
+   # Freeze elapsed clocks when comparing, so only displayed data causes redraws.
+   $until=[datetime]::UtcNow.AddSeconds(3)
+   while($true){
+    try{$fingerprint=Show-Monitor -Now ([datetime]::UnixEpoch)|Out-String;$frame=Show-Monitor|Out-String;break}
+    catch{if([datetime]::UtcNow -ge $until){throw};Start-Sleep -Milliseconds 100}
+   }
+   if($null -eq $previous -or $fingerprint -cne $previous){
+    if(![Console]::IsOutputRedirected){Clear-Host}
+    "Монитор Codex · UTC $([datetime]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss'))"
+    $frame
+    $previous=$fingerprint
+   }
+   # Timeout only gives PowerShell a cancellation point (Ctrl+C); it never rescans.
+   while(!$changes.Wait(1000)){}
+   # Coalesce write/rename bursts, but keep updates moving during sustained logs.
+   $burst=[Diagnostics.Stopwatch]::StartNew()
+   while($changes.Wait(150) -and $burst.ElapsedMilliseconds -lt 750){}
+  }
+ }finally{$changes.Dispose()}
+}
 function Invoke-Workflow {
  [CmdletBinding()]param([string]$Command='status',[string]$Repo,[string]$Id,[string]$TaskFile,[string[]]$Files,[string]$Model='sol',[string]$Effort='medium',[switch]$AllowMax,[string]$Evidence,[string]$Message,[string]$Baseline,[string]$StatusFile,[string]$Stage,[string]$StageAction='start',[switch]$Once,[switch]$CompleteItem,[int]$DeployTimeoutSeconds=300,[switch]$TestMode,[string]$TestCli,[switch]$TestSkipDeployment)
  if(!$Repo){$Repo=Split-Path $PSScriptRoot -Parent};Init-Repo $Repo
- if($Command -in @('status','monitor')){do {if($Command -eq 'monitor' -and !$Once -and ![Console]::IsOutputRedirected){Clear-Host};"Монитор Codex · UTC $([datetime]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss'))";Show-Monitor;if($Command -eq 'status' -or $Once){break};Start-Sleep -Seconds 2}while($true);return}
+ if($Command -in @('status','monitor')){if($Command -eq 'status' -or $Once){"Монитор Codex · UTC $([datetime]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss'))";Show-Monitor}else{Watch-Monitor};return}
  $lock=Acquire-Operation
  try {
   switch($Command){

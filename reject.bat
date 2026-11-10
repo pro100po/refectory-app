@@ -1,7 +1,4 @@
 @echo off
 chcp 65001 >nul
-cd /d "%~dp0"
-git checkout -- .
-echo.
-echo Pravki GPT otmeneny, fayl vozvrashchen k proshloy versii.
-pause
+echo Отклонение без удаления правок: pwsh -NoProfile -File "%~dp0watch.ps1" -Command reject -Id ^<ID^>
+echo Автоматического отката нет. Сначала сохраните и разберите изменения с ведущим.

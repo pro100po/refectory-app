@@ -1,0 +1,391 @@
+Set-StrictMode -Version Latest
+$ErrorActionPreference='Stop'
+$script:Utf8=[Text.UTF8Encoding]::new($false)
+
+function Write-Atomic($Path,$Value) {
+ $tmp="$Path.$([guid]::NewGuid().ToString('N')).tmp"
+ [IO.File]::WriteAllText($tmp,($Value|ConvertTo-Json -Depth 30),$script:Utf8)
+ $until=[datetime]::UtcNow.AddSeconds(3)
+ while($true){try{[IO.File]::Move($tmp,$Path,$true);break}catch{if([datetime]::UtcNow -ge $until){if(Test-Path -LiteralPath $tmp){Remove-Item -LiteralPath $tmp};throw};Start-Sleep -Milliseconds 25}}
+}
+function Read-Json($Path) {
+ $stream=[IO.File]::Open($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete));$reader=[IO.StreamReader]::new($stream,$script:Utf8)
+ try{$reader.ReadToEnd()|ConvertFrom-Json -AsHashtable}finally{$reader.Dispose();$stream.Dispose()}
+}
+function Invoke-Native([string]$Exe,[string[]]$Arguments,[string]$Directory,[string]$InputText) {
+ $p=[Diagnostics.Process]::new(); $si=[Diagnostics.ProcessStartInfo]::new()
+ $si.FileName=$Exe; $si.WorkingDirectory=$Directory; $si.UseShellExecute=$false; $si.CreateNoWindow=$true
+ $si.RedirectStandardOutput=$true; $si.RedirectStandardError=$true; $si.RedirectStandardInput=$true
+ $si.StandardOutputEncoding=$script:Utf8; $si.StandardErrorEncoding=$script:Utf8;$si.StandardInputEncoding=$script:Utf8
+ foreach($a in $Arguments){$si.ArgumentList.Add($a)}
+ $p.StartInfo=$si; [void]$p.Start()
+ $ot=$p.StandardOutput.ReadToEndAsync(); $et=$p.StandardError.ReadToEndAsync()
+ if($InputText){$p.StandardInput.Write($InputText)}; $p.StandardInput.Close(); $p.WaitForExit()
+ $r=@{Code=$p.ExitCode; Out=$ot.GetAwaiter().GetResult(); Err=$et.GetAwaiter().GetResult()}; $p.Dispose(); $r
+}
+function Git([string[]]$Arguments,[switch]$AllowFailure,[string]$InputText) {
+ $r=Invoke-Native 'git' (@('-c','core.quotepath=false','-C',$script:Repo)+$Arguments) $script:Repo $InputText
+ if($r.Code -ne 0 -and !$AllowFailure){throw "git $($Arguments[0]): $($r.Err.Trim()) $($r.Out.Trim()) [exit $($r.Code)]"}
+ $r
+}
+function G([string[]]$Arguments) { (Git $Arguments).Out.TrimEnd("`r","`n") }
+function Hash-Text([string]$Text) { [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($script:Utf8.GetBytes($Text))) }
+function Event($State,[string]$Type,[string]$Details) {
+ $entry=@{time=[datetime]::UtcNow.ToString('o');type=$Type;details=$Details}
+ [IO.File]::AppendAllText((Join-Path $script:Runs "$($State.id)/events.jsonl"),(($entry|ConvertTo-Json -Compress)+"`n"),$script:Utf8)
+ $State.lastEvent="$Type : $Details"; Save-State $State
+}
+function Save-State($State) { Write-Atomic (Join-Path $script:Runs "$($State.id)/state.json") $State }
+function Load-State([string]$Id) {
+ if($Id -notmatch '^\d{8}T\d{9}Z-[a-f0-9]{8}$'){throw 'Неверный ID запуска.'}
+ $p=Join-Path $script:Runs "$Id/state.json"; if(!(Test-Path -LiteralPath $p)){throw 'Запуск не найден.'}; Read-Json $p
+}
+function Acquire-Operation {
+ try { [IO.File]::Open((Join-Path $script:Runs 'operation.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None) }
+ catch { throw 'Другая команда инфраструктуры выполняется. Повторите после её завершения.' }
+}
+function Active { $p=Join-Path $script:Runs 'active.json'; if(Test-Path -LiteralPath $p){Read-Json $p} }
+function Set-Active($State) { Write-Atomic (Join-Path $script:Runs 'active.json') @{id=$State.id;pid=$State.pid;processStarted=$State.processStarted} }
+function Require-Owner($State) { $a=Active; if(!$a -or $a.id -ne $State.id){throw 'Запуск не владеет блокировкой репозитория.'} }
+function Clear-Active($State) { Require-Owner $State; Remove-Item -LiteralPath (Join-Path $script:Runs 'active.json') }
+function Assert-Free { $a=Active; if($a){throw "Репозиторий занят запуском $($a.id). Нужны проверка/приёмка, отклонение или recover."} }
+function Get-Route([string]$Model,[string]$Effort,[switch]$AllowMax) {
+ $map=@{luna='gpt-6-luna';terra='gpt-6.1-terra';sol='gpt-6.1-sol';astra='gpt-6-astra'}
+ if($map.ContainsKey($Model)){$Model=$map[$Model]}
+ $routes=@{'gpt-6-luna'=@('low');'gpt-6.1-terra'=@('medium');'gpt-6.1-sol'=@('medium','high','xhigh');'gpt-6-astra'=@('medium','high','xhigh')}
+ if(!$routes.ContainsKey($Model)){throw "Неизвестная модель: $Model"}
+ if($Effort -eq 'max' -and $AllowMax -and $Model -in @('gpt-6.1-sol','gpt-6-astra')){return @{model=$Model;effort=$Effort}}
+ if($Effort -notin $routes[$Model]){throw "Недопустимый effort $Effort для $Model; max требует явного -AllowMax, ultra запрещён."}
+ @{model=$Model;effort=$Effort}
+}
+function Safe-File([string]$Path) {
+ if(!$Path -or [IO.Path]::IsPathRooted($Path) -or $Path -match '[\x00-\x1f:*?"<>|]' -or $Path -match '(^|[\\/])\.\.([\\/]|$)'){throw "Недопустимый относительный путь: $Path"}
+ $norm=$Path.Replace('\','/'); if($norm -match '(^|/)\.(?:git|codex-runs)(/|$)' -or $norm -match '(^|/)\.(/|$)' -or $norm -match '/$'){throw "Служебный или неоднозначный путь: $Path"}
+ $full=[IO.Path]::GetFullPath((Join-Path $script:Repo $norm))
+ if(!$full.StartsWith($script:Repo+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)){throw 'Путь вне репозитория.'}
+ $walk=$script:Repo
+ foreach($part in $norm.Split('/')) {
+  if($part.EndsWith('.') -or $part.EndsWith(' ')){throw 'Путь с конечной точкой/пробелом запрещён.'}
+  $walk=Join-Path $walk $part
+  if(Test-Path -LiteralPath $walk){$it=Get-Item -LiteralPath $walk -Force; if($it.Attributes -band [IO.FileAttributes]::ReparsePoint){throw "Символическая ссылка/reparse запрещена: $walk"}}
+ }
+ if((Test-Path -LiteralPath $full) -and (Get-Item -LiteralPath $full -Force).PSIsContainer){throw 'Нужны точные файлы, не папки.'}
+ $norm
+}
+function Changed-Files {
+ $a=@(); foreach($args in @(@('diff','--name-only','-z','HEAD'),@('ls-files','--others','--exclude-standard','-z'))){
+  $out=(Git $args).Out; $a+=@($out.Split([char]0,[StringSplitOptions]::RemoveEmptyEntries))
+ }; @($a|Sort-Object -Unique)
+}
+function Assert-Unstaged { if((G @('diff','--cached','--name-only')).Length){throw 'Индекс Git содержит staged изменения; сначала разберите их отдельно.'} }
+function Assert-Clean { Assert-Unstaged; if(@(Changed-Files).Count){throw 'Рабочая папка содержит незавершённые изменения.'} }
+function Assert-Scope($State,[switch]$AllowOwnStaged) {
+ if((G @('rev-parse','HEAD')) -ne $State.baseline -or (G @('branch','--show-current')) -ne $State.branch){throw 'HEAD/ветка изменились после начала запуска.'}
+ if(!$AllowOwnStaged){Assert-Unstaged}
+ $changed=@(Changed-Files)
+ foreach($p in $changed){$norm=Safe-File $p;if($norm -cnotin $State.files){throw "Правка вне задания: $norm"}}
+ foreach($p in $State.files){[void](Safe-File $p)}
+ $parts=@($State.baseline,$State.branch)
+ foreach($p in $changed){$full=Join-Path $script:Repo $p;$v=if(Test-Path -LiteralPath $full){(Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash}else{'DELETED'};$parts+="$p`0$v"}
+ # Include Git metadata (mode changes included), as well as all untracked file bytes.
+ $diff='';$untracked=@((Git @('ls-files','--others','--exclude-standard','-z')).Out.Split([char]0,[StringSplitOptions]::RemoveEmptyEntries))
+ foreach($path in $changed){
+  if($path -cin $untracked){$addition=Git @('diff','--no-index','--binary','--','NUL',$path) -AllowFailure;if($addition.Code -notin @(0,1)){throw "Не удалось сохранить diff нового файла: $path"};$diff+=$addition.Out}
+  else{$diff+=(Git @('diff','--binary','HEAD','--',$path)).Out}
+ }
+ $parts+=$diff
+ @{files=$changed;fingerprint=(Hash-Text ($parts -join "`n"));diff=$diff}
+}
+function New-State($TaskFile,$Files,$Route,[string]$Kind) {
+ if(!$TaskFile -or !(Test-Path -LiteralPath $TaskFile -PathType Leaf)){throw 'Требуется явный существующий -TaskFile.'}
+ if(!$Files -or !$Files.Count){throw 'Требуется список точных разрешённых файлов -Files.'}
+ $list=@($Files|ForEach-Object {Safe-File $_}|Sort-Object -Unique)
+ $id=[datetime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')+'-'+[guid]::NewGuid().ToString('N').Substring(0,8)
+ $dir=Join-Path $script:Runs $id;[void][IO.Directory]::CreateDirectory($dir)
+ Copy-Item -LiteralPath $TaskFile -Destination (Join-Path $dir 'task.md')
+ $s=@{id=$id;kind=$Kind;task=([IO.File]::ReadLines((Join-Path $dir 'task.md'))|Select-Object -First 1);taskHash=(Get-FileHash -LiteralPath (Join-Path $dir 'task.md')).Hash;files=$list;baseline=(G @('rev-parse','HEAD'));branch=(G @('branch','--show-current'));model=$Route.model;effort=$Route.effort;status='prepared';started=[datetime]::UtcNow.ToString('o');ended=$null;pid=$null;processStarted=$null;exitCode=$null;lastEvent='';review=$null;commit=$null;pushed=$false;deployed=$false;error=$null}
+ foreach($name in @('stdout.jsonl','stderr.log','report.md','changes.diff')){[IO.File]::WriteAllText((Join-Path $dir $name),'',$script:Utf8)}
+ Save-State $s; $s
+}
+function Process-Alive($State) {
+ if(!$State.pid -or !$State.processStarted){return $false}
+ try {$p=Get-Process -Id $State.pid -ErrorAction Stop;return [Math]::Abs(($p.StartTime.ToUniversalTime()-([datetime]$State.processStarted).ToUniversalTime()).TotalMilliseconds) -lt 2}catch{
+  # Tool sandboxes may hide normal-session PIDs. Absence from Get-Process is
+  # not proof of death: CIM must confirm it, otherwise recovery fails closed.
+  try{$native=Get-CimInstance -ClassName Win32_Process -Filter "ProcessId = $([int]$State.pid)" -ErrorAction Stop}catch{throw 'Нельзя подтвердить завершение процесса: нужен разрешённый доступ к обычной Windows-сессии. Повторите команду с таким доступом; не меняйте CLI sandbox.'}
+  if(!$native){return $false}
+  $created=$native.CreationDate.ToUniversalTime();$expected=([datetime]$State.processStarted).ToUniversalTime()
+  return [Math]::Abs(($created-$expected).TotalMilliseconds) -lt 2
+ }
+}
+function Assert-CLIStopped($State) {
+ if($State.kind -ne 'cli'){return}
+ if(Process-Alive $State){throw 'Runner ещё работает; проверка/отклонение пока запрещены.'}
+ if($State.ContainsKey('cliPid') -and (Process-Alive @{pid=$State.cliPid;processStarted=$State.cliProcessStarted})){throw 'CLI adapter ещё работает; проверка/отклонение пока запрещены.'}
+}
+function Recovery-Evidence($State,$Evidence) {
+ if($State.status -ne 'interrupted' -and !($State.ContainsKey('recoveryRequired') -and $State.recoveryRequired)){return}
+ if(!$Evidence -or !(Test-Path -LiteralPath $Evidence -PathType Leaf)){throw 'После interrupted нужен явный -Evidence: ведущий проверяет/завершает дерево процессов и записывает результат. Правки и блокировка сохранены.'}
+ $text=[IO.File]::ReadAllText((Resolve-Path -LiteralPath $Evidence));if(!$text.Trim()){throw 'Подтверждение проверки дерева процессов пусто.'}
+ [IO.File]::WriteAllText((Join-Path $script:Runs "$($State.id)/recovery-evidence.md"),$text,$script:Utf8)
+ $State.recoveryEvidence=@{hash=(Hash-Text $text);time=[datetime]::UtcNow.ToString('o')};Event $State 'recovery-evidence' 'Ведущий представил явное подтверждение проверки дерева процессов'
+}
+function Start-Run($TaskFile,$Files,$Model,$Effort,$AllowMax,$TestMode,$TestCli,$Previous,$RecoveryEvidence) {
+ if($Previous){
+  if($Previous.status -in @('accepted','accepted-no-changes','superseded','starting','running')){throw 'Для rerun нужен завершённый непринятый запуск.'}
+  if(Process-Alive $Previous){throw 'Прежний runner ещё работает.'}
+  if($Previous.ContainsKey('cliPid') -and (Process-Alive @{pid=$Previous.cliPid;processStarted=$Previous.cliProcessStarted})){throw 'Прежний CLI ещё работает.'}
+  $active=Active;if($active -and $active.id -ne $Previous.id){throw 'Репозиторий занят другим запуском.'}
+  [void](Assert-Scope $Previous)
+  $probe=@{baseline=$Previous.baseline;branch=$Previous.branch;files=@($Files|ForEach-Object {Safe-File $_})};[void](Assert-Scope $probe)
+ }else{Assert-Free;Assert-Clean}
+ $route=Get-Route $Model $Effort -AllowMax:$AllowMax
+ if($TestCli -and !$TestMode){throw '-TestCli требует явного -TestMode.'}
+ if($TestMode -and !$TestCli){throw 'В тестовом режиме нужен -TestCli.'}
+ $cli=if($TestMode){(Resolve-Path -LiteralPath $TestCli).Path}else{(Get-Command codex -ErrorAction Stop).Source}
+ if([IO.Path]::GetExtension($cli) -notin @('.exe','.cmd','.bat','.ps1')){throw 'Неподдерживаемый CLI endpoint.'}
+ if([IO.Path]::GetExtension($cli) -in @('.cmd','.bat') -and ($script:Repo+$script:Runs+$cli) -match '[&|<>^%!"\r\n]'){throw 'cmd shim не допускает метасимволы в путях; используйте безопасный путь или exe.'}
+ if($Previous){Recovery-Evidence $Previous $RecoveryEvidence}
+ $s=New-State $TaskFile $Files $route 'cli';$s.cli=$cli;$s.testMode=[bool]$TestMode
+ $s.status='starting';if($Previous){$s.previous=$Previous.id;$Previous.status='superseded';Event $Previous 'superseded' "Повторный запуск $($s.id); правки сохранены"};Save-State $s;Set-Active $s
+ try {
+  # Encoded bootstrap contains only generated safe data, never shell text from the task.
+  $data=@{module=$PSCommandPath;repo=$script:Repo;id=$s.id;stdout=(Join-Path $script:Runs "$($s.id)/runner.stdout.log");stderr=(Join-Path $script:Runs "$($s.id)/runner.stderr.log")}|ConvertTo-Json -Compress
+  $encodedData=[Convert]::ToBase64String($script:Utf8.GetBytes($data))
+  $code='$ErrorActionPreference=''Stop'';$d=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('''+$encodedData+'''))|ConvertFrom-Json;try { & {Import-Module $d.module;Invoke-Worker -Repo $d.repo -Id $d.id} 1> $d.stdout 2> $d.stderr }catch{[IO.File]::AppendAllText($d.stderr,($_|Out-String),[Text.UTF8Encoding]::new($false));exit 1}'
+  $enc=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($code))
+  # WMI creates a normal-user process outside the calling tool's process tree.
+  # Start-Process alone is killed by some tool hosts when their command ends.
+  # No RunAs/UAC, task scheduler, service install or sandbox bypass is involved.
+  $startup=New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly -Property @{ShowWindow=[uint16]0}
+  $pwsh=(Get-Command pwsh).Source
+  $created=Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{CommandLine=('"'+$pwsh+'" -NoLogo -NoProfile -EncodedCommand '+$enc);CurrentDirectory=$script:Repo;ProcessStartupInformation=$startup}
+  if($created.ReturnValue -ne 0 -or !$created.ProcessId){throw "Windows CIM launcher: ReturnValue=$($created.ReturnValue), PID=$($created.ProcessId). Нужен разрешённый доступ к обычной Windows-сессии; CLI sandbox не меняйте."}
+  $p=Get-Process -Id $created.ProcessId -ErrorAction Stop
+  $s.pid=$p.Id;$s.processStarted=$p.StartTime.ToUniversalTime().ToString('o');$s.launcher='Windows CIM (normal user, hidden)';Save-State $s;Set-Active $s
+  Event $s 'started' "Отдельный runner PID $($s.pid), $($s.model)/$($s.effort)"
+  [IO.File]::WriteAllText((Join-Path $script:Runs "$($s.id)/start.ready"),'ready',$script:Utf8);$s.id
+ }catch{$s.status='failed';$s.error="$_";$s.ended=[datetime]::UtcNow.ToString('o');Save-State $s;Clear-Active $s;throw}
+}
+function Init-Repo($Repo) {
+ $script:Repo=[IO.Path]::GetFullPath((Resolve-Path -LiteralPath $Repo).Path).TrimEnd('\','/')
+ $root=G @('rev-parse','--show-toplevel');if([IO.Path]::GetFullPath($root).TrimEnd('\','/') -ne $script:Repo){throw '-Repo должен указывать корень Git.'}
+ if((Get-Item -LiteralPath $script:Repo -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Корень не должен быть reparse point.'}
+ $script:Runs=Join-Path $script:Repo '.codex-runs'
+ if(Test-Path -LiteralPath $script:Runs){if((Get-Item -LiteralPath $script:Runs -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw '.codex-runs не должна быть ссылкой.'}}
+ [void][IO.Directory]::CreateDirectory($script:Runs)
+ if((Git @('check-ignore','-q','--','.codex-runs/probe') -AllowFailure).Code -ne 0){throw 'Сначала добавьте /.codex-runs/ в .gitignore. Запуск ничего не коммитит сам.'}
+}
+function Invoke-Worker([string]$Repo,[string]$Id) {
+ Init-Repo $Repo
+ $ready=Join-Path $script:Runs "$Id/start.ready";$deadline=[datetime]::UtcNow.AddSeconds(20)
+ while(!(Test-Path -LiteralPath $ready)){if([datetime]::UtcNow -gt $deadline){throw 'Нет передачи владельца runner.'};Start-Sleep -Milliseconds 100}
+ # Parent still holds operation.lock briefly after it signals ready. Retry the handoff,
+ # then re-read state: never write stale starting state over the worker's progress.
+ $lock=$null;$handoffUntil=[datetime]::UtcNow.AddSeconds(20)
+ while(!$lock){try{$lock=Acquire-Operation}catch{if([datetime]::UtcNow -gt $handoffUntil){throw};Start-Sleep -Milliseconds 100}}
+ try {$s=Load-State $Id;Require-Owner $s;if($s.pid -ne $PID){throw 'Неверный владелец runner.'};$s.status='running';Event $s 'running' 'codex exec запущен'}finally{$lock.Dispose()}
+ try {
+  $dir=Join-Path $script:Runs $Id
+  $cliArgs=@('exec','--json','--output-last-message',(Join-Path $dir 'report.md'),'-m',$s.model,'-c',"model_reasoning_effort=$($s.effort)",'-s','workspace-write','-C',$script:Repo,'-')
+  # Adapter is a fixed script. JSON args are data; task prose reaches CLI only via stdin.
+  Write-Atomic (Join-Path $dir 'cli.json') @{cli=$s.cli;arguments=$cliArgs}
+  $prompt="Ты отдельный исполнитель согласованного задания. Прочитай неизменяемый файл задания: $(Join-Path $dir 'task.md'). Следуй AGENTS.md и docs/EXECUTOR.md. Меняй только: $($s.files -join ', '). Не делай коммитов, push, checkout/reset и не запускай инфраструктурные команды. Верни отчёт с проверками и ограничениями."
+  $psi=[Diagnostics.ProcessStartInfo]::new();$psi.FileName=(Get-Command pwsh).Source;$psi.WorkingDirectory=$script:Repo;$psi.UseShellExecute=$false;$psi.CreateNoWindow=$true
+  foreach($a in @('-NoProfile','-File',(Join-Path $PSScriptRoot 'cli-adapter.ps1'),'-Config',(Join-Path $dir 'cli.json'))){$psi.ArgumentList.Add($a)}
+  $psi.RedirectStandardOutput=$true;$psi.RedirectStandardError=$true;$psi.RedirectStandardInput=$true;$psi.StandardOutputEncoding=$script:Utf8;$psi.StandardErrorEncoding=$script:Utf8;$psi.StandardInputEncoding=$script:Utf8
+  $p=[Diagnostics.Process]::new();$p.StartInfo=$psi;[void]$p.Start();$s.cliPid=$p.Id;$s.cliProcessStarted=$p.StartTime.ToUniversalTime().ToString('o');Save-State $s
+  $p.StandardInput.Write($prompt);$p.StandardInput.Close()
+  $err=$p.StandardError.ReadToEndAsync()
+  $writer=[IO.StreamWriter]::new((Join-Path $dir 'stdout.jsonl'),$false,$script:Utf8);$writer.AutoFlush=$true
+  try {while($null -ne ($line=$p.StandardOutput.ReadLine())) {
+   $writer.WriteLine($line)
+   try {$j=$line|ConvertFrom-Json -AsHashtable;if($j.type){Event $s 'cli-event' ([string]$j.type)}}catch{Event $s 'cli-unparsed' 'Нестандартная строка stdout сохранена'}
+  }}finally{$writer.Dispose()}
+  $p.WaitForExit();$s.exitCode=$p.ExitCode;$p.Dispose();[IO.File]::WriteAllText((Join-Path $dir 'stderr.log'),$err.GetAwaiter().GetResult(),$script:Utf8)
+  if((Get-FileHash -LiteralPath (Join-Path $dir 'task.md')).Hash -ne $s.taskHash){throw 'Исполнитель изменил копию задания.'}
+  $scope=Assert-Scope $s;[IO.File]::WriteAllText((Join-Path $dir 'changes.diff'),$scope.diff,$script:Utf8)
+  $s.status=if($s.exitCode -eq 0){'awaiting-review'}else{'failed'}
+  if($s.exitCode -ne 0){$s.error="CLI exit $($s.exitCode)"}
+ }catch{$s.status='failed';$s.error="$_"}finally{$s.ended=[datetime]::UtcNow.ToString('o');Event $s $s.status $(if($s.error){$s.error}else{'Исполнитель завершился; нужна проверка ведущего'})}
+}
+function Manual-Run($TaskFile,$Files,$Baseline) {
+ Assert-Free;Assert-Unstaged
+ if(!$Baseline -or (G @('rev-parse',"$Baseline^{commit}")) -ne (G @('rev-parse','HEAD'))){throw 'Ручная регистрация требует явного -Baseline, равного текущему HEAD.'}
+ # Validate BEFORE writing an active lock; rollback registration on every failed validation.
+ $route=@{model='manual';effort='manual'};$s=New-State $TaskFile $Files $route 'manual'
+ try {$scope=Assert-Scope $s;if(!$scope.files.Count){throw 'Нет изменений для ручной регистрации.'};$s.status='awaiting-review';$s.ended=[datetime]::UtcNow.ToString('o');Set-Active $s;Event $s 'manual' 'Ручная работа зарегистрирована; CLI не запускался';$s.id}
+ catch {$s.status='invalid';$s.error="$_";Save-State $s;throw}
+}
+function Review-Run($s,$Evidence) {
+ Require-Owner $s;if($s.status -in @('starting','running')){throw 'Исполнитель ещё работает.'}
+ Assert-CLIStopped $s
+ if(!$Evidence -or !(Test-Path -LiteralPath $Evidence -PathType Leaf)){throw 'Нужен -Evidence: файл с результатами проверок и решением ведущего.'}
+ $text=[IO.File]::ReadAllText((Resolve-Path -LiteralPath $Evidence));if(!$text.Trim()){throw 'Доказательства проверки пусты.'}
+ $scope=Assert-Scope $s
+ Recovery-Evidence $s $Evidence
+ [IO.File]::WriteAllText((Join-Path $script:Runs "$($s.id)/changes.diff"),$scope.diff,$script:Utf8)
+ [IO.File]::WriteAllText((Join-Path $script:Runs "$($s.id)/review.md"),$text,$script:Utf8)
+ $s.review=@{fingerprint=$scope.fingerprint;evidenceHash=(Hash-Text $text);time=[datetime]::UtcNow.ToString('o')}
+ $s.status='reviewed';Event $s 'reviewed' 'Проверка привязана к текущему отпечатку файлов'
+}
+function Accept-Run($s,$Message) {
+ Require-Owner $s;if($s.status -ne 'reviewed' -or !$s.review){throw 'Сначала нужна review с доказательствами.'}
+ if(!$Message -or !$Message.Trim()){throw 'Нужно явное сообщение коммита -Message.'}
+ $scope=Assert-Scope $s;if($scope.fingerprint -ne $s.review.fingerprint){throw 'Файлы изменились после review; повторите проверку.'}
+ $ev=[IO.File]::ReadAllText((Join-Path $script:Runs "$($s.id)/review.md"));if((Hash-Text $ev) -ne $s.review.evidenceHash){throw 'Доказательства проверки изменились.'}
+ if(!$scope.files.Count){$s.status='accepted-no-changes';$s.error=$null;Event $s 'accepted-no-changes' 'Проверено: изменений нет, коммит не создавался';Clear-Active $s;return}
+ try {
+  [void](Git (@('add','--')+$scope.files))
+  # Detect races/foreign staged paths before commit. No broad reset on failure.
+  $staged=@((G @('diff','--cached','--name-only')).Split("`n",[StringSplitOptions]::RemoveEmptyEntries));foreach($f in $staged){if($f.TrimEnd("`r") -cnotin $scope.files){throw 'В индексе появились чужие изменения.'}}
+  if((G @('diff','--name-only')).Length){throw 'После git add возникли новые изменения; разберите индекс вручную.'}
+  $after=Assert-Scope $s -AllowOwnStaged
+  if($after.fingerprint -ne $s.review.fingerprint){throw 'Содержимое изменилось во время git add; коммит запрещён, повторите проверку после разбора индекса.'}
+  [void](Git @('commit','-m',$Message));$s.commit=G @('rev-parse','HEAD');$s.status='accepted';$s.error=$null
+  Event $s 'accepted' "Локальный коммит $($s.commit); push не выполнялся";Clear-Active $s
+ }catch{$s.error="$_";Event $s 'accept-error' $s.error;throw}
+}
+function Get-Ledger {
+ $items=@();foreach($f in Get-ChildItem -LiteralPath $script:Runs -Filter state.json -Recurse -File){$items+=Read-Json $f.FullName};$items
+}
+function Save-Publication($p){Write-Atomic (Join-Path $script:Runs 'publication.json') $p}
+function Wait-Deployment($p,[int]$Timeout) {
+ if($Timeout -lt 0 -or $Timeout -gt 3600){throw 'DeployTimeoutSeconds: 0..3600.'}
+ $repoUrl=G @('remote','get-url','origin')
+ if($repoUrl -notmatch '(?:github\.com[:/])([^/]+)/([^/]+?)(?:\.git)?$'){throw 'Origin не GitHub; проверка Pages недоступна.'}
+ $slug="$($Matches[1])/$($Matches[2])";$deadline=[datetime]::UtcNow.AddSeconds($Timeout)
+ do {
+  $r=Invoke-Native 'gh' @('api',"repos/$slug/pages/builds?per_page=100") $script:Repo ''
+  if($r.Code -ne 0){throw "Ошибка GitHub Pages API: $($r.Err)"}
+  $builds=$r.Out|ConvertFrom-Json -AsHashtable
+  $match=@($builds|Where-Object { $_.commit -eq $p.commit }|Sort-Object created_at -Descending)|Select-Object -First 1
+  if($match -and $match.status -eq 'built'){$p.deployed=$true;$p.deployStatus='built';$p.deployChecked=[datetime]::UtcNow.ToString('o');Save-Publication $p;return}
+  if($match -and $match.status -eq 'errored'){throw "Pages завершилась ошибкой для $($p.commit): $($match.error|ConvertTo-Json -Compress)"}
+  if([datetime]::UtcNow -ge $deadline){throw "Время ожидания Pages истекло: подтверждения для $($p.commit) нет."}
+  Start-Sleep -Seconds ([Math]::Min(5,[Math]::Max(1,[int]($deadline-[datetime]::UtcNow).TotalSeconds)))
+ }while($true)
+}
+function New-Archive($p,$Message) {
+ $stamp=[datetime]::UtcNow.ToString('yyyy-MM-dd_HHmmssfff')
+ $archive="versions/$stamp.html";[void](Safe-File $archive);[void](Safe-File 'versions/list.txt');[void](Safe-File 'versions.html')
+ if(Test-Path -LiteralPath (Join-Path $script:Repo $archive)){throw 'Коллизия имени архива.'}
+ [void][IO.Directory]::CreateDirectory((Join-Path $script:Repo 'versions'))
+ $html=[IO.File]::ReadAllText((Join-Path $script:Repo 'index.html'))
+ # A new snapshot lives one directory deeper; preserve local font references only there.
+ $html=$html -replace '(?<![\w/.-])(?:\./)?fonts/','../fonts/'
+ [IO.File]::WriteAllText((Join-Path $script:Repo $archive),$html,$script:Utf8)
+ $subject=$Message -replace '[\r\n\t]',' '
+ [IO.File]::AppendAllText((Join-Path $script:Repo 'versions/list.txt'),"$stamp`t$subject`n",$script:Utf8)
+ $rows=@();$lines=[IO.File]::ReadAllLines((Join-Path $script:Repo 'versions/list.txt'));[array]::Reverse($lines)
+ foreach($line in $lines){if(!$line.Trim()){continue};$pair=$line.Split("`t",2);if($pair.Count -ne 2 -or $pair[0] -notmatch '^\d{4}-\d{2}-\d{2}_\d{4,9}$'){throw 'Неверная строка versions/list.txt; архив не будет опубликован.'};$safe=[Net.WebUtility]::HtmlEncode($pair[1]);$st=$pair[0];$rows+="<tr><td>$st</td><td>$safe</td><td><a href='versions/$st.html' target='_blank'>открыть</a></td></tr>"}
+ $page='<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Кухня трапезной — история версий</title><style>body{max-width:1000px;margin:24px auto;padding:0 16px;background:white;color:#222;font:15px/1.5 system-ui}td{padding:8px;border-bottom:1px solid #ddd}a{color:#295d92}</style></head><body><h1>Кухня трапезной — история версий</h1><p><a href="./">Текущая версия</a> · <a href="https://github.com/pro100po/refectory-app/blob/project-status/PROJECT_STATUS.md">Состояние проекта</a></p><table>'+($rows -join "`n")+'</table></body></html>'
+ [IO.File]::WriteAllText((Join-Path $script:Repo 'versions.html'),$page,$script:Utf8)
+ $p.archiveFiles=@($archive,'versions/list.txt','versions.html');$p.archiveHashes=@{};foreach($f in $p.archiveFiles){$p.archiveHashes[$f]=(Get-FileHash -LiteralPath (Join-Path $script:Repo $f)).Hash};$p.phase='archive-created';Save-Publication $p
+}
+function Publish-Item($Message,$CompleteItem,$TestMode,$TestSkipDeployment,$DeployTimeoutSeconds) {
+ Assert-Free;if(!$CompleteItem){throw 'publish только для завершённого пункта: нужен -CompleteItem.'}
+ if($TestSkipDeployment -and !$TestMode){throw 'Пропуск Pages разрешён только с -TestMode.'}
+ if((G @('branch','--show-current')) -ne 'main'){throw 'Публиковать можно только main.'}
+ $existingPub=Join-Path $script:Runs 'publication.json';$resume=if(Test-Path -LiteralPath $existingPub){Read-Json $existingPub}else{$null}
+ if(!$resume -or $resume.phase -ne 'archive-created'){Assert-Unstaged}
+ [void](Git @('fetch','origin','refs/heads/main:refs/remotes/origin/main'))
+ $remote=G @('rev-parse','origin/main');$head=G @('rev-parse','HEAD')
+ if((Git @('merge-base','--is-ancestor',$remote,$head) -AllowFailure).Code -ne 0){throw 'main расходится с GitHub; сначала разберите расхождение.'}
+ $ledger=@(Get-Ledger);$known=@($ledger|Where-Object {$_.status -eq 'accepted'}|ForEach-Object {$_.commit})
+ $pending=@((G @('rev-list','--reverse',"$remote..HEAD")).Split("`n",[StringSplitOptions]::RemoveEmptyEntries))
+ $pubPath=Join-Path $script:Runs 'publication.json';$p=if(Test-Path -LiteralPath $pubPath){Read-Json $pubPath}else{$null}
+ if($p -and $p.phase -in @('archive-created','archive-committed') -and !$p.pushed){
+  if($head -ne $p.source -and $head -ne $p.commit){throw 'Незавершённая публикация относится к другому HEAD.'}
+ }elseif(!$p -or $p.commit -ne $head){$p=@{source=$head;commit=$head;base=$remote;phase='prepared';archiveFiles=@();pushed=$false;deployed=$false;deployStatus='not-checked';error=$null};Save-Publication $p}
+ foreach($c in $pending){if($c -notin $known -and !($p.phase -eq 'archive-committed' -and $c -eq $p.commit)){throw "Непроверенный локальный коммит $c — push запрещён."}
+  if((G @('rev-list','--parents','-n','1',$c)).Split(' ').Count -ne 2){throw 'Публикация merge-коммитов не поддерживается.'}
+ }
+ if($p.phase -eq 'archive-created'){
+  $actual=@(Changed-Files);if((($actual|Sort-Object) -join "`n") -cne (($p.archiveFiles|Sort-Object) -join "`n")){throw 'Незавершённый архив содержит посторонние изменения.'}
+  foreach($f in $p.archiveFiles){[void](Safe-File $f);if((Get-FileHash -LiteralPath (Join-Path $script:Repo $f)).Hash -ne $p.archiveHashes[$f]){throw 'Созданный архив изменён после попытки публикации.'}}
+ }else{Assert-Clean}
+ try {
+  if($p.phase -eq 'prepared' -and $pending.Count -and (G @('diff','--name-only',$remote,$head,'--','index.html'))){
+   if(!$Message){throw 'Для истории версии нужен -Message.'};New-Archive $p $Message
+  }
+  if($p.phase -eq 'archive-created'){
+   foreach($f in $p.archiveFiles){if((Get-FileHash -LiteralPath (Join-Path $script:Repo $f)).Hash -ne $p.archiveHashes[$f]){throw 'Архив изменён перед commit.'}}
+   $staged=@((G @('diff','--cached','--name-only')).Split("`n",[StringSplitOptions]::RemoveEmptyEntries));foreach($f in $staged){if($f.TrimEnd("`r") -cnotin $p.archiveFiles){throw 'В индексе появились чужие файлы при публикации.'}}
+   [void](Git (@('add','--')+$p.archiveFiles))
+   $stagedAfter=@((G @('diff','--cached','--name-only')).Split("`n",[StringSplitOptions]::RemoveEmptyEntries));foreach($f in $stagedAfter){if($f.TrimEnd("`r") -cnotin $p.archiveFiles){throw 'После git add в индексе появились чужие файлы.'}}
+   if((G @('rev-parse','HEAD')) -ne $p.source){throw 'HEAD изменился во время подготовки архива.'}
+   foreach($f in $p.archiveFiles){if((Get-FileHash -LiteralPath (Join-Path $script:Repo $f)).Hash -ne $p.archiveHashes[$f]){throw 'Архив изменён во время git add.'}}
+   if((G @('diff','--name-only')).Length){throw 'Файлы изменились во время подготовки архива к commit.'}
+   [void](Git @('commit','-m',"История версии: $Message"));$p.commit=G @('rev-parse','HEAD');$p.phase='archive-committed';Save-Publication $p
+  }
+  if($remote -ne $p.commit){[void](Git @('push','origin',"$($p.commit):refs/heads/main"))}
+  $p.pushed=$true;$p.phase='pushed';$p.error=$null;Save-Publication $p
+  foreach($s in $ledger){if($s.commit -and ((Git @('merge-base','--is-ancestor',$s.commit,$p.commit) -AllowFailure).Code -eq 0)){$s.pushed=$true;Save-State $s}}
+  if($TestSkipDeployment){$p.deployStatus='skipped-test';$p.deployed=$false;Save-Publication $p}
+  elseif(!$p.deployed){Wait-Deployment $p $DeployTimeoutSeconds}
+  if($p.deployed){foreach($s in $ledger){if($s.commit -and ((Git @('merge-base','--is-ancestor',$s.commit,$p.commit) -AllowFailure).Code -eq 0)){$s.deployed=$true;Save-State $s}}}
+  $p|ConvertTo-Json -Depth 8
+ }catch{$p.error="$_";Save-Publication $p;throw}
+}
+function Update-ProjectStatus($StatusFile) {
+ Assert-Free;Assert-Clean
+ if(!$StatusFile -or !(Test-Path -LiteralPath $StatusFile -PathType Leaf)){throw 'Нужен явный -StatusFile.'}
+ $content=[IO.File]::ReadAllText((Resolve-Path -LiteralPath $StatusFile));if(!$content.Trim()){throw 'Файл состояния пуст.'}
+ $oldEnv=[Environment]::GetEnvironmentVariable('GIT_INDEX_FILE','Process');$tmp=Join-Path $script:Runs ('status-index-'+[guid]::NewGuid().ToString('N'));$source=Join-Path $script:Runs ('status-'+[guid]::NewGuid().ToString('N')+'.md')
+ try {
+  $ls=G @('ls-remote','--heads','origin','refs/heads/project-status');$parent=$null
+  if($ls){[void](Git @('fetch','origin','refs/heads/project-status:refs/remotes/origin/project-status'));$parent=G @('rev-parse','refs/remotes/origin/project-status');if($parent -ne ($ls -split '\s+')[0]){throw 'Ветка состояния изменилась во время fetch; повторите.'}}
+  $env:GIT_INDEX_FILE=$tmp
+  # Orphan tree, deliberately only PROJECT_STATUS.md even if a bad old branch had extra files.
+  [void](Git @('read-tree','--empty'));[IO.File]::WriteAllText($source,$content,$script:Utf8)
+  $blob=G @('hash-object','-w','--no-filters',$source);[void](Git @('update-index','--add','--cacheinfo',"100644,$blob,PROJECT_STATUS.md"));$tree=G @('write-tree')
+  if($parent -and (G @('rev-parse',"$parent^{tree}")) -eq $tree){return 'Состояние уже совпадает; новый коммит не нужен.'}
+  $ca=@('commit-tree',$tree,'-m','Состояние проекта');if($parent){$ca+=@('-p',$parent)};$commit=G $ca
+  # Normal push: concurrent remote update fails rather than overwriting it.
+  [void](Git @('push','origin',"${commit}:refs/heads/project-status"))
+  Write-Atomic (Join-Path $script:Runs 'status-publication.json') @{commit=$commit;time=[datetime]::UtcNow.ToString('o');url='https://github.com/pro100po/refectory-app/blob/project-status/PROJECT_STATUS.md'}
+  'https://github.com/pro100po/refectory-app/blob/project-status/PROJECT_STATUS.md'
+ }finally{if($null -eq $oldEnv){Remove-Item Env:GIT_INDEX_FILE -ErrorAction SilentlyContinue}else{$env:GIT_INDEX_FILE=$oldEnv};foreach($f in @($tmp,$source)){if(Test-Path -LiteralPath $f){Remove-Item -LiteralPath $f}}}
+}
+function Show-Monitor {
+ $labels=@{prepared='Подготовлен';starting='Запуск';running='Исполнитель работает';'awaiting-review'='Ожидает проверки';reviewed='Проверен';accepted='Принят и сохранён';'accepted-no-changes'='Принят без правок';failed='Ошибка';interrupted='Прерван';rejected='Отклонён, правки сохранены';superseded='Заменён повторным запуском';invalid='Регистрация отклонена'}
+ $rows=@();foreach($s in @(Get-Ledger|Sort-Object started -Descending|Select-Object -First 12)){
+  $end=if($s.ended){[datetime]$s.ended}else{[datetime]::UtcNow};$duration=[int]($end-[datetime]$s.started).TotalSeconds
+  $status=if($labels.ContainsKey($s.status)){$labels[$s.status]}else{$s.status};$role=if($s.kind -eq 'manual'){'Ручная работа'}else{'CLI исполнитель'}
+  $rows+=[pscustomobject]@{ID=$s.id;Задание=$s.task;Роль=$role;Модель="$($s.model)/$($s.effort)";Стадия=$status;Начало=$s.started;Конец=$s.ended;Секунд=$duration;Сохранено=$(if($s.commit){$s.commit.Substring(0,12)}else{'Нет коммита'});GitHub=$s.pushed;Сайт=$s.deployed;Событие=$s.lastEvent;Ошибка=$s.error}
+ };$rows|Format-Table ID,Модель,Стадия,Секунд,Сохранено,GitHub,Сайт -Wrap -AutoSize
+ foreach($r in $rows){"$($r.ID) | $($r.Роль) | $($r.Задание)`nНачало UTC: $($r.Начало); конец UTC: $($r.Конец)`nПоследнее событие: $($r.Событие)";if($r.Ошибка){"ОШИБКА: $($r.Ошибка)"}}
+ $st=Join-Path $script:Runs 'stages.jsonl';if(Test-Path -LiteralPath $st){
+  'Явно зарегистрированные стадии (данные ведущего):';$ev=@(Get-Content -LiteralPath $st|ForEach-Object {$_|ConvertFrom-Json -AsHashtable});$stRows=@()
+  foreach($group in ($ev|Group-Object stage)){
+   $last=$group.Group[-1];$start=@($group.Group|Where-Object {$_.action -eq 'start'})|Select-Object -Last 1
+   $ended=if($last.action -eq 'end'){$last.time}else{$null};$elapsed=if($start){[int](($(if($ended){[datetime]$ended}else{[datetime]::UtcNow}))-[datetime]$start.time).TotalSeconds}else{$null}
+   $stRows+=[pscustomobject]@{Шаг=$group.Name;Модель="$($last.model)/$($last.effort)";Состояние=$(if($ended){'Завершён'}else{'Выполняется'});Начало=$(if($start){$start.time}else{'Не указано'});Конец=$ended;Секунд=$elapsed;Событие=$last.details}
+  };$stRows|Format-Table -Wrap -AutoSize
+ }
+ $pub=Join-Path $script:Runs 'publication.json';if(Test-Path -LiteralPath $pub){$p=Read-Json $pub;'Последняя публикация:';[pscustomobject]@{Коммит=$p.commit;Отправлено=$p.pushed;Развёрнуто=$p.deployed;ПроверкаPages=$p.deployStatus;Ошибка=$p.error}|Format-List}
+ if(!$rows.Count){'Запусков пока нет. Никакие команды исполнения/публикации не выполнялись.'}
+}
+function Invoke-Workflow {
+ [CmdletBinding()]param([string]$Command='status',[string]$Repo,[string]$Id,[string]$TaskFile,[string[]]$Files,[string]$Model='sol',[string]$Effort='medium',[switch]$AllowMax,[string]$Evidence,[string]$Message,[string]$Baseline,[string]$StatusFile,[string]$Stage,[string]$StageAction='start',[switch]$Once,[switch]$CompleteItem,[int]$DeployTimeoutSeconds=300,[switch]$TestMode,[string]$TestCli,[switch]$TestSkipDeployment)
+ if(!$Repo){$Repo=Split-Path $PSScriptRoot -Parent};Init-Repo $Repo
+ if($Command -in @('status','monitor')){do {if($Command -eq 'monitor' -and !$Once -and ![Console]::IsOutputRedirected){Clear-Host};"Монитор Codex · UTC $([datetime]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss'))";Show-Monitor;if($Command -eq 'status' -or $Once){break};Start-Sleep -Seconds 2}while($true);return}
+ $lock=Acquire-Operation
+ try {
+  switch($Command){
+   'run' {Start-Run $TaskFile $Files $Model $Effort $AllowMax $TestMode $TestCli $null $null}
+   'rerun' {Start-Run $TaskFile $Files $Model $Effort $AllowMax $TestMode $TestCli (Load-State $Id) $Evidence}
+   'manual' {Manual-Run $TaskFile $Files $Baseline}
+   'review' {Review-Run (Load-State $Id) $Evidence}
+   'accept-step' {Accept-Run (Load-State $Id) $Message}
+   'reject' {$s=Load-State $Id;Require-Owner $s;Assert-CLIStopped $s;if($s.status -in @('starting','running')){throw 'Сначала дождитесь исполнителя или recover.'};Recovery-Evidence $s $Evidence;$s.status='rejected';Event $s 'rejected' 'Правки сохранены; автоматического отката нет';Clear-Active $s}
+   'recover' {$a=Active;if(!$a){throw 'Нет активного запуска.'};$s=Load-State $a.id;if(!$s.pid -and $s.status -in @('starting','running')){throw 'PID ещё не зарегистрирован: завершение не подтверждено. Требуется проверка запуска в обычной Windows-сессии.'};if(Process-Alive $s){throw 'Runner ещё работает.'};if($s.ContainsKey('cliPid') -and (Process-Alive @{pid=$s.cliPid;processStarted=$s.cliProcessStarted})){throw 'CLI процесс ещё работает; сначала дождитесь его/остановите явно.'};if($s.status -in @('starting','running')){$s.status='interrupted';$s.recoveryRequired=$true;$s.ended=[datetime]::UtcNow.ToString('o');Event $s 'interrupted' 'Runner завершился без подтверждённого результата; правки и блокировка сохранены'}else{'Запуск уже завершён; нужна review или reject.'}}
+   'publish' {Publish-Item $Message $CompleteItem $TestMode $TestSkipDeployment $DeployTimeoutSeconds}
+   'update-status' {Update-ProjectStatus $StatusFile}
+   'record-stage' {if(!$Stage -or !$Message){throw 'Нужны -Stage и -Message.'};$route=Get-Route $Model $Effort -AllowMax:$AllowMax;$e=@{time=[datetime]::UtcNow.ToString('o');stage=$Stage;action=$StageAction;model=$route.model;effort=$route.effort;details=$Message};[IO.File]::AppendAllText((Join-Path $script:Runs 'stages.jsonl'),(($e|ConvertTo-Json -Compress)+"`n"),$script:Utf8)}
+   default {throw 'Неизвестная команда.'}
+  }
+ }finally{$lock.Dispose()}
+}
+Export-ModuleMember -Function Invoke-Workflow,Invoke-Worker

@@ -1,8 +1,5 @@
 @echo off
 chcp 65001 >nul
-cd /d "%~dp0"
-git add -A
-git commit -F commit-msg.txt
-echo.
-echo Pravka prinyata i sohranena.
-pause
+echo Проверка: pwsh -NoProfile -File "%~dp0watch.ps1" -Command review -Id ^<ID^> -Evidence ^<файл проверки^>
+echo Сохранение: pwsh -NoProfile -File "%~dp0watch.ps1" -Command accept-step -Id ^<ID^> -Message ^<сообщение^>
+echo Публикация завершённого пункта выполняется отдельно командой publish -CompleteItem.

@@ -1,3 +1,13 @@
+## 10.11.2026 — кандидат параллельной инфраструктуры
+
+В managed копии parallel-workflow от 6718f04c подготовлен ограниченный режим зарегистрированных workers: отдельные worktrees/ветки, общий настраиваемый предел (по умолчанию 2), локальные active/locks/logs, общий реестр, durable владелец main-интеграции/публикации и source→main mapping. Никакой общей очереди/scheduler нет. Принятый source переносится без автоматического commit и требует fresh main review/accept; worker publish запрещён. Регистрация записывает pending marker до реестра и безопасно завершается точным повтором после сбоя.
+
+Монитор возвращён к цветному append-only журналу HH:mm:ss [задача/попытка] событие: краткое состояние и ограниченный tail при старте, далее только новые события; таблицы, карточки, Clear-Host и перерисовка по времени отсутствуют. Ошибочная/пропавшая запись одной задачи видна отдельно; unchanged bytes и шум не дописывают строки.
+
+Исполнитель: parallel_implementation, Sol/high; formatter: parallel_monitor; независимая проверка: parallel_review, Sol/high. В isolated managed fixture: core E2E 30 PASS; supplemental failure/race/recovery/no-change E2E 25 PASS; registration crash 7 PASS. Последовательные регрессии: infrastructure 77 PASS, recovery 14 PASS, diff 3 PASS; parallel unit 11 PASS; monitor layout и event suite PASS. Проверки выполняются без реального model CLI и production push. Exact stdout/exitCode, mapping и сохранённые ignored runtime-доказательства находятся в work/parallel текущего чата.
+
+Этот файл фиксирует готовый кандидат до окончательной приёмки ведущим. На момент записи production main не изменялась этим исполнителем; commit/push/Pages этим исполнителем не выполнялись. Следующее действие: независимая приёмка финального scoped diff/hash, затем отдельная разрешённая установка и публикация ведущим с повторной проверкой текущей main, процессов и блокировок. Managed test copies архивировать только инструментом archive_worktree после сохранения evidence и завершения read-only проверки.
+
 # Миграция инфраструктуры на локальный Codex
 
 Дата: 10.11.2026. Эта заметка фиксирует этапы миграции. Актуальное состояние всего проекта, включая сохранение и публикацию, ведётся в [PROJECT_STATUS.md](https://github.com/pro100po/refectory-app/blob/project-status/PROJECT_STATUS.md).

@@ -1,6 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 $script:Utf8=[Text.UTF8Encoding]::new($false)
+Import-Module (Join-Path $PSScriptRoot 'Monitor.psm1') -Force
 
 function Write-Atomic($Path,$Value) {
  $tmp="$Path.$([guid]::NewGuid().ToString('N')).tmp"
@@ -103,12 +104,12 @@ function New-State($TaskFile,$Files,$Route,[string]$Kind) {
  $id=[datetime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')+'-'+[guid]::NewGuid().ToString('N').Substring(0,8)
  $dir=Join-Path $script:Runs $id;[void][IO.Directory]::CreateDirectory($dir)
  Copy-Item -LiteralPath $TaskFile -Destination (Join-Path $dir 'task.md')
- $s=@{id=$id;kind=$Kind;task=([IO.File]::ReadLines((Join-Path $dir 'task.md'))|Select-Object -First 1);taskHash=(Get-FileHash -LiteralPath (Join-Path $dir 'task.md')).Hash;files=$list;baseline=(G @('rev-parse','HEAD'));branch=(G @('branch','--show-current'));model=$Route.model;effort=$Route.effort;status='prepared';started=[datetime]::UtcNow.ToString('o');ended=$null;pid=$null;processStarted=$null;exitCode=$null;lastEvent='';review=$null;commit=$null;pushed=$false;deployed=$false;error=$null}
+ $s=@{id=$id;attemptId=$id;taskId=$script:TaskId;kind=$Kind;task=([IO.File]::ReadLines((Join-Path $dir 'task.md'))|Select-Object -First 1);taskHash=(Get-FileHash -LiteralPath (Join-Path $dir 'task.md')).Hash;files=$list;baseline=(G @('rev-parse','HEAD'));branch=(G @('branch','--show-current'));model=$Route.model;effort=$Route.effort;status='prepared';started=[datetime]::UtcNow.ToString('o');ended=$null;pid=$null;processStarted=$null;exitCode=$null;lastEvent='';review=$null;commit=$null;pushed=$false;deployed=$false;error=$null}
  foreach($name in @('stdout.jsonl','stderr.log','report.md','changes.diff')){[IO.File]::WriteAllText((Join-Path $dir $name),'',$script:Utf8)}
  Save-State $s; $s
 }
 function Process-Alive($State) {
- if(!$State.pid -or !$State.processStarted){return $false}
+ if(!$State.pid){return $false};if(!$State.processStarted){throw 'PID без StartTime: завершение не подтверждено.'}
  try {$p=Get-Process -Id $State.pid -ErrorAction Stop;return [Math]::Abs(($p.StartTime.ToUniversalTime()-([datetime]$State.processStarted).ToUniversalTime()).TotalMilliseconds) -lt 2}catch{
   # Tool sandboxes may hide normal-session PIDs. Absence from Get-Process is
   # not proof of death: CIM must confirm it, otherwise recovery fails closed.
@@ -132,6 +133,7 @@ function Recovery-Evidence($State,$Evidence) {
 }
 function Start-Run($TaskFile,$Files,$Model,$Effort,$AllowMax,$TestMode,$TestCli,$Previous,$RecoveryEvidence) {
  if($Previous){
+  if($Previous.kind -eq 'integration'){throw 'Интеграцию нельзя rerun: используйте recover/review/reject.'}
   if($Previous.status -in @('accepted','accepted-no-changes','superseded','starting','running')){throw 'Для rerun нужен завершённый непринятый запуск.'}
   if(Process-Alive $Previous){throw 'Прежний runner ещё работает.'}
   if($Previous.ContainsKey('cliPid') -and (Process-Alive @{pid=$Previous.cliPid;processStarted=$Previous.cliProcessStarted})){throw 'Прежний CLI ещё работает.'}
@@ -146,8 +148,10 @@ function Start-Run($TaskFile,$Files,$Model,$Effort,$AllowMax,$TestMode,$TestCli,
  if([IO.Path]::GetExtension($cli) -notin @('.exe','.cmd','.bat','.ps1')){throw 'Неподдерживаемый CLI endpoint.'}
  if([IO.Path]::GetExtension($cli) -in @('.cmd','.bat') -and ($script:Repo+$script:Runs+$cli) -match '[&|<>^%!"\r\n]'){throw 'cmd shim не допускает метасимволы в путях; используйте безопасный путь или exe.'}
  if($Previous){Recovery-Evidence $Previous $RecoveryEvidence}
- $s=New-State $TaskFile $Files $route 'cli';$s.cli=$cli;$s.testMode=[bool]$TestMode
+ $s=New-State $TaskFile $Files $route 'cli';$s.cli=$cli;$s.testMode=[bool]$TestMode;$s.launchPhase='prepared';Save-State $s
+ try{Reserve-Slot $s}catch{$s.status='invalid';$s.error="$_";Save-State $s;throw}
  $s.status='starting';if($Previous){$s.previous=$Previous.id;$Previous.status='superseded';Event $Previous 'superseded' "Повторный запуск $($s.id); правки сохранены"};Save-State $s;Set-Active $s
+ $launchRequested=$false;$createdPid=$null
  try {
   # Encoded bootstrap contains only generated safe data, never shell text from the task.
   $data=@{module=$PSCommandPath;repo=$script:Repo;id=$s.id;stdout=(Join-Path $script:Runs "$($s.id)/runner.stdout.log");stderr=(Join-Path $script:Runs "$($s.id)/runner.stderr.log")}|ConvertTo-Json -Compress
@@ -159,16 +163,22 @@ function Start-Run($TaskFile,$Files,$Model,$Effort,$AllowMax,$TestMode,$TestCli,
   # No RunAs/UAC, task scheduler, service install or sandbox bypass is involved.
   $startup=New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly -Property @{ShowWindow=[uint16]0}
   $pwsh=(Get-Command pwsh).Source
+  $s.launchPhase='requested';Save-State $s;$launchRequested=$true
   $created=Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{CommandLine=('"'+$pwsh+'" -NoLogo -NoProfile -EncodedCommand '+$enc);CurrentDirectory=$script:Repo;ProcessStartupInformation=$startup}
-  if($created.ReturnValue -ne 0 -or !$created.ProcessId){throw "Windows CIM launcher: ReturnValue=$($created.ReturnValue), PID=$($created.ProcessId). Нужен разрешённый доступ к обычной Windows-сессии; CLI sandbox не меняйте."}
-  $p=Get-Process -Id $created.ProcessId -ErrorAction Stop
+  if($created.ReturnValue -ne 0 -or !$created.ProcessId){$launchRequested=$false;throw "Windows CIM launcher: ReturnValue=$($created.ReturnValue), PID=$($created.ProcessId). Нужен разрешённый доступ к обычной Windows-сессии; CLI sandbox не меняйте."}
+  $createdPid=[int]$created.ProcessId
+  $p=Get-Process -Id $createdPid -ErrorAction Stop
   $s.pid=$p.Id;$s.processStarted=$p.StartTime.ToUniversalTime().ToString('o');$s.launcher='Windows CIM (normal user, hidden)';Save-State $s;Set-Active $s
   Event $s 'started' "Отдельный runner PID $($s.pid), $($s.model)/$($s.effort)"
   [IO.File]::WriteAllText((Join-Path $script:Runs "$($s.id)/start.ready"),'ready',$script:Utf8);$s.id
- }catch{$s.status='failed';$s.error="$_";$s.ended=[datetime]::UtcNow.ToString('o');Save-State $s;Clear-Active $s;throw}
+ }catch{
+  $s.error="$_"
+  if($launchRequested){$s.status='starting';if($createdPid){$s.pid=$createdPid};Save-State $s;Set-Active $s;throw "Исход запуска не подтверждён; active и слот сохранены. $($s.error)"}
+  $s.status='failed';$s.ended=[datetime]::UtcNow.ToString('o');Save-State $s;Clear-Active $s;Slot-LaunchFailed $s;throw
+ }
 }
 function Init-Repo($Repo) {
- $script:Repo=[IO.Path]::GetFullPath((Resolve-Path -LiteralPath $Repo).Path).TrimEnd('\','/')
+ $script:Repo=Canonical-Directory $Repo
  $root=G @('rev-parse','--show-toplevel');if([IO.Path]::GetFullPath($root).TrimEnd('\','/') -ne $script:Repo){throw '-Repo должен указывать корень Git.'}
  if((Get-Item -LiteralPath $script:Repo -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Корень не должен быть reparse point.'}
  $script:Runs=Join-Path $script:Repo '.codex-runs'
@@ -178,6 +188,7 @@ function Init-Repo($Repo) {
 }
 function Invoke-Worker([string]$Repo,[string]$Id) {
  Init-Repo $Repo
+ Init-Coordination $null $null 'worker'
  $ready=Join-Path $script:Runs "$Id/start.ready";$deadline=[datetime]::UtcNow.AddSeconds(20)
  while(!(Test-Path -LiteralPath $ready)){if([datetime]::UtcNow -gt $deadline){throw 'Нет передачи владельца runner.'};Start-Sleep -Milliseconds 100}
  # Parent still holds operation.lock briefly after it signals ready. Retry the handoff,
@@ -218,7 +229,7 @@ function Manual-Run($TaskFile,$Files,$Baseline) {
  catch {$s.status='invalid';$s.error="$_";Save-State $s;throw}
 }
 function Review-Run($s,$Evidence) {
- Require-Owner $s;if($s.status -in @('starting','running')){throw 'Исполнитель ещё работает.'}
+ Require-Owner $s;Assert-IntegrationOwner $s;Assert-NoUnmerged;if($s.kind -eq 'integration'){if($s.status -notin @('awaiting-review','reviewed','conflict')){throw 'Перенос не подтверждён; сначала адресный recover либо reject.'};Normalize-IntegrationIndex $s};if($s.status -in @('starting','running')){throw 'Исполнитель ещё работает.'}
  Assert-CLIStopped $s
  if(!$Evidence -or !(Test-Path -LiteralPath $Evidence -PathType Leaf)){throw 'Нужен -Evidence: файл с результатами проверок и решением ведущего.'}
  $text=[IO.File]::ReadAllText((Resolve-Path -LiteralPath $Evidence));if(!$text.Trim()){throw 'Доказательства проверки пусты.'}
@@ -227,14 +238,14 @@ function Review-Run($s,$Evidence) {
  [IO.File]::WriteAllText((Join-Path $script:Runs "$($s.id)/changes.diff"),$scope.diff,$script:Utf8)
  [IO.File]::WriteAllText((Join-Path $script:Runs "$($s.id)/review.md"),$text,$script:Utf8)
  $s.review=@{fingerprint=$scope.fingerprint;evidenceHash=(Hash-Text $text);time=[datetime]::UtcNow.ToString('o')}
- $s.status='reviewed';Event $s 'reviewed' 'Проверка привязана к текущему отпечатку файлов'
+ $s.status='reviewed';Event $s 'reviewed' 'Проверка привязана к текущему отпечатку файлов';if($s.kind -eq 'integration'){Save-Integration $s 'reviewed'}
 }
 function Accept-Run($s,$Message) {
- Require-Owner $s;if($s.status -ne 'reviewed' -or !$s.review){throw 'Сначала нужна review с доказательствами.'}
+ Require-Owner $s;Assert-IntegrationOwner $s;Assert-NoUnmerged;if($s.status -ne 'reviewed' -or !$s.review){throw 'Сначала нужна review с доказательствами.'}
  if(!$Message -or !$Message.Trim()){throw 'Нужно явное сообщение коммита -Message.'}
  $scope=Assert-Scope $s;if($scope.fingerprint -ne $s.review.fingerprint){throw 'Файлы изменились после review; повторите проверку.'}
  $ev=[IO.File]::ReadAllText((Join-Path $script:Runs "$($s.id)/review.md"));if((Hash-Text $ev) -ne $s.review.evidenceHash){throw 'Доказательства проверки изменились.'}
- if(!$scope.files.Count){$s.status='accepted-no-changes';$s.error=$null;Event $s 'accepted-no-changes' 'Проверено: изменений нет, коммит не создавался';Clear-Active $s;return}
+ if(!$scope.files.Count){$s.status='accepted-no-changes';$s.error=$null;Event $s 'accepted-no-changes' 'Проверено: изменений нет, коммит не создавался';if($s.kind -eq 'integration'){Save-Integration $s 'accepted-no-changes'};Clear-Active $s;return}
  try {
   [void](Git (@('add','--')+$scope.files))
   # Detect races/foreign staged paths before commit. No broad reset on failure.
@@ -242,8 +253,9 @@ function Accept-Run($s,$Message) {
   if((G @('diff','--name-only')).Length){throw 'После git add возникли новые изменения; разберите индекс вручную.'}
   $after=Assert-Scope $s -AllowOwnStaged
   if($after.fingerprint -ne $s.review.fingerprint){throw 'Содержимое изменилось во время git add; коммит запрещён, повторите проверку после разбора индекса.'}
-  [void](Git @('commit','-m',$Message));$s.commit=G @('rev-parse','HEAD');$s.status='accepted';$s.error=$null
-  Event $s 'accepted' "Локальный коммит $($s.commit); push не выполнялся";Clear-Active $s
+  if($s.kind -eq 'integration'){$s.acceptIntent=@{tree=(G @('write-tree'));baseline=$s.baseline;review=$s.review;time=[datetime]::UtcNow.ToString('o')};Save-State $s;Save-Integration $s 'committing'}
+  [void](Git @('commit','-m',$Message));$s.commit=G @('rev-parse','HEAD');$s.acceptedTree=G @('rev-parse',"$($s.commit)^{tree}");$s.status='accepted';$s.error=$null
+  $acceptedDetails=if($s.kind -eq 'integration'){"Интеграция принята: source $($s.sourceCommit) → main $($s.commit); push не выполнялся"}else{"Локальный коммит $($s.commit); push не выполнялся"};Event $s 'accepted' $acceptedDetails;if($s.kind -eq 'integration'){Save-Integration $s 'accepted'};Clear-Active $s
  }catch{$s.error="$_";Event $s 'accept-error' $s.error;throw}
 }
 function Get-Ledger {
@@ -348,101 +360,387 @@ function Update-ProjectStatus($StatusFile) {
   'https://github.com/pro100po/refectory-app/blob/project-status/PROJECT_STATUS.md'
  }finally{if($null -eq $oldEnv){Remove-Item Env:GIT_INDEX_FILE -ErrorAction SilentlyContinue}else{$env:GIT_INDEX_FILE=$oldEnv};foreach($f in @($tmp,$source)){if(Test-Path -LiteralPath $f){Remove-Item -LiteralPath $f}}}
 }
-function Show-Monitor([datetime]$Now=[datetime]::UtcNow) {
- $labels=@{prepared='Подготовлен';starting='Запуск';running='Исполнитель работает';'awaiting-review'='Ожидает проверки';reviewed='Проверен';accepted='Принят и сохранён';'accepted-no-changes'='Принят без правок';failed='Ошибка';interrupted='Прерван';rejected='Отклонён, правки сохранены';superseded='Заменён повторным запуском';invalid='Регистрация отклонена'}
- $rows=@();foreach($s in @(Get-Ledger|Sort-Object started -Descending|Select-Object -First 12)){
-  $end=if($s.ended){[datetime]$s.ended}else{$Now};$duration=[int]($end-[datetime]$s.started).TotalSeconds
-  $status=if($labels.ContainsKey($s.status)){$labels[$s.status]}else{$s.status};$role=if($s.kind -eq 'manual'){'Ручная работа'}else{'CLI исполнитель'}
-  $rows+=[pscustomobject]@{ID=$s.id;Задание=$s.task;Роль=$role;Модель="$($s.model)/$($s.effort)";Стадия=$status;Начало=$s.started;Конец=$s.ended;Секунд=$duration;Сохранено=$(if($s.commit){$s.commit.Substring(0,12)}else{'Нет коммита'});GitHub=$s.pushed;Сайт=$s.deployed;Событие=$s.lastEvent;Ошибка=$s.error}
- };$rows|Format-Table ID,Модель,Стадия,Секунд,Сохранено,GitHub,Сайт -Wrap -AutoSize
- foreach($r in $rows){"$($r.ID) | $($r.Роль) | $($r.Задание)`nНачало UTC: $($r.Начало); конец UTC: $($r.Конец)`nПоследнее событие: $($r.Событие)";if($r.Ошибка){"ОШИБКА: $($r.Ошибка)"}}
- $st=Join-Path $script:Runs 'stages.jsonl';if(Test-Path -LiteralPath $st){
-  'Явно зарегистрированные стадии (данные ведущего):';$ev=@(Get-Content -LiteralPath $st|ForEach-Object {$_|ConvertFrom-Json -AsHashtable});$stRows=@()
-  foreach($group in ($ev|Group-Object stage)){
-   $last=$group.Group[-1];$start=@($group.Group|Where-Object {$_.action -eq 'start'})|Select-Object -Last 1
-   $ended=if($last.action -eq 'end'){$last.time}else{$null};$elapsed=if($start){[int](($(if($ended){[datetime]$ended}else{$Now}))-[datetime]$start.time).TotalSeconds}else{$null}
-   $stRows+=[pscustomobject]@{Шаг=$group.Name;Модель="$($last.model)/$($last.effort)";Состояние=$(if($ended){'Завершён'}else{'Выполняется'});Начало=$(if($start){$start.time}else{'Не указано'});Конец=$ended;Секунд=$elapsed;Событие=$last.details}
-  };$stRows|Format-Table -Wrap -AutoSize
+function Canonical-Directory([string]$Path) {
+ if(!$Path -or !(Test-Path -LiteralPath $Path -PathType Container)){throw 'Нужна существующая папка.'}
+ $full=[IO.Path]::GetFullPath((Resolve-Path -LiteralPath $Path).Path).TrimEnd('\','/')
+ $walk=$full
+ while($walk){$item=Get-Item -LiteralPath $walk -Force;if($item.Attributes -band [IO.FileAttributes]::ReparsePoint){throw "Reparse путь запрещён: $walk"};$next=Split-Path $walk -Parent;if($next -eq $walk){break};$walk=$next}
+ $full
+}
+function Git-At([string]$Root,[string[]]$Arguments,[switch]$AllowFailure) {
+ $r=Invoke-Native 'git' (@('-c','core.quotepath=false','-C',$Root)+$Arguments) $Root ''
+ if($r.Code -ne 0 -and !$AllowFailure){throw "git $($Arguments[0]): $($r.Err) $($r.Out)"};$r
+}
+function Common-Dir([string]$Root){[IO.Path]::GetFullPath((Git-At $Root @('rev-parse','--path-format=absolute','--git-common-dir')).Out.Trim()).TrimEnd('\','/')}
+function Coordinator-Path {Join-Path $script:CoordinatorRepo '.codex-runs/coordinator'}
+function Registry-Path {Join-Path (Coordinator-Path) 'registry.json'}
+function Coordinator-Gate {
+ $dir=Coordinator-Path;[void][IO.Directory]::CreateDirectory($dir)
+ if((Get-Item -LiteralPath $dir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'coordinator не должен быть ссылкой.'}
+ try{[IO.File]::Open((Join-Path $dir 'registry.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)}catch{throw 'Реестр координатора занят другой короткой операцией; повторите команду.'}
+}
+function Read-Registry {
+ $r=Read-Json (Registry-Path)
+ if(!$r -or $r.schemaVersion -ne 1 -or !$r.tasks -or !$r.reservations -or !$r.integrations){
+  # Empty dictionaries are legitimate; distinguish absent keys from empty values.
+  if(!$r -or $r.schemaVersion -ne 1 -or !$r.ContainsKey('tasks') -or !$r.ContainsKey('reservations') -or !$r.ContainsKey('integrations')){throw 'Реестр координатора повреждён; автоматическое восстановление пустым реестром запрещено.'}
  }
- $pub=Join-Path $script:Runs 'publication.json';if(Test-Path -LiteralPath $pub){$p=Read-Json $pub;'Последняя публикация:';[pscustomobject]@{Коммит=$p.commit;Отправлено=$p.pushed;Развёрнуто=$p.deployed;ПроверкаPages=$p.deployStatus;Ошибка=$p.error}|Format-List}
- if(!$rows.Count){'Запусков пока нет. Никакие команды исполнения/публикации не выполнялись.'}
+ if($r.coordinatorRepo -ne $script:CoordinatorRepo -or $r.commonDir -ne (Common-Dir $script:Repo)){throw 'Реестр принадлежит другой рабочей копии/Git common-dir.'};$r
+}
+function Save-Registry($r){Write-Atomic (Registry-Path) $r}
+function Assert-Coordinator {
+ if($script:WorkerBinding){throw 'Зарегистрированному worker запрещены интеграция, публикация и настройка координатора.'}
+ if($script:Repo -ne $script:CoordinatorRepo -or (G @('branch','--show-current')) -ne 'main'){throw 'Команда разрешена только в канонической main координатора.'}
+}
+function Ensure-Registry {
+ Assert-Coordinator
+ $gate=Coordinator-Gate
+ try{
+  if(Test-Path -LiteralPath (Registry-Path)){[void](Read-Registry);return}
+  $r=@{schemaVersion=1;coordinatorRepo=$script:Repo;commonDir=(Common-Dir $script:Repo);maxWorkers=2;tasks=@{};reservations=@{};integrations=@{};owner=$null;created=[datetime]::UtcNow.ToString('o')};Save-Registry $r
+ }finally{$gate.Dispose()}
+}
+function Init-Coordination([string]$CoordinatorRepo,[string]$TaskId,[string]$Command) {
+ $script:WorkerBinding=$null;$script:TaskId=$null;$script:CoordinatorRepo=$script:Repo
+ $marker=Join-Path $script:Runs 'worker.json'
+ if(Test-Path -LiteralPath $marker){
+  $b=Read-Json $marker
+  if(!$b -or !$b.taskId -or !$b.coordinatorRepo){throw 'Маркер worker повреждён; обход регистрации запрещён.'}
+  $script:WorkerBinding=$b;$script:CoordinatorRepo=Canonical-Directory $b.coordinatorRepo;$script:TaskId=$b.taskId
+  if($CoordinatorRepo -and (Canonical-Directory $CoordinatorRepo) -ne $script:CoordinatorRepo){throw 'CoordinatorRepo не совпадает с регистрацией worker.'}
+  if($TaskId -and $TaskId -cne $b.taskId){throw 'TaskId не совпадает с регистрацией worker.'}
+  if($Command -in @('run','rerun') -and (!$CoordinatorRepo -or !$TaskId)){throw 'Зарегистрированный worker требует явные -CoordinatorRepo и -TaskId при запуске.'}
+  $r=Read-Registry;if(!$r.tasks.ContainsKey($b.taskId)){throw 'Worker отсутствует в реестре координатора.'};$t=$r.tasks[$b.taskId]
+  if($t.workerRepo -ne $script:Repo -or $t.workerBranch -cne (G @('branch','--show-current')) -or $t.base -ne $b.base){throw 'Папка/ветка/base worker не совпадают с регистрацией.'}
+ }elseif(($CoordinatorRepo -and (Canonical-Directory $CoordinatorRepo) -ne $script:Repo) -or ($TaskId -and $Command -in @('run','rerun','manual'))){throw 'Сначала зарегистрируйте эту рабочую копию командой register-worker.'}
+ if(!$script:WorkerBinding -and $Command -eq 'record-stage' -and $TaskId){$r=Read-Registry;if(!$r.tasks.ContainsKey($TaskId)){throw 'TaskId этапа не зарегистрирован.'};$script:TaskId=$TaskId}
+}
+function Register-Worker([string]$TaskId,[string]$WorkerRepo,[string]$WorkerBranch) {
+ Assert-Coordinator;Assert-Free
+ if($TaskId -notmatch '^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$'){throw 'TaskId: 1–80 латинских букв, цифр, точек, дефисов или подчёркиваний.'}
+ if(!$WorkerBranch -or $WorkerBranch -ieq 'main' -or (Git @('check-ref-format','--branch',$WorkerBranch) -AllowFailure).Code){throw 'Нужна отдельная допустимая не-main ветка.'}
+ $worker=Canonical-Directory $WorkerRepo
+ if($worker -eq $script:Repo -or (Common-Dir $worker) -ne (Common-Dir $script:Repo)){throw 'Нужен отдельный worktree с тем же Git common-dir.'}
+ $top=(Git-At $worker @('rev-parse','--show-toplevel')).Out.Trim();if((Canonical-Directory $top) -ne $worker){throw 'WorkerRepo должен быть корнем Git worktree.'}
+ $listed=(Git @('worktree','list','--porcelain','-z')).Out.Split([char]0,[StringSplitOptions]::RemoveEmptyEntries)
+ if(!@($listed|Where-Object {$_ -like 'worktree *' -and (Canonical-Directory $_.Substring(9)) -eq $worker}).Count){throw 'WorkerRepo не зарегистрирован Git как worktree.'}
+ if((Git-At $worker @('branch','--show-current')).Out.Trim() -cne $WorkerBranch){throw 'WorkerBranch не совпадает с фактической веткой worktree.'}
+ $runs=Join-Path $worker '.codex-runs';$marker=Join-Path $runs 'worker.json'
+ if(Test-Path -LiteralPath $runs){if((Get-Item -LiteralPath $runs -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Worker .codex-runs является ссылкой.'}}
+ if((Git-At $worker @('check-ignore','-q','--','.codex-runs/probe') -AllowFailure).Code){throw 'Worker должен исключать /.codex-runs/ из Git.'}
+ [void][IO.Directory]::CreateDirectory($runs)
+ try{$workerLock=[IO.File]::Open((Join-Path $runs 'operation.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)}catch{throw 'Worker занят локальной командой регистрации/запуска.'}
+ try{
+ Ensure-Registry;$gate=Coordinator-Gate
+ try{
+  $r=Read-Registry
+  if($r.tasks.ContainsKey($TaskId)){
+   $old=$r.tasks[$TaskId];if($old.workerRepo -ne $worker -or $old.workerBranch -cne $WorkerBranch){throw 'Изменение привязки существующей задачи запрещено.'}
+   if(Test-Path -LiteralPath $marker){$b=Read-Json $marker;if($b.taskId -cne $TaskId -or $b.coordinatorRepo -ne $script:Repo -or $b.base -ne $old.base){throw 'Маркер не совпадает с реестром.'}}else{if((Test-Path -LiteralPath (Join-Path $runs 'active.json')) -or (Git-At $worker @('status','--porcelain')).Out.Trim()){throw 'Для восстановления отсутствующего marker worker должен быть чистым и свободным.'}}
+   Write-Atomic $marker @{taskId=$TaskId;coordinatorRepo=$script:Repo;workerRepo=$worker;workerBranch=$WorkerBranch;base=$old.base;phase='registered'}
+   return "Задача $TaskId уже зарегистрирована."
+  }
+  foreach($t in $r.tasks.Values){if($t.workerRepo -eq $worker -or $t.workerBranch -ieq $WorkerBranch){throw 'Папка или ветка уже назначена другой задаче.'}}
+  if($r.owner){throw 'Сначала завершите незавершённую интеграцию/публикацию.'}
+  if(Test-Path -LiteralPath $marker){
+   $pending=Read-Json $marker
+   if($pending -isnot [Collections.IDictionary] -or !$pending.ContainsKey('phase') -or $pending.phase -ne 'registering' -or $pending.taskId -cne $TaskId -or $pending.coordinatorRepo -ne $script:Repo -or $pending.workerRepo -ne $worker -or $pending.workerBranch -cne $WorkerBranch -or $pending.base -ne (Git-At $worker @('rev-parse','HEAD')).Out.Trim()){throw 'Рабочая копия содержит другую/неоднозначную регистрацию.'}
+  }
+  if(Test-Path -LiteralPath (Join-Path $runs 'active.json')){throw 'В worker есть незавершённый локальный запуск.'}
+  if((Git-At $worker @('status','--porcelain')).Out.Trim()){throw 'Перед регистрацией worker должен быть чистым.'}
+  $base=(Git-At $worker @('rev-parse','HEAD')).Out.Trim();[void][IO.Directory]::CreateDirectory($runs)
+  # Fail closed across process death: marker precedes registry. Only exact pending reentry may complete it.
+  Write-Atomic $marker @{taskId=$TaskId;coordinatorRepo=$script:Repo;workerRepo=$worker;workerBranch=$WorkerBranch;base=$base;phase='registering'}
+  $r.tasks[$TaskId]=@{taskId=$TaskId;workerRepo=$worker;workerBranch=$WorkerBranch;base=$base;registered=[datetime]::UtcNow.ToString('o');attempts=@()};Save-Registry $r
+  Write-Atomic $marker @{taskId=$TaskId;coordinatorRepo=$script:Repo;workerRepo=$worker;workerBranch=$WorkerBranch;base=$base;phase='registered'};"Зарегистрирована задача $TaskId, ветка $WorkerBranch."
+ }finally{$gate.Dispose()}
+ }finally{$workerLock.Dispose()}
+}
+function Refresh-Reservations($r) {
+ foreach($slot in $r.reservations.Values){
+  if($slot.phase -eq 'released'){continue}
+  try{$t=$r.tasks[$slot.taskId];$state=Read-Json (Join-Path $t.workerRepo ".codex-runs/$($slot.attemptId)/state.json");if($state -isnot [Collections.IDictionary] -or !$state.ContainsKey('status') -or !$state.ContainsKey('ended') -or !$state.ContainsKey('pid') -or !$state.ContainsKey('processStarted')){throw 'Неверная схема состояния'}}catch{$slot.error="Состояние недоступно, слот сохранён: $_";continue}
+  if($state.status -in @('starting','running') -or !$state.ended){continue}
+  if(!$state.pid){if($slot.phase -eq 'launch-failed'){$slot.phase='released';$slot.released=[datetime]::UtcNow.ToString('o')};continue}
+  try{if(Process-Alive $state){continue};if($state.ContainsKey('cliPid') -and (Process-Alive @{pid=$state.cliPid;processStarted=$state.cliProcessStarted})){continue}}catch{$slot.error="Завершение не подтверждено: $_";continue}
+  $slot.phase='released';$slot.released=[datetime]::UtcNow.ToString('o')
+ }
+}
+function Reserve-Slot($s) {
+ if(!$script:WorkerBinding){return}
+ $gate=Coordinator-Gate
+ try{
+  $r=Read-Registry;Refresh-Reservations $r
+  $busy=@($r.reservations.Values|Where-Object {$_.phase -ne 'released'})
+  if($busy.Count -ge $r.maxWorkers){Save-Registry $r;throw "Предел $($r.maxWorkers) исполнителей занят: $(($busy|ForEach-Object {'{0}/{1}' -f $_.taskId,$_.attemptId}) -join ', ')."}
+  $r.reservations[$s.id]=@{taskId=$script:TaskId;attemptId=$s.id;phase='reserved';launcherPid=$PID;launcherStarted=(Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o');time=[datetime]::UtcNow.ToString('o')}
+  $r.tasks[$script:TaskId].attempts=@($r.tasks[$script:TaskId].attempts)+$s.id;Save-Registry $r
+ }finally{$gate.Dispose()}
+}
+function Slot-LaunchFailed($s) {
+ if(!$script:WorkerBinding){return};$gate=Coordinator-Gate
+ try{$r=Read-Registry;if($r.reservations.ContainsKey($s.id)){$r.reservations[$s.id].phase='launch-failed';Refresh-Reservations $r;Save-Registry $r}}finally{$gate.Dispose()}
+}
+function Configure-Workers([string]$MaxWorkers) {
+ Assert-Coordinator;$limit=0
+ if($MaxWorkers -notmatch '^[1-9][0-9]*$' -or ![int]::TryParse($MaxWorkers,[ref]$limit) -or $limit -lt 1){throw 'MaxWorkers должен быть положительным целым числом.'}
+ Ensure-Registry;$gate=Coordinator-Gate
+ try{$r=Read-Registry;Refresh-Reservations $r;$busy=@($r.reservations.Values|Where-Object {$_.phase -ne 'released'});if($limit -lt $busy.Count){throw 'Нельзя уменьшить предел ниже уже зарезервированных слотов.'};$r.maxWorkers=$limit;Save-Registry $r;"Предел исполнителей: $limit"}finally{$gate.Dispose()}
+}
+function Recover-OrphanSlot([string]$Id) {
+ if(!$script:WorkerBinding -or !$Id){throw 'Нет активного запуска; для orphan reservation нужен зарегистрированный worker и явный -Id.'}
+ $active=Active;if($active -and $active.id -ne $Id){throw 'Orphan recovery не владеет чужим active.'}
+ $gate=Coordinator-Gate
+ try{
+  $r=Read-Registry;if(!$r.reservations.ContainsKey($Id) -or $r.reservations[$Id].taskId -cne $script:TaskId){throw 'Эта задача не владеет reservation.'}
+  $slot=$r.reservations[$Id];$launcher=@{pid=$slot.launcherPid;processStarted=$slot.launcherStarted}
+  if(Process-Alive $launcher){throw 'Launcher ещё работает; reservation сохранён.'}
+  $s=Load-State $Id
+  if(!$s.ContainsKey('launchPhase') -or $s.launchPhase -ne 'prepared' -or $s.pid){throw 'Нет доказательства отсутствия запуска процесса; reservation сохранён.'}
+  $s.status='interrupted';$s.recoveryRequired=$true;$s.ended=[datetime]::UtcNow.ToString('o');Set-Active $s;Event $s 'interrupted' 'Launcher завершился до launch intent; слот освобождён, правки/история сохранены; нужен recovery evidence'
+  $slot.phase='released';$slot.released=[datetime]::UtcNow.ToString('o');$slot.reason='launcher-dead-before-launch-intent';Save-Registry $r;$s.id
+ }finally{$gate.Dispose()}
+}
+function Integration-Key([string]$TaskId,[string]$AttemptId){"$TaskId/$AttemptId"}
+function Save-Integration($s,[string]$Phase) {
+ $gate=Coordinator-Gate
+ try{
+  $r=Read-Registry;$key=Integration-Key $s.taskId $s.sourceAttemptId
+  if(!$r.owner -or $r.owner.kind -ne 'integration' -or $r.owner.attemptId -ne $s.id){throw 'Нет владельца этой интеграции.'}
+  $m=$r.integrations[$key];$m.phase=$Phase;$m.updated=[datetime]::UtcNow.ToString('o')
+  if($s.review){$m.review=$s.review};if($s.ContainsKey('acceptIntent')){$m.acceptIntent=$s.acceptIntent}
+  if($Phase -in @('accepted','accepted-no-changes')){$m.integratedAcceptedCommit=$s.commit;$m.accepted=[datetime]::UtcNow.ToString('o');$m.reason=if($s.commit){'fresh-main-review'}else{'Проверено текущее дерево main; перенос не содержит изменений'};$r.owner=$null}
+  elseif($Phase -eq 'rejected'){$m.reason='Отклонено ведущим; изменения сохранены';$r.owner=$null}
+  $report="# Интеграция $($s.taskId)`nПопытка: $($s.id)`nSource attempt: $($s.sourceAttemptId)`nSource commit: $($s.sourceCommit)`nMain baseline: $($s.baseline)`nIntegrated accepted commit: $($s.commit)`nPhase: $Phase`nReview: $($s.review|ConvertTo-Json -Compress)`n"
+  [IO.File]::WriteAllText((Join-Path $script:Runs "$($s.id)/report.md"),$report,$script:Utf8)
+  Save-Registry $r
+ }finally{$gate.Dispose()}
+}
+function Assert-IntegrationOwner($s){
+ if($s.kind -ne 'integration'){return};$r=Read-Registry
+ if(!$r.owner -or $r.owner.kind -ne 'integration' -or $r.owner.attemptId -ne $s.id){throw 'Интеграция не владеет main.'}
+}
+function Assert-NoUnmerged {if((G @('diff','--name-only','--diff-filter=U')).Length){throw 'В индексе остались конфликты; разрешите только файлы задания и повторите fresh review.'}}
+function Normalize-IntegrationIndex($s){
+ Assert-IntegrationOwner $s;Assert-NoUnmerged
+ $staged=@((G @('diff','--cached','--name-only','-z')).Split([char]0,[StringSplitOptions]::RemoveEmptyEntries))
+ foreach($f in $staged){if($f -cnotin $s.files){throw "Чужой staged файл $f сохранён; review запрещён."}}
+ if($staged.Count){[void](Git (@('restore','--staged','--')+$staged))}
+ # Quit only cherry-pick metadata; never abort/reset or discard the resolved files.
+ $ch=G @('rev-parse','--path-format=absolute','--git-path','CHERRY_PICK_HEAD');if(Test-Path -LiteralPath $ch){[void](Git @('cherry-pick','--quit'))}
+}
+function Integrate-Worker([string]$TaskId,[string]$Id) {
+ Assert-Coordinator;Ensure-Registry
+ if($TaskId -notmatch '^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$' -or $Id -notmatch '^\d{8}T\d{9}Z-[a-f0-9]{8}$'){throw 'Нужны безопасные -TaskId и source -Id.'}
+ $gate=Coordinator-Gate
+ try{
+  $r=Read-Registry;$key=Integration-Key $TaskId $Id
+  if($r.integrations.ContainsKey($key)){$known=$r.integrations[$key];if($known.phase -in @('accepted','accepted-no-changes')){return ($known|ConvertTo-Json -Depth 15)};throw "Источник уже имеет незавершённую/отклонённую интеграцию $($known.integrationAttemptId); используйте её recover/review."}
+  if($r.owner){throw "Main занят владельцем $($r.owner.kind)/$($r.owner.attemptId)."}
+  Assert-Free;Assert-Clean;Assert-NoUnmerged
+  if(!$r.tasks.ContainsKey($TaskId)){throw 'Задача не зарегистрирована.'};$t=$r.tasks[$TaskId];$worker=Canonical-Directory $t.workerRepo
+  if((Common-Dir $worker) -ne $r.commonDir -or (Git-At $worker @('branch','--show-current')).Out.Trim() -cne $t.workerBranch){throw 'Регистрация source больше не соответствует Git.'}
+  $b=Read-Json (Join-Path $worker '.codex-runs/worker.json');if($b.taskId -cne $TaskId -or $b.coordinatorRepo -ne $script:Repo){throw 'Маркер source не соответствует координатору.'}
+  $sourceDir=Join-Path $worker ".codex-runs/$Id";$source=Read-Json (Join-Path $sourceDir 'state.json')
+  if(!$source -or $source.taskId -cne $TaskId -or $source.branch -cne $t.workerBranch -or $source.status -notin @('accepted','accepted-no-changes')){throw 'Источник должен быть принятым запуском этой задачи.'}
+  Assert-CLIStopped $source
+  if((Get-FileHash -LiteralPath (Join-Path $sourceDir 'task.md')).Hash -ne $source.taskHash){throw 'Исходное задание изменилось.'}
+  $evidence=[IO.File]::ReadAllText((Join-Path $sourceDir 'review.md'));if((Hash-Text $evidence) -ne $source.review.evidenceHash){throw 'Source evidence изменились после приёмки.'}
+  if($source.status -eq 'accepted'){
+   if(!$source.commit -or $source.commit -notmatch '^[a-f0-9]{40,64}$'){throw 'Неизвестный source commit.'}
+   if(!$source.ContainsKey('acceptedTree') -or (G @('rev-parse',"$($source.commit)^{tree}")) -ne $source.acceptedTree){throw 'Source tree не совпадает с принятым снимком.'}
+   $parents=(G @('rev-list','--parents','-n','1',$source.commit)).Split(' ');if($parents.Count -ne 2 -or $parents[1] -ne $source.baseline){throw 'Интегрируется ровно один commit с родителем baseline; merge/пачка не поддержаны.'}
+   if((Git-At $worker @('merge-base','--is-ancestor',$source.commit,$t.workerBranch) -AllowFailure).Code){throw 'Source commit больше не принадлежит worker ветке.'}
+   $changed=@((G @('diff-tree','--no-commit-id','--name-only','-r','-z',$source.commit)).Split([char]0,[StringSplitOptions]::RemoveEmptyEntries));foreach($f in $changed){[void](Safe-File $f);if($f -cnotin $source.files){throw "Source commit за scope: $f"}}
+  }elseif($source.commit){throw 'accepted-no-changes не должен содержать commit.'}
+  $s=New-State (Join-Path $sourceDir 'task.md') $source.files @{model='integration';effort='fresh-review-required'} 'integration'
+  $s.taskId=$TaskId;$s.attemptId=$s.id;$s.sourceAttemptId=$Id;$s.sourceCommit=$source.commit;$s.sourceBaseline=$source.baseline;$s.sourceReviewHash=$source.review.evidenceHash;$s.status='integrating';$s.ended=[datetime]::UtcNow.ToString('o');Save-State $s
+  $r.owner=@{kind='integration';taskId=$TaskId;attemptId=$s.id;pid=$PID;processStarted=(Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o');time=[datetime]::UtcNow.ToString('o')}
+  $r.integrations[$key]=@{taskId=$TaskId;sourceAttemptId=$Id;sourceCommit=$source.commit;sourceBaseline=$source.baseline;sourceReviewHash=$source.review.evidenceHash;integrationAttemptId=$s.id;mainBaseline=$s.baseline;files=$s.files;phase='intent';integratedAcceptedCommit=$null;review=$null;created=[datetime]::UtcNow.ToString('o');pushed=$false;deployed=$false};Save-Registry $r;Set-Active $s
+ }finally{$gate.Dispose()}
+ # Durable intent exists before the first Git mutation. Other workers use their own checkout.
+ Save-Integration $s 'applying'
+ if($s.sourceCommit){$pick=Git @('cherry-pick','--no-commit',$s.sourceCommit) -AllowFailure}else{$pick=@{Code=0;Out='';Err=''}}
+ if($pick.Code -ne 0){$s.status='conflict';$s.error=$pick.Err+$pick.Out;Event $s 'integration-conflict' "Перенос сохранён, нужны разбор конфликтов и fresh review: $($s.error)";Save-Integration $s 'conflict';$s.id;return}
+ Normalize-IntegrationIndex $s;$scope=Assert-Scope $s;$s.transferFingerprint=$scope.fingerprint;$s.status='awaiting-review';Event $s 'integrated' "Source $($s.sourceCommit) перенесён на main $($s.baseline); нужна новая проверка";Save-Integration $s 'awaiting-review';$s.id
+}
+function Recover-Integration([string]$TaskId,[string]$Id) {
+ Assert-Coordinator;$r=Read-Registry;$owner=$r.owner
+ if(!$owner -or $owner.kind -ne 'integration'){throw 'Нет незавершённой интеграции.'}
+ if(($TaskId -and $TaskId -cne $owner.taskId) -or ($Id -and $Id -ne $owner.attemptId)){throw 'recover адресован другой интеграции.'}
+ if(Process-Alive $owner){throw 'Команда владельца интеграции ещё работает.'}
+ $s=Load-State $owner.attemptId;$m=$r.integrations[(Integration-Key $s.taskId $s.sourceAttemptId)]
+ $a=Active;if(!$a){Set-Active $s}elseif($a.id -ne $s.id){throw 'Main active принадлежит другому запуску.'}
+ $head=G @('rev-parse','HEAD')
+ if($s.status -in @('accepted','accepted-no-changes')){Save-Integration $s $s.status;Clear-Active $s;return 'Принятая связь восстановлена без нового коммита.'}
+ if($head -ne $s.baseline){
+  if(!$s.ContainsKey('acceptIntent')){throw 'HEAD изменился без accept intent: сохранена неоднозначность, автоматическая приёмка запрещена.'}
+  $parents=(G @('rev-list','--parents','-n','1',$head)).Split(' ')
+  $ev=[IO.File]::ReadAllText((Join-Path $script:Runs "$($s.id)/review.md"))
+  if($parents.Count -ne 2 -or $parents[1] -ne $s.baseline -or (G @('rev-parse',"$head^{tree}")) -ne $s.acceptIntent.tree -or (Hash-Text $ev) -ne $s.review.evidenceHash){throw 'Коммит не совпал с intent/tree/evidence; владелец и файлы сохранены.'}
+  $files=@((G @('diff-tree','--no-commit-id','--name-only','-r','-z',$head)).Split([char]0,[StringSplitOptions]::RemoveEmptyEntries));foreach($file in $files){if($file -cnotin $s.files){throw 'Recovered commit выходит за scope.'}}
+  Assert-Clean;$s.commit=$head;$s.status='accepted';Event $s 'accepted' "Восстановлен точный принятый commit $head";Save-Integration $s 'accepted';Clear-Active $s;return 'Mapping восстановлена без второго commit.'
+ }
+ if($m.phase -eq 'intent'){
+  Assert-Clean;throw 'Сбой до применения: intent сохранён. Явно reject (без потери данных), повтор не применяет cherry-pick вслепую.'
+ }
+ Assert-NoUnmerged
+ # Once applying has begun, only inspect the saved tree. Never replay cherry-pick.
+ Normalize-IntegrationIndex $s;$scope=Assert-Scope $s
+ if($m.phase -eq 'applying' -and !$scope.files.Count -and $s.sourceCommit){throw 'Нет доказательства завершения применения source: пустое дерево после applying неоднозначно; owner сохранён, нужен явный разбор/reject.'}
+ $s.transferFingerprint=$scope.fingerprint;$s.status='awaiting-review';$s.review=$null;Event $s 'recovered' 'Перенос сохранён после сбоя; требуется fresh review';Save-Integration $s 'awaiting-review';$s.id
+}
+function Begin-Publication {
+ Assert-Coordinator;Ensure-Registry;$gate=Coordinator-Gate
+ try{
+  $r=Read-Registry
+  if($r.owner){
+   if($r.owner.kind -ne 'publication'){throw 'Публикация запрещена до приёмки/отклонения интеграции.'}
+   if(Process-Alive $r.owner){throw 'Другой владелец публикации ещё работает.'}
+  }
+  $r.owner=@{kind='publication';attemptId='publication';pid=$PID;processStarted=(Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o');time=[datetime]::UtcNow.ToString('o')};Save-Registry $r
+ }finally{$gate.Dispose()}
+}
+function Complete-Publication {
+ $gate=Coordinator-Gate
+ try{$r=Read-Registry;if(!$r.owner -or $r.owner.kind -ne 'publication' -or $r.owner.pid -ne $PID){throw 'Владелец публикации изменился.'};$r.owner=$null;Save-Registry $r}finally{$gate.Dispose()}
+}
+function Sync-PublicationMappings {
+ if(!(Test-Path -LiteralPath (Registry-Path))){return};$p=Read-Json (Join-Path $script:Runs 'publication.json');$gate=Coordinator-Gate
+ try{
+  $r=Read-Registry
+  foreach($m in $r.integrations.Values){if($m.phase -ne 'accepted' -or !$m.integratedAcceptedCommit){continue}
+   if((Git @('merge-base','--is-ancestor',$m.integratedAcceptedCommit,$p.commit) -AllowFailure).Code -eq 0){$m.pushed=$p.pushed;$m.deployed=$p.deployed;$m.publicationCommit=$p.commit}
+  };Save-Registry $r
+ }finally{$gate.Dispose()}
+}
+
+function Read-SharedText([string]$Path) {
+ $stream=[IO.File]::Open($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete));$reader=[IO.StreamReader]::new($stream,$script:Utf8)
+ try{$reader.ReadToEnd()}finally{$reader.Dispose();$stream.Dispose()}
+}
+function Monitor-ObservationError([string]$Root,[string]$TaskId,[string]$AttemptId,[string]$Details,[string]$Log) {
+ $id=Hash-Text "$Root/$TaskId/$AttemptId/$Details/$Log"
+ if(!(Get-Variable -Name MonitorErrorTimes -Scope Script -ErrorAction SilentlyContinue)){$script:MonitorErrorTimes=@{}}
+ if(!$script:MonitorErrorTimes.ContainsKey($id)){$script:MonitorErrorTimes[$id]=[datetime]::UtcNow.ToString('o')}
+ $brief=if($Details.Length -gt 420){$Details.Substring(0,420)+'…'}else{$Details}
+ @{time=$script:MonitorErrorTimes[$id];type='error';details="$brief; полный журнал: $Log";root=$Root;taskId=$TaskId;attemptId=$AttemptId;eventId=$id}
+}
+function Read-MonitorSnapshot {
+ $roots=@(@{root=$script:Repo;taskId=$null;mapping=$null});$runs=@();$events=@();$stages=@();$pubs=@()
+ $registryFile=Join-Path $script:Runs 'coordinator/registry.json'
+ if(Test-Path -LiteralPath $registryFile){
+  try{$registry=Read-Json $registryFile;foreach($t in $registry.tasks.Values){$roots+=@{root=$t.workerRepo;taskId=$t.taskId;mapping=$registry.integrations}}}
+  catch{$events+=Monitor-ObservationError $script:Repo 'coordinator' 'registry' "Ошибка реестра: $_" $registryFile}
+ }
+ foreach($entry in $roots){
+  $root=$entry.root;$local=Join-Path $root '.codex-runs'
+  try{
+   if(!(Test-Path -LiteralPath $root)){throw "Рабочая копия отсутствует: $root"}
+   if(!(Test-Path -LiteralPath $local)){continue}
+   foreach($dir in Get-ChildItem -LiteralPath $local -Directory|Where-Object {$_.Name -match '^\d{8}T\d{9}Z-[a-f0-9]{8}$'}){
+    try{
+     $file=Join-Path $dir.FullName 'state.json';if(!(Test-Path -LiteralPath $file)){throw 'Отсутствует state.json'};$s=Read-Json $file;if(!$s){throw 'Пустой state.json'}
+     $s.root=$root;$s.taskId=if($s.ContainsKey('taskId')){$s.taskId}else{$entry.taskId};$s.attemptId=$s.id
+     if($entry.mapping){$key=Integration-Key $entry.taskId $s.id;if($entry.mapping.ContainsKey($key)){$m=$entry.mapping[$key];$s.sourceCommit=$m.sourceCommit;$s.integratedAcceptedCommit=$m.integratedAcceptedCommit;$s.mainBaseline=$m.mainBaseline;$s.integrationStatus=$m.phase;$s.pushed=$m.pushed;$s.deployed=$m.deployed}}
+     $runs+=$s
+     $log=Join-Path $dir.FullName 'events.jsonl';if(Test-Path -LiteralPath $log){
+      $raw=Read-SharedText $log;$lines=$raw.Split("`n");for($i=0;$i -lt $lines.Length-1;$i++){if(!$lines[$i].Trim()){continue};try{$e=$lines[$i]|ConvertFrom-Json -AsHashtable;$e.root=$root;$e.taskId=$s.taskId;$e.attemptId=$s.id;$e.lineIndex=$i;if($e.type -match 'error|failed|conflict|interrupted' -and $e.details.Length -gt 600){$e.details=$e.details.Substring(0,420)+"…; полный журнал: $log"};$events+=$e}catch{$events+=Monitor-ObservationError $root $s.taskId $s.id "Ошибка строки $i JSONL: $_" $log}}
+     }
+    }catch{$events+=Monitor-ObservationError $root $entry.taskId $dir.Name "Ошибка задачи $($entry.taskId)/$($dir.Name): $_" $file}
+   }
+   $stagePath=Join-Path $local 'stages.jsonl';if(Test-Path -LiteralPath $stagePath){$raw=Read-SharedText $stagePath;$lines=$raw.Split("`n");for($i=0;$i -lt $lines.Length-1;$i++){if(!$lines[$i].Trim()){continue};try{$e=$lines[$i]|ConvertFrom-Json -AsHashtable;$e.root=$root;if(!$e.ContainsKey('taskId')){$e.taskId=$entry.taskId};if(!$e.ContainsKey('attemptId')){$e.attemptId='stages'};$e.lineIndex=$i;$stages+=$e}catch{$events+=Monitor-ObservationError $root $entry.taskId 'stages' "Ошибка строки $i JSONL: $_" $stagePath}}}
+   $pubPath=Join-Path $local 'publication.json';if(Test-Path -LiteralPath $pubPath){$p=Read-Json $pubPath;$p.root=$root;$p.taskId=if($entry.taskId){$entry.taskId}else{'publication'};$p.attemptId='publication';$p.time=(Get-Item -LiteralPath $pubPath).LastWriteTimeUtc.ToString('o');$pubs+=$p}
+  }catch{$events+=Monitor-ObservationError $root $entry.taskId 'registry' "Ошибка задачи $($entry.taskId): $_" $local}
+ }
+ @{Runs=$runs;Events=$events;Stages=$stages;Publications=$pubs;Roots=@($roots|ForEach-Object {$_.root})}
+}
+function Show-Monitor([datetime]$Now=[datetime]::UtcNow) {
+ $snapshot=Read-MonitorSnapshot
+ Format-WorkflowMonitorSummary -Runs $snapshot.Runs -Stages $snapshot.Stages -Publications $snapshot.Publications -Now $Now
+ $records=@(Get-WorkflowMonitorRecords -Runs $snapshot.Runs -Events $snapshot.Events -Stages $snapshot.Stages -Publications $snapshot.Publications)
+ $cursor=New-WorkflowMonitorCursor
+ Write-WorkflowMonitorRecords -Records @(Select-WorkflowMonitorNewRecords -Records $records -Cursor $cursor -InitialSkipFallback)
 }
 function Watch-Monitor {
- # Native handlers only: PowerShell scriptblocks cannot run on watcher threads.
- if(-not ('CodexMonitorChanges' -as [type])){
+ if(-not ('CodexMonitorChangesV2' -as [type])){
   Add-Type -TypeDefinition @'
 using System;
 using System.IO;
 using System.Threading;
-public sealed class CodexMonitorChanges : IDisposable {
- readonly FileSystemWatcher watcher;
+using System.Collections.Generic;
+public sealed class CodexMonitorChangesV2 : IDisposable {
+ readonly Dictionary<string,FileSystemWatcher> watchers = new Dictionary<string,FileSystemWatcher>(StringComparer.OrdinalIgnoreCase);
  readonly AutoResetEvent changed = new AutoResetEvent(false);
- readonly object gate = new object();
- bool disposed;
- public CodexMonitorChanges(string path) {
-  watcher = new FileSystemWatcher(path) {
-   IncludeSubdirectories = true,
-   NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite | NotifyFilters.Size,
-   InternalBufferSize = 65536
-  };
-  // Directory events also matter: an entire run can be renamed or removed.
-  watcher.Changed += Wake; watcher.Created += Wake; watcher.Deleted += Wake;
-  watcher.Renamed += Wake; watcher.Error += Overflow;
-  watcher.EnableRaisingEvents = true;
+ readonly object gate = new object(); bool disposed;
+ public void Add(string path) {
+  if(!Directory.Exists(path) || watchers.ContainsKey(path)) return;
+  var watcher = new FileSystemWatcher(path) { IncludeSubdirectories=true, NotifyFilter=NotifyFilters.FileName|NotifyFilters.DirectoryName|NotifyFilters.LastWrite|NotifyFilters.Size,InternalBufferSize=65536 };
+  watcher.Changed+=Wake;watcher.Created+=Wake;watcher.Deleted+=Wake;watcher.Renamed+=Wake;watcher.Error+=Overflow;
+  watchers.Add(path,watcher);watcher.EnableRaisingEvents=true;
  }
- void Wake(object sender, FileSystemEventArgs args) { Signal(); }
- void Overflow(object sender, ErrorEventArgs args) { Signal(); } // Full rescan, including on buffer overflow.
- void Signal() { lock(gate) { if(!disposed) changed.Set(); } }
- public bool Wait(int milliseconds) { return changed.WaitOne(milliseconds); }
- public void Dispose() {
-  lock(gate) { disposed = true; }
-  watcher.Dispose(); changed.Dispose();
- }
+ void Wake(object sender,FileSystemEventArgs args){Signal();}
+ void Overflow(object sender,ErrorEventArgs args){Signal();}
+ void Signal(){lock(gate){if(!disposed)changed.Set();}}
+ public bool Wait(int milliseconds){return changed.WaitOne(milliseconds);}
+ public void Dispose(){lock(gate){disposed=true;}foreach(var watcher in watchers.Values)watcher.Dispose();changed.Dispose();}
 }
 '@
  }
- $changes=[CodexMonitorChanges]::new($script:Runs)
- try {
-  $previous=$null
+ $changes=[CodexMonitorChangesV2]::new();$cursor=New-WorkflowMonitorCursor;$initial=$true
+ try{
+  $changes.Add($script:Runs)
   while($true){
-   # The watcher is already armed. Changes during reads/rendering stay signalled.
-   # Freeze elapsed clocks when comparing, so only displayed data causes redraws.
-   $until=[datetime]::UtcNow.AddSeconds(3)
-   while($true){
-    try{$fingerprint=Show-Monitor -Now ([datetime]::UnixEpoch)|Out-String;$frame=Show-Monitor|Out-String;break}
-    catch{if([datetime]::UtcNow -ge $until){throw};Start-Sleep -Milliseconds 100}
-   }
-   if($null -eq $previous -or $fingerprint -cne $previous){
-    if(![Console]::IsOutputRedirected){Clear-Host}
-    "Монитор Codex · UTC $([datetime]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss'))"
-    $frame
-    $previous=$fingerprint
-   }
-   # Timeout only gives PowerShell a cancellation point (Ctrl+C); it never rescans.
+   # Arm new worker roots before rereading: writes during initial snapshot stay signalled.
+   $snapshot=Read-MonitorSnapshot;foreach($root in $snapshot.Roots){$local=Join-Path $root '.codex-runs';if(Test-Path -LiteralPath $local){$changes.Add($local)}};$snapshot=Read-MonitorSnapshot
+   if($initial){"Монитор Codex · UTC $([datetime]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss'))";Format-WorkflowMonitorSummary -Runs $snapshot.Runs -Stages $snapshot.Stages -Publications $snapshot.Publications;$initial=$false}
+   $records=@(Get-WorkflowMonitorRecords -Runs $snapshot.Runs -Events $snapshot.Events -Stages $snapshot.Stages -Publications $snapshot.Publications)
+   Write-WorkflowMonitorRecords -Records @(Select-WorkflowMonitorNewRecords -Records $records -Cursor $cursor -InitialSkipFallback)
    while(!$changes.Wait(1000)){}
-   # Coalesce write/rename bursts, but keep updates moving during sustained logs.
-   $burst=[Diagnostics.Stopwatch]::StartNew()
-   while($changes.Wait(150) -and $burst.ElapsedMilliseconds -lt 750){}
+   $burst=[Diagnostics.Stopwatch]::StartNew();while($changes.Wait(150) -and $burst.ElapsedMilliseconds -lt 750){}
   }
  }finally{$changes.Dispose()}
 }
+
 function Invoke-Workflow {
- [CmdletBinding()]param([string]$Command='status',[string]$Repo,[string]$Id,[string]$TaskFile,[string[]]$Files,[string]$Model='sol',[string]$Effort='medium',[switch]$AllowMax,[string]$Evidence,[string]$Message,[string]$Baseline,[string]$StatusFile,[string]$Stage,[string]$StageAction='start',[switch]$Once,[switch]$CompleteItem,[int]$DeployTimeoutSeconds=300,[switch]$TestMode,[string]$TestCli,[switch]$TestSkipDeployment)
- if(!$Repo){$Repo=Split-Path $PSScriptRoot -Parent};Init-Repo $Repo
+ [CmdletBinding()]param([string]$Command='status',[string]$Repo,[string]$CoordinatorRepo,[string]$TaskId,[string]$WorkerRepo,[string]$WorkerBranch,[string]$MaxWorkers='2',[string]$Id,[string]$TaskFile,[string[]]$Files,[string]$Model='sol',[string]$Effort='medium',[switch]$AllowMax,[string]$Evidence,[string]$Message,[string]$Baseline,[string]$StatusFile,[string]$Stage,[string]$StageAction='start',[switch]$Once,[switch]$CompleteItem,[int]$DeployTimeoutSeconds=300,[switch]$TestMode,[string]$TestCli,[switch]$TestSkipDeployment)
+ if(!$Repo){$Repo=Split-Path $PSScriptRoot -Parent};Init-Repo $Repo;Init-Coordination $CoordinatorRepo $TaskId $Command
  if($Command -in @('status','monitor')){if($Command -eq 'status' -or $Once){"Монитор Codex · UTC $([datetime]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss'))";Show-Monitor}else{Watch-Monitor};return}
+ # Lock order for every mutating command is local operation.lock, then short coordinator registry.lock.
+ # A worker runner holds neither coordinator gate nor local operation.lock while executing CLI.
  $lock=Acquire-Operation
  try {
+  Init-Coordination $CoordinatorRepo $TaskId $Command
   switch($Command){
+   'register-worker' {Register-Worker $TaskId $WorkerRepo $WorkerBranch}
+   'configure' {Configure-Workers $MaxWorkers}
+   'integrate' {Integrate-Worker $TaskId $Id}
    'run' {Start-Run $TaskFile $Files $Model $Effort $AllowMax $TestMode $TestCli $null $null}
    'rerun' {Start-Run $TaskFile $Files $Model $Effort $AllowMax $TestMode $TestCli (Load-State $Id) $Evidence}
    'manual' {Manual-Run $TaskFile $Files $Baseline}
    'review' {Review-Run (Load-State $Id) $Evidence}
    'accept-step' {Accept-Run (Load-State $Id) $Message}
-   'reject' {$s=Load-State $Id;Require-Owner $s;Assert-CLIStopped $s;if($s.status -in @('starting','running')){throw 'Сначала дождитесь исполнителя или recover.'};Recovery-Evidence $s $Evidence;$s.status='rejected';Event $s 'rejected' 'Правки сохранены; автоматического отката нет';Clear-Active $s}
-   'recover' {$a=Active;if(!$a){throw 'Нет активного запуска.'};$s=Load-State $a.id;if(!$s.pid -and $s.status -in @('starting','running')){throw 'PID ещё не зарегистрирован: завершение не подтверждено. Требуется проверка запуска в обычной Windows-сессии.'};if(Process-Alive $s){throw 'Runner ещё работает.'};if($s.ContainsKey('cliPid') -and (Process-Alive @{pid=$s.cliPid;processStarted=$s.cliProcessStarted})){throw 'CLI процесс ещё работает; сначала дождитесь его/остановите явно.'};if($s.status -in @('starting','running')){$s.status='interrupted';$s.recoveryRequired=$true;$s.ended=[datetime]::UtcNow.ToString('o');Event $s 'interrupted' 'Runner завершился без подтверждённого результата; правки и блокировка сохранены'}else{'Запуск уже завершён; нужна review или reject.'}}
-   'publish' {Publish-Item $Message $CompleteItem $TestMode $TestSkipDeployment $DeployTimeoutSeconds}
-   'update-status' {Update-ProjectStatus $StatusFile}
-   'record-stage' {if(!$Stage -or !$Message){throw 'Нужны -Stage и -Message.'};$route=Get-Route $Model $Effort -AllowMax:$AllowMax;$e=@{time=[datetime]::UtcNow.ToString('o');stage=$Stage;action=$StageAction;model=$route.model;effort=$route.effort;details=$Message};[IO.File]::AppendAllText((Join-Path $script:Runs 'stages.jsonl'),(($e|ConvertTo-Json -Compress)+"`n"),$script:Utf8)}
+   'reject' {
+    $s=Load-State $Id;Require-Owner $s;Assert-IntegrationOwner $s;Assert-CLIStopped $s
+    if($s.status -in @('starting','running')){throw 'Сначала дождитесь исполнителя или recover.'}
+    if($s.kind -eq 'integration'){$scope=Assert-Scope $s -AllowOwnStaged}
+    Recovery-Evidence $s $Evidence;$s.status='rejected';Event $s 'rejected' 'Правки сохранены; автоматического отката нет'
+    if($s.kind -eq 'integration'){Save-Integration $s 'rejected'};Clear-Active $s
+   }
+   'recover' {
+    if((Test-Path -LiteralPath (Registry-Path)) -and !$script:WorkerBinding){$r=Read-Registry;if($r.owner -and $r.owner.kind -eq 'integration'){Recover-Integration $TaskId $Id;break};if($r.owner -and $r.owner.kind -eq 'publication'){if(Process-Alive $r.owner){throw 'Публикация ещё работает.'};throw 'Публикация сохранена; повторите publish для продолжения того же commit/archive.'}}
+    $a=Active;if(!$a){Recover-OrphanSlot $Id;break};if($Id -and $a.id -ne $Id){throw 'recover адресован другому запуску.'};$s=Load-State $a.id
+    if(!$s.pid -and $s.status -in @('starting','running') -and $s.ContainsKey('launchPhase') -and $s.launchPhase -eq 'prepared'){Recover-OrphanSlot $s.id;break}
+    if(!$s.pid -and $s.status -in @('starting','running')){throw 'PID ещё не зарегистрирован: завершение не подтверждено. Требуется проверка запуска в обычной Windows-сессии.'}
+    if($s.kind -eq 'integration' -and $s.status -in @('accepted','accepted-no-changes')){$r=Read-Registry;$m=$r.integrations[(Integration-Key $s.taskId $s.sourceAttemptId)];$expected=if($s.commit){$s.commit}else{$s.baseline};if(!$r.owner -and $m.phase -eq $s.status -and $m.integratedAcceptedCommit -eq $s.commit -and (G @('rev-parse','HEAD')) -eq $expected){Assert-Clean;Clear-Active $s;'Принятая mapping подтверждена, active освобождён.';break}}
+    if(Process-Alive $s){throw 'Runner ещё работает.'}
+    if($s.ContainsKey('cliPid') -and (Process-Alive @{pid=$s.cliPid;processStarted=$s.cliProcessStarted})){throw 'CLI процесс ещё работает; сначала дождитесь его/остановите явно.'}
+    if($s.status -in @('starting','running')){$s.status='interrupted';$s.recoveryRequired=$true;$s.ended=[datetime]::UtcNow.ToString('o');Event $s 'interrupted' 'Runner завершился без подтверждённого результата; правки и блокировка сохранены'}else{'Запуск уже завершён; нужна review или reject.'}
+    if($script:WorkerBinding){$gate=Coordinator-Gate;try{$r=Read-Registry;Refresh-Reservations $r;Save-Registry $r}finally{$gate.Dispose()}}
+   }
+   'publish' {Begin-Publication;try{Publish-Item $Message $CompleteItem $TestMode $TestSkipDeployment $DeployTimeoutSeconds;Sync-PublicationMappings;Complete-Publication}catch{if(Test-Path -LiteralPath (Join-Path $script:Runs 'publication.json')){Sync-PublicationMappings};throw}}
+   'update-status' {if($script:WorkerBinding){throw 'Worker не публикует состояние проекта.'};Update-ProjectStatus $StatusFile}
+   'record-stage' {if(!$Stage -or !$Message){throw 'Нужны -Stage и -Message.'};$route=Get-Route $Model $Effort -AllowMax:$AllowMax;$e=@{time=[datetime]::UtcNow.ToString('o');taskId=$script:TaskId;attemptId=$Id;stage=$Stage;action=$StageAction;model=$route.model;effort=$route.effort;details=$Message};[IO.File]::AppendAllText((Join-Path $script:Runs 'stages.jsonl'),(($e|ConvertTo-Json -Compress)+"`n"),$script:Utf8)}
    default {throw 'Неизвестная команда.'}
   }
  }finally{$lock.Dispose()}

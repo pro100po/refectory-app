@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
- [ValidateSet('status','monitor','run','rerun','manual','review','accept-step','reject','recover','publish','update-status','record-stage')][string]$Command='status',
+ [ValidateSet('status','monitor','run','rerun','manual','review','accept-step','reject','recover','publish','update-status','record-stage','register-worker','configure','integrate')][string]$Command='status',
+ [string]$CoordinatorRepo, [string]$TaskId, [string]$WorkerRepo, [string]$WorkerBranch, [string]$MaxWorkers='2',
  [string]$Repo=$PSScriptRoot, [string]$Id, [string]$TaskFile, [string[]]$Files,
  [string]$Model='sol', [string]$Effort='medium', [switch]$AllowMax,
  [string]$Evidence, [string]$Message, [string]$Baseline, [string]$StatusFile,

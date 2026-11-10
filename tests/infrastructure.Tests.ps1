@@ -14,7 +14,7 @@ function State($id){Get-Content -LiteralPath (Join-Path $script:repo ".codex-run
 function Wait-Run($id){$until=[datetime]::UtcNow.AddSeconds(35);do{$s=State $id;if($s.status -notin @('starting','running')){return $s};if([datetime]::UtcNow -gt $until){throw "Worker timeout $id"};Start-Sleep -Milliseconds 150}while($true)}
 function Fresh($name){
  $script:repo=Join-Path $TestRoot "$name русский пробел";[void][IO.Directory]::CreateDirectory($script:repo)
- foreach($f in @('watch.ps1','.gitignore','scripts/Workflow.psm1','scripts/cli-adapter.ps1')){$dest=Join-Path $script:repo $f;[void][IO.Directory]::CreateDirectory((Split-Path $dest -Parent));Copy-Item -LiteralPath (Join-Path $src $f) -Destination $dest}
+ foreach($f in @('watch.ps1','.gitignore','scripts/Workflow.psm1','scripts/Monitor.psm1','scripts/cli-adapter.ps1')){$dest=Join-Path $script:repo $f;[void][IO.Directory]::CreateDirectory((Split-Path $dest -Parent));Copy-Item -LiteralPath (Join-Path $src $f) -Destination $dest}
  $script:watch=Join-Path $script:repo 'watch.ps1'
  [void](Git @('init','-b','main'));[void](Git @('config','user.name','Fixture'));[void](Git @('config','user.email','fixture@example.invalid'));[void](Git @('config','core.autocrlf','false'))
  Put (Join-Path $script:repo 'a.txt') 'baseline';Put (Join-Path $script:repo 'index.html') '<style>@font-face{src:url(fonts/test.woff2)}</style>fixture'
